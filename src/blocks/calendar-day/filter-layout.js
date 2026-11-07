@@ -8,6 +8,7 @@
 import { addFilter } from '@wordpress/hooks';
 import { select } from '@wordpress/data';
 import { store as blockEditorStore } from '@wordpress/block-editor';
+import { hasRibbonStyle } from '../calendar/utils/day-classes';
 
 /**
  * Lock Layout controls for Calendar Day blocks using the Ribbon style.
@@ -35,11 +36,7 @@ export function filterCalendarDayLayoutSettings(
 		clientId
 	) {
 		const attributes = select( blockEditorStore )?.getBlockAttributes( clientId );
-		const isRibbon = Boolean(
-			attributes?.className?.includes( 'is-style-ribbon' ),
-		);
-
-		if ( isRibbon ) {
+		if ( hasRibbonStyle( attributes?.className ) ) {
 			if ( 'layout.allowEditing' === settingName ) {
 				return false;
 			}

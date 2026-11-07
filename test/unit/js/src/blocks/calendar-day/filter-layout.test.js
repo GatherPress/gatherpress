@@ -124,4 +124,21 @@ describe( 'filterCalendarDayLayoutSettings', () => {
 
 		expect( allowEditingResult ).toBe( false );
 	} );
+
+	it( 'keeps layout controls for a class that only starts with the Ribbon style', () => {
+		select.mockReturnValue( {
+			getBlockAttributes: jest.fn().mockReturnValue( {
+				className: 'is-style-ribbon-foo',
+			} ),
+		} );
+
+		expect(
+			filterCalendarDayLayoutSettings(
+				undefined,
+				'layout',
+				'day-cell-1',
+				'gatherpress/calendar-day',
+			),
+		).toBeUndefined();
+	} );
 } );

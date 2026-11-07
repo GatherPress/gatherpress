@@ -34,7 +34,10 @@ import {
 	FALLBACK_BLOCK_GAP,
 } from '../blocks/calendar/utils/day-number';
 import { getRibbonRowsStyle } from '../blocks/calendar/utils/ribbon-rows';
-import { getDayClassNames } from '../blocks/calendar/utils/day-classes';
+import {
+	getDayClassNames,
+	hasRibbonStyle,
+} from '../blocks/calendar/utils/day-classes';
 
 /**
  * Strips top-level event-date blocks from entries on multi-day/all-day spans.
@@ -188,9 +191,7 @@ function CalendarDayPreviewComponent( {
 		[ day, isTimeGrid, timeGridConfig, numRibbonSlots ],
 	);
 
-	const isRibbon = Boolean(
-		dayBlockAttributes?.className?.includes( 'is-style-ribbon' ),
-	);
+	const isRibbon = hasRibbonStyle( dayBlockAttributes?.className );
 	const isRibbonOrTimeGrid = isRibbon || isTimeGrid;
 
 	const hasDayNumberBlock = useMemo(
