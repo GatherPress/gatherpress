@@ -1667,7 +1667,7 @@ final class Map {
 	 * See {@see Saved_Image::filename()}.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Moved to {@see Saved_Image::filename()}.
+	 * @since 0.36.2 Moved to {@see Saved_Image::filename()}.
 	 *
 	 * @param string $address   Venue address.
 	 * @param float  $latitude  Venue latitude.
