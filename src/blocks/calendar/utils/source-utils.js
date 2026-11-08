@@ -268,7 +268,7 @@ export function resolveSourceEventDates( select, params = {} ) {
 	let effectivePostId = 0;
 	if ( isSelected ) {
 		effectivePostId = toPostId( postId );
-	} else if ( isContext ) {
+	} else {
 		effectivePostId =
 			toPostId( contextPostId ) || toPostId( currentEditorPostId );
 	}

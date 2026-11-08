@@ -167,7 +167,7 @@ final class Date_Range {
 	 */
 	public static function from_query(
 		array $query,
-		array $attributes = array(),
+		array $attributes,
 		int $page = 1,
 		?WP_Block $block = null
 	): self {
