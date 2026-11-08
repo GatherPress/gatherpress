@@ -497,7 +497,7 @@ class Test_Setup extends Base {
 
 		$result = $instance->on_site_delete( $tables );
 
-		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$expected_table = Event::table();
 
 		$this->assertContains(
 			$expected_table,
@@ -581,7 +581,7 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 
 		// Drop the table if it exists from previous tests.
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
 		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
 		$occurrences = Occurrences::table();
@@ -644,7 +644,7 @@ class Test_Setup extends Base {
 		// Drop tables from both sites if they exist.
 		foreach ( array( get_current_blog_id(), $site_id_2 ) as $site_id ) {
 			switch_to_blog( $site_id );
-			foreach ( array( sprintf( Event::TABLE_FORMAT, $wpdb->prefix ), Occurrences::table() ) as $table ) {
+			foreach ( array( Event::table(), Occurrences::table() ) as $table ) {
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
 				$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
 			}
@@ -658,7 +658,7 @@ class Test_Setup extends Base {
 		foreach ( array( get_current_blog_id(), $site_id_2 ) as $site_id ) {
 			switch_to_blog( $site_id );
 
-			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			$table = Event::table();
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
 			$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
 
@@ -709,7 +709,7 @@ class Test_Setup extends Base {
 
 		switch_to_blog( $new_site_id );
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table absence.
 		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
 
@@ -744,7 +744,7 @@ class Test_Setup extends Base {
 		// Switch to the new site to verify table was created.
 		switch_to_blog( $new_site_id );
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
 		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
 
@@ -784,7 +784,7 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 
 		// Drop the table if it exists.
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
 		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
 

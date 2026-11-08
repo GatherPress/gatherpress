@@ -156,6 +156,19 @@ class Event {
 	}
 
 	/**
+	 * The event date table of the current site.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The table name.
+	 */
+	public static function table(): string {
+		global $wpdb;
+
+		return sprintf( self::TABLE_FORMAT, $wpdb->prefix );
+	}
+
+	/**
 	 * Whether an event's blocks should render for the current viewer.
 	 *
 	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
@@ -1197,7 +1210,7 @@ class Event {
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );
 		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( (string) $fields['datetime_end'], $timezone );
 
-		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
+		$table = self::table();
 
 		// @todo Add caching to this and create new method to check existence.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery

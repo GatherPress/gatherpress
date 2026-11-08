@@ -454,9 +454,7 @@ final class Setup {
 	 * @return string[] An updated array of table names to be deleted during site deletion.
 	 */
 	public function on_site_delete( array $tables ): array {
-		global $wpdb;
-
-		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$tables[] = Event::table();
 		$tables[] = Occurrences::table();
 
 		return $tables;

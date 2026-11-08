@@ -840,7 +840,7 @@ class Test_Setup extends Base {
 		);
 
 		// Verify record exists in custom table.
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$count = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE post_id = %d', $table, $post_id ) );
 		$this->assertGreaterThan( 0, $count, 'Event record should exist in custom table.' );

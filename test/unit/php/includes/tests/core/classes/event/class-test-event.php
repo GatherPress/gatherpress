@@ -292,7 +292,7 @@ class Test_Event extends Base {
 		// previous tests may have set datetime values for this post ID.
 		if ( empty( $params ) ) {
 			global $wpdb;
-			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			$table = Event::table();
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->delete( $table, array( 'post_id' => $post->ID ), array( '%d' ) );
 			delete_transient( sprintf( Event::DATETIME_CACHE_KEY, $post->ID ) );
@@ -2217,6 +2217,21 @@ class Test_Event extends Base {
 		$event   = new Event( $post_id );
 
 		$this->assertNull( $event->post, 'Failed to assert post is null for non-event post.' );
+	}
+
+	/**
+	 * The table name carries the current site's prefix.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::table
+	 *
+	 * @return void
+	 */
+	public function test_table(): void {
+		global $wpdb;
+
+		$this->assertSame( $wpdb->prefix . 'gatherpress_events', Event::table() );
 	}
 
 	/**
