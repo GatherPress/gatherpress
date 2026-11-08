@@ -718,21 +718,24 @@ final class Setup {
 	 * current locale for proper calendar identification).
 	 *
 	 * @since 0.34.0
+	 * @since TBD Escapes the site name and folds the header lines.
 	 *
 	 * @param string $calendar_data The events to be included in the iCal file.
 	 *
 	 * @return string               The complete iCal data wrapped in the VCALENDAR format.
 	 */
 	public function get_ical_wrap( string $calendar_data ): string {
+		$prodid = sprintf(
+			'PRODID:-//%s//GatherPress//%s',
+			External::escape_ical_text( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) ),
+			// Prepare 2-digit lang code.
+			strtoupper( substr( get_locale(), 0, 2 ) )
+		);
+
 		$args = array(
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
-			sprintf(
-				'PRODID:-//%s//GatherPress//%s',
-				get_bloginfo( 'title' ),
-				// Prepare 2-digit lang code.
-				strtoupper( substr( get_locale(), 0, 2 ) )
-			),
+			External::fold_ical_line( $prodid ),
 			$calendar_data,
 			'END:VCALENDAR',
 		);

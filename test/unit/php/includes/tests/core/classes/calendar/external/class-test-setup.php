@@ -736,6 +736,36 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * The site name in PRODID is decoded, escaped and folded to 75 octets.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ical_wrap
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_wrap_escapes_and_folds_the_site_name(): void {
+		$blogname = get_option( 'blogname' );
+		$name     = 'Tokyo & Osaka, ' . str_repeat( '東京', 20 ) . '; Meetups';
+
+		update_option( 'blogname', $name );
+
+		$wrapped = Setup::get_instance()->get_ical_wrap( "BEGIN:VEVENT\r\nEND:VEVENT" );
+
+		update_option( 'blogname', $blogname );
+
+		foreach ( explode( "\r\n", $wrapped ) as $line ) {
+			$this->assertLessThanOrEqual( 75, strlen( $line ), 'No envelope line should exceed 75 octets.' );
+		}
+
+		$this->assertStringContainsString(
+			'PRODID:-//Tokyo & Osaka\\, ' . str_repeat( '東京', 20 ) . '\\; Meetups//GatherPress//',
+			str_replace( "\r\n ", '', $wrapped ),
+			'Unfolding should give back the decoded, escaped site name.'
+		);
+	}
+
+	/**
 	 * Coverage for get_ical_list and get_ical_feed — both query upcoming
 	 * events and emit one VEVENT per result.
 	 *

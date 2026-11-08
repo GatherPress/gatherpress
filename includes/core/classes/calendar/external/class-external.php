@@ -328,9 +328,9 @@ final class External {
 		}
 
 		$permalink   = (string) get_permalink( $post );
-		$summary     = $this->escape_ical_text( $post->post_title );
-		$description = $this->escape_ical_text( $description );
-		$location    = $this->escape_ical_text( $location );
+		$summary     = self::escape_ical_text( $post->post_title );
+		$description = self::escape_ical_text( $description );
+		$location    = self::escape_ical_text( $location );
 
 		$args = array(
 			'BEGIN:VEVENT',
@@ -350,7 +350,7 @@ final class External {
 
 		return implode(
 			"\r\n",
-			array_map( fn( string $line ): string => $this->fold_ical_line( $line ), $args )
+			array_map( fn( string $line ): string => self::fold_ical_line( $line ), $args )
 		);
 	}
 
@@ -415,12 +415,13 @@ final class External {
 	 * fold counts the escaped octets.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Public and static, for the calendar envelope.
 	 *
 	 * @param string $text The raw text to escape.
 	 *
 	 * @return string The escaped text suitable for a TEXT-typed iCal property.
 	 */
-	private function escape_ical_text( string $text ): string {
+	public static function escape_ical_text( string $text ): string {
 		return addcslashes( $text, "\\,;\r\n" );
 	}
 
@@ -536,7 +537,7 @@ final class External {
 	 *
 	 * @return string The line, folded where it is longer than 75 octets.
 	 */
-	private function fold_ical_line( string $line ): string {
+	public static function fold_ical_line( string $line ): string {
 		$folded = '';
 		$limit  = 75;
 		$length = strlen( $line );

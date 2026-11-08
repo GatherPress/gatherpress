@@ -737,13 +737,12 @@ class Test_External extends Base {
 	 * @return void
 	 */
 	public function test_fold_ical_line_keeps_a_line_of_75_octets(): void {
-		$instance = new External( $this->make_event() );
-		$line     = 'SUMMARY:' . str_repeat( 'a', 67 );
+		$line = 'SUMMARY:' . str_repeat( 'a', 67 );
 
 		$this->assertSame( 75, strlen( $line ), 'The fixture should sit exactly on the limit.' );
 		$this->assertSame(
 			$line,
-			Utility::invoke_hidden_method( $instance, 'fold_ical_line', array( $line ) ),
+			External::fold_ical_line( $line ),
 			'A line of 75 octets should not be folded.'
 		);
 	}
@@ -759,9 +758,8 @@ class Test_External extends Base {
 	 * @return void
 	 */
 	public function test_fold_ical_line_counts_the_name_and_the_leading_space(): void {
-		$instance = new External( $this->make_event() );
-		$line     = 'DESCRIPTION:' . str_repeat( 'a', 200 );
-		$folded   = Utility::invoke_hidden_method( $instance, 'fold_ical_line', array( $line ) );
+		$line   = 'DESCRIPTION:' . str_repeat( 'a', 200 );
+		$folded = External::fold_ical_line( $line );
 
 		$this->assertSame(
 			array( 75, 75, 64 ),
@@ -790,9 +788,8 @@ class Test_External extends Base {
 	 * @return void
 	 */
 	public function test_fold_ical_line_keeps_multibyte_characters_whole( string $line, int $first_line_octets ): void {
-		$instance = new External( $this->make_event() );
-		$folded   = Utility::invoke_hidden_method( $instance, 'fold_ical_line', array( $line ) );
-		$lines    = explode( "\r\n", $folded );
+		$folded = External::fold_ical_line( $line );
+		$lines  = explode( "\r\n", $folded );
 
 		$this->assertSame(
 			$first_line_octets,
@@ -864,13 +861,7 @@ class Test_External extends Base {
 	 * @return void
 	 */
 	public function test_escape_ical_text_escapes_special_chars(): void {
-		$instance = new External( $this->make_event() );
-
-		$escaped = Utility::invoke_hidden_method(
-			$instance,
-			'escape_ical_text',
-			array( "a\\b,c;d\re\nf" )
-		);
+		$escaped = External::escape_ical_text( "a\\b,c;d\re\nf" );
 
 		// addcslashes converts \r and \n to the literal two-char sequences
 		// `\r` and `\n` (backslash + letter), not actual CR/LF.
