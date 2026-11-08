@@ -579,7 +579,7 @@ class Test_Date_Range extends Base {
 
 		$this->assertSame(
 			current_datetime()->format( 'Y-m-d' ),
-			Date_Range::from_query( $query )->start_date,
+			Date_Range::from_query( $query, array() )->start_date,
 			'Failed to assert a date that is not valid is today.'
 		);
 	}

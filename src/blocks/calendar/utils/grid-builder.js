@@ -558,7 +558,7 @@ export function groupPostsByDate(
 		if ( a.startDateStr !== b.startDateStr ) {
 			return a.startDateStr.localeCompare( b.startDateStr );
 		}
-		return ( a.post.id || 0 ) - ( b.post.id || 0 );
+		return a.post.id - b.post.id;
 	} );
 
 	const occupiedSlots = {};
@@ -587,7 +587,7 @@ export function groupPostsByDate(
 
 	Object.keys( grouped ).forEach( ( dateStr ) => {
 		grouped[ dateStr ].sort(
-			( a, b ) => ( a.slot || 0 ) - ( b.slot || 0 ),
+			( a, b ) => a.slot - b.slot,
 		);
 	} );
 
@@ -668,8 +668,7 @@ export function buildWeeks(
 		// Pre-pad leading empty days before the first visible day of the month
 		if ( ! firstDayPlaced ) {
 			firstDayPlaced = true;
-			const startCol = activeDaysOfWeek.indexOf( dayOfWeek );
-			const emptyDays = -1 !== startCol ? startCol : 0;
+			const emptyDays = activeDaysOfWeek.indexOf( dayOfWeek );
 
 			// Fill initial empty days before the month starts.
 			for ( let i = 0; i < emptyDays; i++ ) {
@@ -807,7 +806,7 @@ export function getWeekNumRibbonSlots( weekDays, isTimeGrid ) {
 	}
 	let maxSlot = -1;
 	weekDays.forEach( ( day ) => {
-		( day.posts || [] ).forEach( ( p ) => {
+		day.posts.forEach( ( p ) => {
 			if ( ! p.isTimed ) {
 				maxSlot = Math.max( maxSlot, Number( p.slot ) || 0 );
 			}
@@ -829,8 +828,8 @@ export function getWeekNumRibbonSlots( weekDays, isTimeGrid ) {
  * @return {Object} Calendar data structure.
  */
 export function generateCalendar(
-	posts = [],
-	startOfWeek = 0,
+	posts,
+	startOfWeek,
 	dateRange,
 	showWeekends = true,
 	timeGridConfig = {},
@@ -855,10 +854,7 @@ export function generateCalendar(
 			dayNames.push( formatCalendarDate( 'D', d ) );
 		}
 		const weeks = buildConsecutiveDays( startObj, requestedCount, postsByDate );
-		const numRibbonSlots = getWeekNumRibbonSlots(
-			weeks[ 0 ] || [],
-			isTimeGrid,
-		);
+		const numRibbonSlots = getWeekNumRibbonSlots( weeks[ 0 ], isTimeGrid );
 		const units = [
 			{
 				dayNames,
@@ -878,10 +874,7 @@ export function generateCalendar(
 	}
 
 	if ( 'week' === viewType ) {
-		const weekStart =
-			dateRange.rawWeekStart ||
-			dateRange.startDateObj ||
-			toNoonDate( dateRange.startDate );
+		const weekStart = dateRange.rawWeekStart || startObj;
 		const dayNames = getDayNames( startOfWeek, showWeekends );
 		const weeks = buildConsecutiveWeeks(
 			weekStart,
