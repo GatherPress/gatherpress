@@ -6,7 +6,10 @@ during `npm install` via the `postinstall` hook in `package.json`. Each patch
 should be documented here so a future contributor knows what it does, why it
 exists, and when it can be removed.
 
-## `@wordpress+env+11.14.0.patch`
+## `@wordpress+env+12.1.0.patch`
+
+patch-package matches a patch to the exact installed version, so regenerate this
+one under the new version's name whenever `@wordpress/env` is bumped.
 
 ### What it changes
 

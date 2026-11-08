@@ -127,38 +127,13 @@ jobs:
           ./node_modules
         key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-    # playwright-core's bundled yauzl deadlocks unpacking the browser archive
-    # on Node 24.16/24.17: the extract stream never emits `close`, so the
-    # forked oopDownloadBrowserMain.js wedges silently *after* the transfer
-    # reaches 100% (nodejs/node#63487, microsoft/playwright#41133). Playwright
-    # vendored the fix in 1.60.0; 1.58.x never got it.
-    #
-    # .nvmrc pins 24.17.0 (#1962, to dodge a 24.18.0 `wp-scripts build`
-    # corruption), which is squarely in the broken range -- that pin is why
-    # runs 31287296394, 31288339635 and 31313721827 all hung after reaching
-    # 100%. Node 24.18.0 carries the libuv revert, so run the install (and
-    # only the install) on a Node past it, then restore the pinned one before
-    # anything builds.
-    #
     # The apt phase below stays a separate step with its own timeout: the
     # combined `install --with-deps` once hung indefinitely inside it and
     # burned GitHub's 6h limit across every locale (run 27881952586).
-    - name: Use a Node without the extraction deadlock
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      uses: actions/setup-node@v4
-      with:
-        node-version: '24.20.0'
-
     - name: Install Playwright browser
       timeout-minutes: 15
       run: npx playwright install chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-
-    - name: Restore the pinned Node
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      uses: actions/setup-node@v4
-      with:
-        node-version-file: '.nvmrc'
 
     - name: Install Playwright system dependencies
       timeout-minutes: 10
