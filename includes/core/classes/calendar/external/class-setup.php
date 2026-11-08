@@ -68,6 +68,7 @@ final class Setup {
 	 */
 	public function __construct() {
 		Cache::get_instance();
+		Feed_Placeholder::get_instance();
 
 		$this->setup_hooks();
 	}
@@ -998,6 +999,7 @@ final class Setup {
 	 * @return bool True when a 304 is the correct answer.
 	 */
 	public function is_not_modified( string $etag, string $last_modified ): bool {
+		// INPUT_SERVER is unreliable under FastCGI.
 		$client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_NONE_MATCH'] ) )
 			: '';
@@ -1008,6 +1010,7 @@ final class Setup {
 			return in_array( $etag, $tags, true );
 		}
 
+		// INPUT_SERVER is unreliable under FastCGI.
 		$client_time = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) )
 			: '';
@@ -1089,12 +1092,13 @@ final class Setup {
 	 * Check if any post type is registered with a taxonomy.
 	 *
 	 * @since 0.34.0
+	 * @since TBD    Public, for `Feed_Placeholder`.
 	 *
 	 * @param string $taxonomy   Taxonomy slug.
 	 *
 	 * @return bool
 	 */
-	protected function has_post_type_for_taxonomy( string $taxonomy ): bool {
+	public function has_post_type_for_taxonomy( string $taxonomy ): bool {
 		$post_types = get_post_types_by_support( Event::SUPPORT );
 		foreach ( $post_types as $post_type ) {
 			if ( is_object_in_taxonomy( $post_type, $taxonomy ) ) {
@@ -1112,12 +1116,13 @@ final class Setup {
 	 * and if its taxonomy is one that is related to any 'gatherpress-event-date' supporting post type.
 	 *
 	 * @since 0.34.0
+	 * @since TBD    Public, for `Feed_Placeholder`.
 	 *
 	 * @param  string $post_type  The post_type to check.
 	 *
 	 * @return bool
 	 */
-	protected function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
+	public function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
 		return post_type_supports( $post_type, Shadow_Source::SUPPORT ) &&
 			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
 	}
@@ -1138,6 +1143,7 @@ final class Setup {
 	 */
 	public function is_calendar_negotiated( ?string $accept_header = null ): bool {
 		if ( null === $accept_header ) {
+			// INPUT_SERVER is unreliable under FastCGI.
 			$accept_header = isset( $_SERVER['HTTP_ACCEPT'] ) && is_string( $_SERVER['HTTP_ACCEPT'] )
 				? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) )
 				: '';

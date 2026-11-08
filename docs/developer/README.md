@@ -20,6 +20,7 @@ Standalone guides for customizing specific GatherPress features through hooks:
 - [Taxonomies](taxonomies/): registering your own taxonomy across every event post type, attaching categories and tags, and renaming or detaching Topics.
 - [WP-CLI commands](wp-cli/README.md): `wp gatherpress event rsvp` and `wp gatherpress settings import|export`, and how to add a command of your own.
 - [Content import and export](content-import-export/README.md): how event dates survive a WXR round trip, and how to carry your own data with them.
+- [Calendar blocks](blocks/calendar.md): the attributes, binding sources, CSS classes and hooks of the month, week and day calendar blocks.
 
 For every hook GatherPress exposes, see the auto-generated [hook reference](hooks/) and the [hook naming convention](hooks-naming-convention.md).
 

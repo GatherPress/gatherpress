@@ -64,6 +64,7 @@ final class Modal {
 	protected function setup_hooks(): void {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
+		add_filter( $render_block_hook, array( $this, 'render_as_dialog' ) );
 		add_filter( $render_block_hook, array( $this, 'apply_modal_attributes' ), 10, 2 );
 		add_filter( $render_block_hook, array( $this, 'adjust_block_z_index' ), 10, 2 );
 		add_filter( $render_block_hook, array( $this, 'filter_login_modal' ), 10, 2 );
@@ -71,10 +72,35 @@ final class Modal {
 	}
 
 	/**
+	 * Renders the modal as a native `<dialog>`.
+	 *
+	 * The block saves a `<div>`, so this runs at render time and existing
+	 * content needs no migration. Opened with `showModal()`, the browser
+	 * keeps focus inside the dialog, makes the page behind it inert, and
+	 * closes it on Escape.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 *
+	 * @return string The block content as a `<dialog>`, or unchanged when it is not a `<div>`.
+	 */
+	public function render_as_dialog( string $block_content ): string {
+		$block_content = trim( $block_content );
+
+		if ( ! preg_match( '/^<div\b/', $block_content ) || ! str_ends_with( $block_content, '</div>' ) ) {
+			return $block_content;
+		}
+
+		return '<dialog' . substr( $block_content, 4, -6 ) . '</dialog>';
+	}
+
+	/**
 	 * Modifies the modal block's attributes for accessibility.
 	 *
 	 * Dynamically updates the modal block's rendered content to include necessary
-	 * attributes for improved accessibility and functionality.
+	 * attributes for improved accessibility and functionality. The `<dialog>`
+	 * element carries the dialog role itself, and `showModal()` makes it modal.
 	 *
 	 * A modal with a custom name (`metadata.name`) uses it as its `aria-label`.
 	 * A modal without one gets the generic "Modal" label and the
@@ -94,6 +120,7 @@ final class Modal {
 	 * @since 0.33.0
 	 * @since 0.36.0 Marks modals that have no custom name.
 	 * @since 0.36.1    Names RSVP block modals after their title paragraph.
+	 * @since TBD       No longer sets `role`, `aria-modal`, `aria-hidden` or `tabindex`, which the `<dialog>` covers.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -113,11 +140,7 @@ final class Modal {
 				$tag->set_attribute( 'data-gatherpress-default-label', 'true' );
 			}
 
-			$tag->set_attribute( 'role', 'dialog' );
-			$tag->set_attribute( 'aria-modal', 'true' );
-			$tag->set_attribute( 'aria-hidden', 'true' );
 			$tag->set_attribute( 'aria-label', esc_attr( $modal_name ) );
-			$tag->set_attribute( 'tabindex', '-1' );
 
 			if ( $this->is_rsvp_block_modal( $block ) ) {
 				$this->label_by_paragraphs( $tag );

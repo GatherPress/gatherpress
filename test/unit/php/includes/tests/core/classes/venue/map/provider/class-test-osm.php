@@ -15,10 +15,12 @@ namespace GatherPress\Tests\Core\Venue\Map\Provider;
 use ErrorException;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Carto;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
 use GdImage;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 
 /**
  * Class Test_OSM.
@@ -142,6 +144,42 @@ class Test_OSM extends Base {
 	}
 
 	/**
+	 * A CARTO tile request names the site as its referer, so a key
+	 * restricted to the site's domain is accepted. Another host is not told.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::fetch_tile
+	 *
+	 * @return void
+	 */
+	public function test_fetch_tile_sends_the_site_as_referer_to_carto(): void {
+		$requests = array();
+		$capture  = static function ( $preempt, $args, $url ) use ( &$requests ) {
+			$requests[ $url ] = $args['headers']['Referer'] ?? null;
+
+			return $preempt;
+		};
+
+		add_filter( 'pre_http_request', $capture, 9, 3 );
+
+		( new OSM() )->fetch_tile( 1, 2, 3, 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123' );
+		( new OSM() )->fetch_tile( 1, 2, 3, 'https://example.test/{z}/{x}/{y}.png' );
+
+		remove_filter( 'pre_http_request', $capture, 9 );
+
+		$this->assertSame(
+			home_url( '/' ),
+			$requests['https://a.basemaps.cartocdn.com/light_all/1/2/3.png?key=abc123'],
+			'Failed to assert a CARTO tile request names the site as its referer.'
+		);
+		$this->assertNull(
+			$requests['https://example.test/1/2/3.png'],
+			'Failed to assert another tile host is not sent a referer.'
+		);
+	}
+
+	/**
 	 * `fetch_tile()` returns null when the response code is non-200 — a
 	 * blank patch in the composite is preferable to aborting the whole
 	 * render.
@@ -185,7 +223,7 @@ class Test_OSM extends Base {
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 
 		$callback = function () {
-			return new \WP_Error( 'http_request_failed', 'boom' );
+			return new WP_Error( 'http_request_failed', 'boom' );
 		};
 
 		add_filter( 'pre_http_request', $callback );
@@ -387,10 +425,80 @@ class Test_OSM extends Base {
 	}
 
 	/**
+	 * CARTO serves raster tiles up to zoom 18, so a CARTO map above that
+	 * renders from zoom 18 tiles, and its retina variant is skipped.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_caps_carto_zoom(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$zooms  = array();
+		$record = function ( $preempt, $args, $url ) use ( &$zooms ) {
+			$zooms[] = (int) explode( '/', (string) wp_parse_url( $url, PHP_URL_PATH ) )[2];
+
+			return $this->short_circuit_tile_requests( $preempt, $args, $url );
+		};
+
+		add_filter( 'pre_http_request', $record, 9, 3 );
+
+		$this->assertInstanceOf( GdImage::class, ( new OSM() )->render( 40.7128, -74.0060, 20, 320, 240 ) );
+		$this->assertSame(
+			array( Carto::ZOOM_MAX ),
+			array_values( array_unique( $zooms ) ),
+			'Failed to assert zoom 18 tiles.'
+		);
+		$this->assertNull(
+			( new OSM() )->render( 40.7128, -74.0060, Carto::ZOOM_MAX, 320, 240, 2 ),
+			'Failed to assert the retina variant past zoom 18 is skipped.'
+		);
+
+		remove_filter( 'pre_http_request', $record, 9 );
+	}
+
+	/**
+	 * A tile server other than CARTO is not held to CARTO's zoom limit.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_does_not_cap_other_tile_servers(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$zooms  = array();
+		$record = function ( $preempt, $args, $url ) use ( &$zooms ) {
+			$zooms[] = (int) explode( '/', (string) wp_parse_url( $url, PHP_URL_PATH ) )[1];
+
+			return $this->short_circuit_tile_requests( $preempt, $args, $url );
+		};
+		$tiles  = static fn(): string => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+		add_filter( 'pre_http_request', $record, 9, 3 );
+		add_filter( 'gatherpress_static_map_tile_url', $tiles );
+
+		$this->assertInstanceOf( GdImage::class, ( new OSM() )->render( 40.7128, -74.0060, 19, 320, 240 ) );
+		$this->assertSame( array( 19 ), array_values( array_unique( $zooms ) ), 'Failed to assert zoom 19 tiles.' );
+
+		remove_filter( 'pre_http_request', $record, 9 );
+		remove_filter( 'gatherpress_static_map_tile_url', $tiles );
+	}
+
+	/**
 	 * When the wall-clock budget is exhausted between iterations, the
-	 * render loop breaks out and the canvas comes back with the
-	 * pre-painted gray background — no tiles fetched. Filter-driven so
-	 * we don't have to wait COMPOSITE_TIME_BUDGET seconds.
+	 * render loop breaks out with no tiles fetched, so there is no map to
+	 * return and renders pause. Filter-driven so we don't have to wait
+	 * COMPOSITE_TIME_BUDGET seconds.
 	 *
 	 * @covers ::render
 	 *
@@ -416,19 +524,26 @@ class Test_OSM extends Base {
 		// Negative budget puts the deadline in the past from the first
 		// iteration, forcing `break 2` before any fetch runs.
 		$budget = static fn() => -1;
+		$tiles  = Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' );
+		$paused = OSM::TILES_FAILED_TRANSIENT . md5( $tiles . '|15' );
 
+		delete_transient( $paused );
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		add_filter( 'pre_http_request', $counter, 10 );
 		add_filter( 'gatherpress_static_map_composite_time_budget', $budget );
 
 		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
+		$pause  = get_transient( $paused );
+
+		delete_transient( $paused );
 
 		remove_filter( 'gatherpress_static_map_composite_time_budget', $budget );
 		remove_filter( 'pre_http_request', $counter, 10 );
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 
-		$this->assertInstanceOf( GdImage::class, $canvas );
+		$this->assertNull( $canvas );
 		$this->assertSame( 0, $fetches, 'No tiles should be fetched when the deadline is already in the past.' );
+		$this->assertSame( 1, (int) $pause, 'Failed to assert a render with no tiles pauses renders.' );
 	}
 
 	/**
@@ -445,11 +560,16 @@ class Test_OSM extends Base {
 			$this->markTestSkipped( 'GD extension is not available.' );
 		}
 
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		$fail = static function () {
-			return new \WP_Error( 'boom', 'tile fetch failed' );
+		$fetches = 0;
+		$fail    = function ( $preempt, $args, $url ) use ( &$fetches ) {
+			// Only the first tile fails.
+			return 1 === ++$fetches
+				? new WP_Error( 'boom', 'tile fetch failed' )
+				: $this->short_circuit_tile_requests( $preempt, $args, $url );
 		};
-		add_filter( 'pre_http_request', $fail, 10 );
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $fail, 10, 3 );
 
 		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
 
@@ -477,18 +597,20 @@ class Test_OSM extends Base {
 			$this->markTestSkipped( 'GD extension is not available.' );
 		}
 
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		$garbage = static function () {
-			return array(
-				'response' => array(
-					'code'    => 200,
-					'message' => 'OK',
-				),
-				'body'     => 'not a png',
-				'headers'  => array(),
-			);
+		$fetches = 0;
+		$garbage = function ( $preempt, $args, $url ) use ( &$fetches ) {
+			$response = $this->short_circuit_tile_requests( $preempt, $args, $url );
+
+			// Only the first tile is not a PNG.
+			if ( 1 === ++$fetches ) {
+				$response['body'] = 'not a png';
+			}
+
+			return $response;
 		};
-		add_filter( 'pre_http_request', $garbage, 10 );
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $garbage, 10, 3 );
 
 		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
 
@@ -496,6 +618,119 @@ class Test_OSM extends Base {
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 
 		$this->assertInstanceOf( GdImage::class, $canvas );
+	}
+
+	/**
+	 * A render that gets no tiles returns null, so the gray background is
+	 * not saved, and renders pause before asking the tile host again.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_returns_null_and_pauses_when_no_tile_loads(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$fetches = 0;
+		$fail    = static function () use ( &$fetches ) {
+			++$fetches;
+
+			return new WP_Error( 'boom', 'tile fetch failed' );
+		};
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $fail, 10 );
+
+		$this->assertNull(
+			( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 ),
+			'Failed to assert a map with no tiles is not returned.'
+		);
+		$tiles  = Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' );
+		$paused = OSM::TILES_FAILED_TRANSIENT . md5( $tiles . '|15' );
+
+		$this->assertSame( 1, (int) get_transient( $paused ), 'Failed to assert renders pause.' );
+
+		$fetches = 0;
+
+		$count = function ( $preempt, $args, $url ) use ( &$fetches ) {
+			++$fetches;
+
+			return $this->short_circuit_tile_requests( $preempt, $args, $url );
+		};
+
+		remove_filter( 'pre_http_request', $fail, 10 );
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $count, 10, 3 );
+
+		$this->assertNull(
+			( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 ),
+			'Failed to assert a render during the pause returns nothing.'
+		);
+		$this->assertSame( 0, $fetches, 'Failed to assert no tile is requested during the pause.' );
+		$this->assertInstanceOf(
+			GdImage::class,
+			( new OSM() )->render( 37.3318, -122.0312, 16, 512, 256 ),
+			'Failed to assert another tile zoom does not wait for the pause.'
+		);
+
+		remove_filter( 'pre_http_request', $count, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		Settings::get_instance()->set( 'carto_api_key', 'corrected' );
+
+		$this->assertInstanceOf(
+			GdImage::class,
+			( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 ),
+			'Failed to assert a new tile URL does not wait for the pause.'
+		);
+
+		Settings::get_instance()->set( 'carto_api_key', '' );
+		delete_transient( $paused );
+
+		$this->assertInstanceOf(
+			GdImage::class,
+			( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 ),
+			'Failed to assert renders resume after the pause.'
+		);
+	}
+
+	/**
+	 * The cache source is the tile URL with a hash of the key, so
+	 * a new key renders saved maps again, and the key's value stays out
+	 * of the hash.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::get_cache_source
+	 *
+	 * @return void
+	 */
+	public function test_get_cache_source(): void {
+		$settings = Settings::get_instance();
+		$osm      = new OSM();
+
+		$this->assertSame( 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', $osm->get_cache_source() );
+
+		$settings->set( 'carto_api_key', 'abc123' );
+
+		$first = $osm->get_cache_source();
+
+		$this->assertSame(
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=' . md5( 'abc123' ),
+			$first,
+			'Failed to assert the key is noted as a hash.'
+		);
+		$this->assertStringNotContainsString( 'abc123', $first );
+
+		$settings->set( 'carto_api_key', 'different-key' );
+
+		$this->assertNotSame( $first, $osm->get_cache_source(), 'Failed to assert a new key changes the source.' );
+
+		$settings->set( 'carto_api_key', '' );
 	}
 
 	/**
@@ -582,23 +817,46 @@ class Test_OSM extends Base {
 			$this->markTestSkipped( 'GD extension is not available.' );
 		}
 
-		$canvas = imagecreatetruecolor( 256, 256 );
+		$tile = imagecreatetruecolor( 256, 256 );
+		$red  = (int) imagecolorallocate( $tile, 255, 0, 0 );
+		imagefilledrectangle( $tile, 0, 0, 255, 255, $red );
+		ob_start();
+		imagepng( $tile );
+		$body = (string) ob_get_clean();
 
-		Utility::invoke_hidden_method(
+		$canvas = imagecreatetruecolor( 256, 256 );
+		$gray   = (int) imagecolorallocate( $canvas, 238, 238, 238 );
+		imagefilledrectangle( $canvas, 0, 0, 255, 255, $gray );
+
+		$this->assertNotSame( $red, imagecolorat( $canvas, 0, 0 ), 'Failed to assert the canvas starts gray.' );
+
+		$serve = static fn(): array => array(
+			'response' => array(
+				'code'    => 200,
+				'message' => 'OK',
+			),
+			'body'     => $body,
+			'headers'  => array(),
+		);
+
+		add_filter( 'pre_http_request', $serve, 11 );
+
+		$painted = Utility::invoke_hidden_method(
 			new OSM(),
 			'paint_tile',
 			array( $canvas, 0, 0, 1, 0, 0, 'https://example.test/{z}/{x}/{y}.png' )
 		);
 
-		// Canvas remains a GdImage and was modified in place — proxy assertion
-		// is that the call returned without throwing.
-		$this->assertInstanceOf( GdImage::class, $canvas );
+		remove_filter( 'pre_http_request', $serve, 11 );
+
+		$this->assertTrue( $painted, 'Failed to assert a painted tile is reported.' );
+		$this->assertSame( $red, imagecolorat( $canvas, 0, 0 ), 'Failed to assert the tile is copied.' );
 
 		unset( $canvas );
 	}
 
 	/**
-	 * `paint_tile()` returns silently when fetch_tile yields null (HTTP
+	 * `paint_tile()` reports false when fetch_tile yields null (HTTP
 	 * error path). The canvas is untouched.
 	 *
 	 * @covers ::paint_tile
@@ -612,13 +870,13 @@ class Test_OSM extends Base {
 
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		$fail = static function () {
-			return new \WP_Error( 'boom', 'tile fetch failed' );
+			return new WP_Error( 'boom', 'tile fetch failed' );
 		};
 		add_filter( 'pre_http_request', $fail, 10 );
 
 		$canvas = imagecreatetruecolor( 256, 256 );
 
-		Utility::invoke_hidden_method(
+		$painted = Utility::invoke_hidden_method(
 			new OSM(),
 			'paint_tile',
 			array( $canvas, 0, 0, 1, 0, 0, 'https://example.test/{z}/{x}/{y}.png' )
@@ -627,12 +885,12 @@ class Test_OSM extends Base {
 		remove_filter( 'pre_http_request', $fail, 10 );
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 
-		$this->assertInstanceOf( GdImage::class, $canvas );
+		$this->assertFalse( $painted, 'Failed to assert a tile that did not load is reported.' );
 		unset( $canvas );
 	}
 
 	/**
-	 * `paint_tile()` returns silently when decode_tile yields false (the
+	 * `paint_tile()` reports false when decode_tile yields false (the
 	 * fetched bytes aren't a valid PNG).
 	 *
 	 * @covers ::paint_tile
@@ -659,7 +917,7 @@ class Test_OSM extends Base {
 
 		$canvas = imagecreatetruecolor( 256, 256 );
 
-		Utility::invoke_hidden_method(
+		$painted = Utility::invoke_hidden_method(
 			new OSM(),
 			'paint_tile',
 			array( $canvas, 0, 0, 1, 0, 0, 'https://example.test/{z}/{x}/{y}.png' )
@@ -668,7 +926,7 @@ class Test_OSM extends Base {
 		remove_filter( 'pre_http_request', $garbage, 10 );
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 
-		$this->assertInstanceOf( GdImage::class, $canvas );
+		$this->assertFalse( $painted, 'Failed to assert a tile that did not decode is reported.' );
 		unset( $canvas );
 	}
 
@@ -713,7 +971,7 @@ class Test_OSM extends Base {
 		$settings->set( 'carto_api_key', 'abc123' );
 
 		$this->assertSame(
-			OSM::DEFAULT_TILE_URL . '?key=abc123',
+			'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?key=abc123',
 			Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' ),
 			'Failed to assert the compositor tile URL carries the key.'
 		);

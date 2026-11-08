@@ -65,7 +65,7 @@ apply_filters(
 		)
 ```
 
-- [includes/core/classes/blocks/class-calendar-query.php:526](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-calendar-query.php#L526)
+- [includes/core/classes/blocks/class-calendar-query.php:491](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-calendar-query.php#L491)
 ```php
 apply_filters( 'gatherpress_query_vars', $query_args, $block_query, false )
 ```

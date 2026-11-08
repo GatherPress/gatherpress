@@ -1171,12 +1171,34 @@ final class Utility {
 			$sanitizer = 'sanitize_text_field';
 		}
 
-		// For WordPress sanitizers, unslash first.
-		if ( in_array( $sanitizer, array( 'sanitize_text_field', 'sanitize_email' ), true ) ) {
-			$value = wp_unslash( $value );
+		// No wp_unslash() here: filter_input() reads the raw request, which
+		// WordPress never slashed, so unslashing would strip real backslashes.
+		return (string) call_user_func( $sanitizer, $value );
+	}
+
+	/**
+	 * Get request input from POST or GET, the way `$_REQUEST` merges them.
+	 *
+	 * There is no INPUT_REQUEST, so this reads POST first and falls back to GET.
+	 * That matches wp_magic_quotes(), which rebuilds `$_REQUEST` as
+	 * `array_merge( $_GET, $_POST )`, so POST wins over GET. One difference:
+	 * an empty POST value falls back to GET instead of winning.
+	 *
+	 * @since TBD
+	 *
+	 * @param string        $var_name  Variable name to retrieve.
+	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
+	 *
+	 * @return string Sanitized input value or empty string if not found.
+	 */
+	public static function get_request_input( string $var_name, ?callable $sanitizer = null ): string {
+		$value = self::get_http_input( INPUT_POST, $var_name, $sanitizer );
+
+		if ( '' === $value ) {
+			$value = self::get_http_input( INPUT_GET, $var_name, $sanitizer );
 		}
 
-		return (string) call_user_func( $sanitizer, $value );
+		return $value;
 	}
 
 	/**
@@ -1207,6 +1229,49 @@ final class Utility {
 		}
 
 		return wp_get_referer();
+	}
+
+	/**
+	 * Gets the absolute URL of the current request.
+	 *
+	 * The scheme and host come from the home URL, not the request headers,
+	 * so a forged `Host` header never reaches a link or a form. The path and
+	 * query are the request's own.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $remove_query_args Query args to leave out of the URL.
+	 *
+	 * @return string The current URL.
+	 */
+	public static function get_current_url( array $remove_query_args = array() ): string {
+		// INPUT_SERVER is unreliable under FastCGI.
+		$request = isset( $_SERVER['REQUEST_URI'] )
+			? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
+			: '/';
+		$home    = (array) wp_parse_url( home_url() );
+		$origin  = sprintf(
+			'%s://%s%s',
+			$home['scheme'] ?? 'http',
+			$home['host'] ?? '',
+			isset( $home['port'] ) ? ':' . $home['port'] : ''
+		);
+
+		return remove_query_arg( $remove_query_args, $origin . $request );
+	}
+
+	/**
+	 * Whether the current request renders a front-end page.
+	 *
+	 * False for admin, REST, Ajax and feed requests, which have no page for
+	 * a visitor to click through.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True when the request renders a front-end page.
+	 */
+	public static function is_page_request(): bool {
+		return ! is_admin() && ! wp_is_serving_rest_request() && ! wp_doing_ajax() && ! is_feed();
 	}
 
 	/**
@@ -1257,5 +1322,37 @@ final class Utility {
 		}
 
 		return $block_names;
+	}
+
+	/**
+	 * Finds the first block with a given name in a list of parsed blocks.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<mixed> $blocks     Parsed blocks.
+	 * @param string       $block_name Name of the block to find.
+	 * @param bool         $recursive  Whether to search the inner blocks too.
+	 *
+	 * @return array<string, mixed>|null The parsed block, or null when none has the name.
+	 */
+	public static function find_block( array $blocks, string $block_name, bool $recursive = false ): ?array {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			if ( ( $block['blockName'] ?? '' ) === $block_name ) {
+				return $block;
+			}
+
+			$inner_blocks = is_array( $block['innerBlocks'] ?? null ) ? $block['innerBlocks'] : array();
+			$found        = $recursive ? self::find_block( $inner_blocks, $block_name, true ) : null;
+
+			if ( null !== $found ) {
+				return $found;
+			}
+		}
+
+		return null;
 	}
 }

@@ -333,6 +333,10 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 								label: __( 'Past (event has ended)', 'gatherpress' ),
 								value: 'past',
 							},
+							{
+								label: __( 'Canceled (event is canceled)', 'gatherpress' ),
+								value: 'canceled',
+							},
 						] }
 						onChange={ setFormState }
 					/>

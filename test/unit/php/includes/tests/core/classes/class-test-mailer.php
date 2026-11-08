@@ -104,6 +104,7 @@ class Test_Mailer extends Base {
 							'email'   => get_userdata( $user_id )->user_email,
 						)
 					),
+					Mailer::CONTEXT_EVENT,
 				)
 			)
 		);
@@ -124,7 +125,7 @@ class Test_Mailer extends Base {
 			Utility::invoke_hidden_method(
 				Mailer::get_instance(),
 				'is_eligible',
-				array( $this->recipient( array( 'user_id' => $user_id ) ) )
+				array( $this->recipient( array( 'user_id' => $user_id ) ), Mailer::CONTEXT_EVENT )
 			)
 		);
 	}
@@ -159,6 +160,7 @@ class Test_Mailer extends Base {
 							'email'      => 'anonymous@example.test',
 						)
 					),
+					Mailer::CONTEXT_EVENT,
 				)
 			)
 		);
@@ -183,6 +185,7 @@ class Test_Mailer extends Base {
 							'email'   => 'anonymous@example.test',
 						)
 					),
+					Mailer::CONTEXT_EVENT,
 				)
 			)
 		);
@@ -1442,6 +1445,68 @@ class Test_Mailer extends Base {
 				'name'       => 'Recipient',
 			),
 			$overrides
+		);
+	}
+
+	/**
+	 * Check that reminders follow the user's reminder opt-in, not the updates opt-in.
+	 *
+	 * @covers ::is_eligible
+	 *
+	 * @return void
+	 */
+	public function test_is_eligible_uses_reminder_opt_in_for_users(): void {
+		$user_id   = $this->factory->user->create();
+		$recipient = $this->recipient( array( 'user_id' => $user_id ) );
+		$mailer    = Mailer::get_instance();
+
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '0' );
+
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $mailer, 'is_eligible', array( $recipient, Mailer::CONTEXT_REMINDER ) ),
+			'Opting out of updates leaves reminders on.'
+		);
+
+		update_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', '0' );
+
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $mailer, 'is_eligible', array( $recipient, Mailer::CONTEXT_REMINDER ) )
+		);
+	}
+
+	/**
+	 * Check that reminders to RSVPs without an account follow the comment opt-out.
+	 *
+	 * @covers ::is_eligible
+	 *
+	 * @return void
+	 */
+	public function test_is_eligible_reminder_for_comment_uses_comment_opt_out(): void {
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $this->factory->post->create(),
+				'comment_author'       => 'Anonymous',
+				'comment_author_email' => 'anonymous@example.test',
+				'comment_approved'     => 1,
+			)
+		);
+		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', '0' );
+
+		$this->assertFalse(
+			Utility::invoke_hidden_method(
+				Mailer::get_instance(),
+				'is_eligible',
+				array(
+					$this->recipient(
+						array(
+							'is_user'    => false,
+							'comment_id' => $comment_id,
+							'email'      => 'anonymous@example.test',
+						)
+					),
+					Mailer::CONTEXT_REMINDER,
+				)
+			)
 		);
 	}
 }

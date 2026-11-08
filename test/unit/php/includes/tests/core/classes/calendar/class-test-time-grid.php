@@ -265,4 +265,18 @@ class Test_Time_Grid extends Base {
 		$this->assertSame( 525, Utility::invoke_hidden_method( $from_eight, 'round_to_step', array( 530, false ) ) );
 		$this->assertSame( 570, Utility::invoke_hidden_method( $from_eight, 'round_to_step', array( 530, true ) ) );
 	}
+
+	/**
+	 * Coverage for from_context.
+	 *
+	 * @covers ::from_context
+	 *
+	 * @return void
+	 */
+	public function test_from_context(): void {
+		$time_grid = new Time_Grid( true );
+
+		$this->assertSame( $time_grid, Time_Grid::from_context( array( 'gatherpress/timeGridConfig' => $time_grid ) ) );
+		$this->assertFalse( Time_Grid::from_context( array( 'gatherpress/timeGridConfig' => 'invalid' ) )->enabled );
+	}
 }

@@ -172,6 +172,7 @@ final class Form_Field {
 		$this->attributes = $this->process_attributes( $attributes );
 
 		$this->maybe_prefill_field_value();
+		$this->maybe_restore_returned_submission();
 	}
 
 	/**
@@ -222,6 +223,8 @@ final class Form_Field {
 			'autocomplete'           => $this->resolve_autocomplete( $raw_attributes ),
 			'textarea_rows'          => $raw_attributes['textareaRows'] ?? 4,
 			'input_id'               => $this->get_input_id( $raw_attributes ),
+			'error_message'          => '',
+			'autofocus'              => false,
 		);
 	}
 
@@ -319,6 +322,32 @@ final class Form_Field {
 		} elseif ( 'text' === $this->attributes['field_type'] ) {
 			$this->attributes['field_value'] = $user->display_name;
 		}
+	}
+
+	/**
+	 * Puts back what a rejected submission left for this field.
+	 *
+	 * When an RSVP Form comes back after its submission was rejected without
+	 * JavaScript, the field shows what was typed in place of its default,
+	 * and its error, if any. A hidden field keeps its own value.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	private function maybe_restore_returned_submission(): void {
+		if ( 'hidden' === $this->get_field_type() ) {
+			return;
+		}
+
+		$returned = Rsvp_Form::get_instance()->get_returned_field( (string) $this->attributes['field_name'] );
+
+		if ( null !== $returned['value'] ) {
+			$this->attributes['field_value'] = $returned['value'];
+		}
+
+		$this->attributes['error_message'] = $returned['error'];
+		$this->attributes['autofocus']     = $returned['autofocus'];
 	}
 
 	/**
@@ -651,6 +680,19 @@ final class Form_Field {
 			'' !== (string) $this->attributes['help_text']
 		) {
 			$attributes['aria-describedby'] = $this->attributes['input_id'] . '-help';
+		}
+
+		// A returned error marks the field the way form-errors.js does. A
+		// radio group carries it on its fieldset instead, in the template.
+		if ( 'radio' !== $field_type && '' !== $this->attributes['error_message'] ) {
+			$attributes['aria-invalid']     = 'true';
+			$attributes['aria-describedby'] = trim(
+				( $attributes['aria-describedby'] ?? '' ) . ' ' . $this->attributes['input_id'] . '-error'
+			);
+		}
+
+		if ( 'radio' !== $field_type && $this->attributes['autofocus'] ) {
+			$attributes['autofocus'] = 'autofocus';
 		}
 
 		// Convert array to string.

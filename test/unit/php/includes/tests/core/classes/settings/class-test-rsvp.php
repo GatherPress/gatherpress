@@ -48,6 +48,34 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * The tab name has its own translation context, so languages that use
+	 * different words for the tab and for other uses of "RSVP" can translate
+	 * it on its own (#2583).
+	 *
+	 * @since TBD
+	 * @covers ::get_name
+	 *
+	 * @return void
+	 */
+	public function test_get_name_uses_its_own_context(): void {
+		$translate = static function ( string $translation, string $text, string $context, string $domain ): string {
+			if ( 'RSVP' === $text && 'settings tab name' === $context && 'gatherpress' === $domain ) {
+				return 'Réservations';
+			}
+
+			return $translation;
+		};
+
+		add_filter( 'gettext_with_context', $translate, 10, 4 );
+
+		$name = Utility::invoke_hidden_method( Rsvp::get_instance(), 'get_name' );
+
+		remove_filter( 'gettext_with_context', $translate, 10 );
+
+		$this->assertSame( 'Réservations', $name, 'Failed to assert the tab name uses the settings tab name context.' );
+	}
+
+	/**
 	 * Coverage for get_priority method.
 	 *
 	 * @covers ::get_priority
@@ -81,6 +109,62 @@ class Test_Rsvp extends Base {
 			$section['rsvp_cleanup'],
 			'Failed to assert rsvp_cleanup is an array.'
 		);
+	}
+
+	/**
+	 * The reminder timing checkboxes follow the filtered timings.
+	 *
+	 * Invoked directly because xdebug does not trace same-class helpers
+	 * called from inside get_sections().
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_reminder_timing_options
+	 *
+	 * @return void
+	 */
+	public function test_get_reminder_timing_options(): void {
+		$instance = Rsvp::get_instance();
+		$options  = Utility::invoke_hidden_method( $instance, 'get_reminder_timing_options' );
+
+		$this->assertSame(
+			array( 'event_reminder_day_before', 'event_reminder_hour_before' ),
+			array_keys( $options )
+		);
+		$this->assertSame( 'Reminder Timing', $options['event_reminder_day_before']['labels']['name'] );
+		$this->assertSame(
+			'',
+			$options['event_reminder_hour_before']['labels']['name'],
+			'Only the first row is headed.'
+		);
+		$this->assertSame( '', $options['event_reminder_day_before']['description'] );
+		$this->assertSame( '', $options['event_reminder_hour_before']['description'] );
+		$this->assertSame( 'checkbox', $options['event_reminder_day_before']['field']['type'] );
+		$this->assertTrue( $options['event_reminder_day_before']['field']['options']['default'] );
+		$this->assertFalse( $options['event_reminder_hour_before']['field']['options']['default'] );
+		$this->assertSame( '1', $options['event_reminder_hour_before']['show_if']['enable_event_reminders'] );
+
+		$filter = static function ( array $timings ): array {
+			unset( $timings['hour_before'] );
+
+			$timings['week_before'] = array(
+				'label'   => 'A week before',
+				'seconds' => WEEK_IN_SECONDS,
+				'default' => false,
+			);
+
+			return $timings;
+		};
+
+		add_filter( 'gatherpress_event_reminder_timings', $filter );
+		$options = Utility::invoke_hidden_method( $instance, 'get_reminder_timing_options' );
+		remove_filter( 'gatherpress_event_reminder_timings', $filter );
+
+		$this->assertSame(
+			array( 'event_reminder_day_before', 'event_reminder_week_before' ),
+			array_keys( $options )
+		);
+		$this->assertSame( 'A week before', $options['event_reminder_week_before']['field']['label'] );
 	}
 
 	/**

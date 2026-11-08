@@ -69,6 +69,7 @@ jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => {
 jest.mock( '@src/variations/core/query/components', () => ( {
 	EventQueryControlsSlotFill: () => null,
 	EventInheritedQueryControlsSlotFill: () => null,
+	useQueryControlVisibility: jest.fn( () => ( {} ) ),
 } ) );
 
 jest.mock( '@src/helpers/event', () => ( {
@@ -78,6 +79,7 @@ jest.mock( '@src/helpers/event', () => ( {
 
 jest.mock( '@src/helpers/editor', () => ( {
 	usePostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
+	isInFSETemplate: jest.fn( () => false ),
 } ) );
 
 const mockUpdateBlockAttributes = jest.fn();
@@ -95,6 +97,7 @@ jest.mock( '@wordpress/data', () => ( {
 import { addFilter } from '@wordpress/hooks';
 import { useIsPostTypeLoaded, usePostTypeSupports } from '@src/helpers/event';
 import { usePostTypeLabel } from '@src/helpers/editor';
+import { useQueryControlVisibility } from '@src/variations/core/query/components';
 
 /**
  * Internal dependencies
@@ -108,7 +111,10 @@ import { EventQueryControlsPanel } from '@src/variations/core/query/controls';
 const withEventQueryControls = addFilter.mock.calls[ 0 ][ 2 ];
 
 describe( 'EventQueryControlsPanel', () => {
-	const baseProps = ( { postType = 'gatherpress_event', inherit = false } = {} ) => ( {
+	const baseProps = ( {
+		postType = 'gatherpress_event',
+		inherit = false,
+	} = {} ) => ( {
 		attributes: {
 			query: {
 				postType,
@@ -180,6 +186,42 @@ describe( 'EventQueryControlsPanel', () => {
 		expect(
 			screen.queryByTestId( 'query-controls-slot' ),
 		).not.toBeInTheDocument();
+	} );
+
+	it( 'returns null for a shadow-source query with no control to show', () => {
+		usePostTypeSupports.mockImplementation(
+			( support ) => 'gatherpress-shadow-source' === support,
+		);
+		useQueryControlVisibility.mockReturnValueOnce( {
+			showShadowSourceFilterControl: false,
+			showHasEventsFilterControl: false,
+		} );
+
+		const { container } = render(
+			<EventQueryControlsPanel
+				{ ...baseProps( { postType: 'gatherpress_venue' } ) }
+			/>,
+		);
+
+		expect( container.firstChild ).toBeNull();
+	} );
+
+	it.each( [
+		[ 'showHasEventsFilterControl' ],
+		[ 'showShadowSourceFilterControl' ],
+	] )( 'renders the panel for a shadow-source query when %s', ( flag ) => {
+		usePostTypeSupports.mockImplementation(
+			( support ) => 'gatherpress-shadow-source' === support,
+		);
+		useQueryControlVisibility.mockReturnValueOnce( { [ flag ]: true } );
+
+		render(
+			<EventQueryControlsPanel
+				{ ...baseProps( { postType: 'gatherpress_venue' } ) }
+			/>,
+		);
+
+		expect( screen.getByTestId( 'inspector-controls' ) ).toBeInTheDocument();
 	} );
 
 	it( 'gracefully handles a missing query.postType (treats it as unsupported)', () => {
@@ -313,6 +355,90 @@ describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
 						orderBy: 'datetime',
 						gatherpress_event_query: 'upcoming',
 						inherit: false,
+					},
+				} }
+			/>,
+		);
+
+		expect( lastQueryUpdate() ).toBeUndefined();
+	} );
+
+	it( 'strips activity vars but keeps context params when the queried post type loses shadow-source support', () => {
+		// Reported by a tester: switching a venue query to `post` left
+		// gatherpress_has_events_filter / gatherpress_upcoming_events_only in the saved query, so
+		// selecting a shadow-source type later silently reactivated the
+		// filter. The panel must clear them once shadow-source support is
+		// gone, even when event-date support is still present. The context
+		// params stay because the REST preview consumes them on event
+		// queries too (rest_query forwards them when event support holds).
+		usePostTypeSupports.mockImplementation(
+			( support ) => 'gatherpress-event-date' === support,
+		);
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: {
+						postType: 'gatherpress_event',
+						gatherpress_event_query: 'upcoming',
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 0,
+						gatherpress_shadow_source_post_id: 42,
+						gatherpress_shadow_source_post_type:
+							'gatherpress_venue',
+					},
+				} }
+			/>,
+		);
+
+		expect( lastQueryUpdate() ).toEqual( {
+			postType: 'gatherpress_event',
+			gatherpress_event_query: 'upcoming',
+			gatherpress_shadow_source_post_id: 42,
+			gatherpress_shadow_source_post_type: 'gatherpress_venue',
+		} );
+	} );
+
+	it( 'clears activity vars and context params when switching a venue query to a plain post type', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: {
+						postType: 'post',
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 1,
+						gatherpress_shadow_source_post_id: 7,
+						gatherpress_shadow_source_post_type:
+							'gatherpress_venue',
+					},
+				} }
+			/>,
+		);
+
+		expect( lastQueryUpdate() ).toEqual( {
+			postType: 'post',
+		} );
+	} );
+
+	it( 'keeps activity vars while the queried post type supports shadow sources', () => {
+		usePostTypeSupports.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType,
+		);
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: {
+						postType: 'gatherpress_venue',
+						gatherpress_has_events_filter: 1,
+						gatherpress_upcoming_events_only: 1,
 					},
 				} }
 			/>,
@@ -584,5 +710,35 @@ describe( 'QueryPosttypeObserver auto-transform', () => {
 		);
 
 		expect( setAttributes ).not.toHaveBeenCalled();
+	} );
+
+	it( 'transforms a shadow-source Query Loop without applying event-only defaults (#1906)', () => {
+		// Shadow-source post types (e.g. `gatherpress_venue`) declare only
+		// gatherpress-shadow-source support, so the observer must namespace
+		// the block but must NOT write the event-only defaults
+		// (gatherpress_event_query, include_unfinished, orderBy: 'datetime')
+		// that would later be stripped by the panel cleanup effect.
+		usePostTypeSupports.mockImplementation( ( support, postType ) => {
+			if ( 'gatherpress-event-date' === support ) {
+				return false;
+			}
+			if (
+				'gatherpress-shadow-source' === support &&
+				'gatherpress_venue' === postType
+			) {
+				return true;
+			}
+			return false;
+		} );
+
+		const setAttributes = renderQuery( { postType: 'gatherpress_venue' } );
+
+		expect( setAttributes ).toHaveBeenCalledTimes( 1 );
+		const next = setAttributes.mock.calls[ 0 ][ 0 ];
+		expect( next.namespace ).toBe( 'gatherpress-event-query' );
+		expect( next.query ).toEqual( {
+			postType: 'gatherpress_venue',
+			inherit: false,
+		} );
 	} );
 } );

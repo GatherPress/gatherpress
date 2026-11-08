@@ -85,6 +85,9 @@ class Test_User extends Base {
 		$instance = User::get_instance();
 		$user     = $this->mock->user( true )->get();
 
+		// Keep the reminders checkbox off, so only the updates checkbox can be checked.
+		update_user_meta( $user->ID, 'gatherpress_event_reminders_opt_in', 0 );
+
 		// Test default checkbox state (should be checked).
 		delete_user_meta( $user->ID, 'gatherpress_event_updates_opt_in' );
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
@@ -317,6 +320,7 @@ class Test_User extends Base {
 	 * Coverage for timezone getter
 	 *
 	 * @covers ::user_set_timezone
+	 * @covers ::get_saved_timezone
 	 *
 	 * @return void
 	 */
@@ -333,6 +337,29 @@ class Test_User extends Base {
 			'Hammer Time',
 			$instance->user_set_timezone( 'ET-or-whatever' )
 		);
+		$this->assertSame( 'Hammer Time', $instance->get_saved_timezone() );
+	}
+
+	/**
+	 * The saved timezone is empty when logged out and in the admin.
+	 *
+	 * @covers ::get_saved_timezone
+	 *
+	 * @return void
+	 */
+	public function test_get_saved_timezone_outside_the_frontend(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		update_user_meta( $user->ID, 'gatherpress_timezone', 'Europe/London' );
+		set_current_screen( 'dashboard' );
+
+		$this->assertSame( '', $instance->get_saved_timezone(), 'The admin has no saved timezone.' );
+
+		set_current_screen( 'front' );
+		wp_set_current_user( 0 );
+
+		$this->assertSame( '', $instance->get_saved_timezone(), 'A logged-out visitor has no saved timezone.' );
 	}
 
 	/**
@@ -368,6 +395,12 @@ class Test_User extends Base {
 
 		// Save profile fields.
 		$instance->save_profile_fields( $user_id );
+
+		$this->assertEquals(
+			'0',
+			get_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', true ),
+			'An unchecked reminders box is saved as an opt-out.'
+		);
 
 		// Verify all three meta fields were saved.
 		$this->assertEquals(
@@ -628,5 +661,50 @@ class Test_User extends Base {
 
 		// Clean up.
 		remove_all_filters( 'gatherpress_event_updates_default_opt_in' );
+	}
+
+	/**
+	 * Coverage for the reminders opt-in default, filter and stored value.
+	 *
+	 * @covers ::has_event_reminders_opt_in
+	 *
+	 * @return void
+	 */
+	public function test_has_event_reminders_opt_in(): void {
+		$instance = User::get_instance();
+		$user_id  = $this->factory->user->create();
+
+		$this->assertTrue( $instance->has_event_reminders_opt_in( $user_id ), 'On by default.' );
+
+		add_filter( 'gatherpress_event_reminders_default_opt_in', static fn(): string => '0' );
+		$this->assertFalse( $instance->has_event_reminders_opt_in( $user_id ), 'The filter sets the default.' );
+		remove_all_filters( 'gatherpress_event_reminders_default_opt_in' );
+
+		update_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', 0 );
+		$this->assertFalse( $instance->has_event_reminders_opt_in( $user_id ), 'A stored opt-out wins.' );
+
+		update_user_meta( $user_id, 'gatherpress_event_reminders_opt_in', 1 );
+		$this->assertTrue( $instance->has_event_reminders_opt_in( $user_id ) );
+	}
+
+	/**
+	 * Coverage for the reminders checkbox in the profile.
+	 *
+	 * @covers ::profile_fields
+	 *
+	 * @return void
+	 */
+	public function test_profile_fields_renders_reminders_checkbox(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', 0 );
+		update_user_meta( $user->ID, 'gatherpress_event_reminders_opt_in', 1 );
+
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+
+		$this->assertStringContainsString( 'name="gatherpress_event_reminders_opt_in"', $markup );
+		$this->assertStringContainsString( 'an email reminder before Events I am attending.', $markup );
+		$this->assertSame( 1, substr_count( $markup, "checked='checked'" ), 'Only the reminders box is checked.' );
 	}
 }

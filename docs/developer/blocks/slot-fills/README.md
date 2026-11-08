@@ -53,15 +53,16 @@ The controls GatherPress registers, in render order:
 
 | `name` | Control |
 |---|---|
-| `listType` | Upcoming / Past |
-| `includeUnfinished` | Include events already under way |
+| `listType` | Upcoming / Past. Only present when the query lists an event post type |
+| `includeUnfinished` | Include events already under way. Only present when the query lists an event post type |
 | `exclude` | Exclude the current event. Only present when the query and its host are the same post type |
 | `shadowSourceFilter` | Filter by the current venue or other shadow source. Only present in a template, or on a shadow-source host querying a different post type |
-| `count` | Events per page |
-| `offset` | Offset |
-| `order` | Order and order by |
+| `hasEventsFilter` | Filter by event activity, with an Upcoming / Past choice. Only present when the query lists a shadow-source post type, such as venues, whose taxonomy is on an event post type |
+| `count` | Events per page. Only present when the query lists an event post type |
+| `offset` | Offset. Only present when the query lists an event post type |
+| `order` | Order and order by. Only present when the query lists an event post type |
 
-The two conditional entries are absent rather than present-and-hidden, so the array is always exactly what would render.
+The conditional entries are absent rather than present-and-hidden, so the array is always exactly what would render.
 
 Removing `shadowSourceFilter` removes the toggle only. A block that already has the filter switched on keeps its source in step with the post being edited, because that sync runs separately from the control.
 

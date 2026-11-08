@@ -38,7 +38,8 @@ Version bumps are never hand-edited. The generator lives in-repo at
 old `wp gatherpress develop generate_version` WP-CLI command in the
 [gatherpress-develop](https://github.com/GatherPress/gatherpress-develop)
 plugin). Run it via the **Version Bump** workflow (Actions → Version Bump →
-enter the version), or locally:
+enter the version, and the branch: `develop`, or `version-X.Y.Z` for a
+patch), or locally:
 
 ```bash
 npm run version:bump -- --version=X.Y.Z
@@ -48,7 +49,8 @@ npm i --package-lock-only
 It reads the target version's credits file at
 `.github/scripts/release/credits/X.Y.Z.json` (hand-added first via a normal
 PR; new contributors accumulate in `credits/unreleased.json` and fold in
-automatically at bump time), then writes:
+automatically at bump time). A patch version with no file starts from the
+previous patch's file, so `X.Y.1` starts from `X.Y.0`. It then writes:
 
 - `gatherpress.php` `Version:` header, `package.json` version, `readme.txt`
   `Stable tag:`, the version badge in `README.md`, and the regenerated
@@ -123,7 +125,7 @@ A pre-release zip also carries `@since TBD` in the docblocks of anything new, an
 
 - [ ] All issues in the release's milestone are closed or moved.
 - [ ] Queued `.github/changelog/` entries read correctly (skim, fix anything off).
-- [ ] Rehearse the rollup in a throwaway tree so the tag run cannot fail on the changelog: `git worktree add /tmp/rollup main && cd /tmp/rollup && ../<repo>/vendor/bin/changelogger write --use-version=X.Y.Z --yes`, then check `CHANGELOG.md` has the new `## [X.Y.Z]` section and its `[X.Y.Z]:` link, and discard the worktree. This catches a missing link line under the previous version's heading, which the parser refuses (see Troubleshooting).
+- [ ] Read the **Release preview** comment on the `version-X.Y.Z` PR into main. The `release-preview.yml` check rehearses the tag's rollup on the PR merged into main, and comments the rolled `## [X.Y.Z]` section and the `@since` tags the rollup will carry back to develop or leave for a human. It fails when the tag would, for example on a missing link line under the previous version's heading, which the parser refuses (see Troubleshooting). It runs again on each push, so fix the branch and let it rerun.
 - [ ] Credits file for `X.Y.Z` added at `.github/scripts/release/credits/X.Y.Z.json`: by convention a copy of the latest pre-release file, roster corrections applied to the pre-release file first.
 - [ ] `npm run version:bump -- --version=X.Y.Z` (or the Version Bump workflow) + `npm i --package-lock-only`; version PRs opened and merged in order: credits file, alpha sync, core `version-X.Y.Z` → develop.
 
@@ -170,7 +172,7 @@ Every one of these is required; skipping any of them bites the next release:
 - [ ] **Confirm the wp.org release.** wp.org emails committers a release
   confirmation link; the new version is not live in the plugin directory
   until a committer clicks it.
-- [ ] **Confirm the `release/X.Y.Z` rollup PR auto-merged into develop.** The workflow creates its commit via the API (GitHub-signed) and enables auto-merge (squash), so it lands on its own once checks pass, this brings the rolled-up `CHANGELOG.md` to develop and removes the consumed entry files. If it's still open, see Troubleshooting.
+- [ ] **Confirm the `release/X.Y.Z` rollup PR auto-merged into develop.** The workflow creates its commit via the API (GitHub-signed) and enables auto-merge (squash), so it lands on its own once checks pass, this brings the rolled-up `CHANGELOG.md` to develop and removes the consumed entry files. It does not auto-merge when it lists `@since` tags needing a look (see the next steps). If it's still open for another reason, see Troubleshooting.
 
   Know what that PR is before you touch it: the workflow branches
   `release/X.Y.Z` **off `develop`** and commits only the rollup onto it:
@@ -201,13 +203,15 @@ Every one of these is required; skipping any of them bites the next release:
   on its own branch, so develop still says `TBD` for the same symbols. The
   rollup carries back every docblock that is byte-identical apart from the
   tag, and lists anything it could not match with certainty in the PR body.
-  Resolve those by hand before merging, or the next minor claims them.
+  The release preview comment listed the same ones before the tag. The PR
+  is not set to auto-merge when there are any: resolve them on its branch,
+  then merge it, or the next minor claims them.
 - [ ] **Check develop has the version's credits file** at
   `.github/scripts/release/credits/X.Y.Z.json`. A patch's file is written on
   the `version-X.Y.Z` branch, so it only reaches main; the rollup PR carries
   it back when develop is missing it. For a minor it is already there from
   the bump.
-- [ ] **Release GatherPress Alpha**: merge its `version-X.Y.Z` sync PR if not already done, **and make sure alpha has a changelog entry file for `X.Y.Z` on the branch it releases from** (`.github/changelog/sync-X-Y-Z`, "Track the GatherPress X.Y.Z release, which the plugin is version-locked to."). Alpha's rollup has nothing to write without it and its release fails at "Extract release body" before tagging; 0.35.3 needed a second PR for exactly this. Then let the core release workflow's `alpha-handoff` job dispatch alpha's release (automatic with the `GATHERPRESS_ALPHA_TOKEN` secret; otherwise run the `gh workflow run release.yml` one-liner from the job summary, a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha still works too, tagged on the branch that version lives on: `main` for a stable, `develop` for a pre-release). Alpha's release train mirrors core's, so its stable releases also want a develop→main merge before the tag. Merge alpha's own rollup PR afterward, then do alpha's **changelog parity** too: since alpha split `develop` from `main` (alpha #74) its rollup lands on one branch only, so cherry-pick that squash across to the other, the same way as core's parity step above. Alpha's `main` also runs whatever copy of the workflow it has, which lags `develop` until alpha's next release merge; if a dispatch from the Actions tab builds the wrong branch, dispatch with `--ref main` (alpha #79 makes the checkout follow the version instead).
+- [ ] **Release GatherPress Alpha**: merge its `version-X.Y.Z` sync PR if not already done, **and make sure alpha has a changelog entry file for `X.Y.Z` on the branch it releases from**. Alpha's rollup has nothing to write without one and its release fails at "Extract release body" before tagging; 0.35.3 needed a second PR for exactly this. A local `npm run version:bump` for a stable version adds `.github/changelog/sync-X-Y-Z` to the sibling `../gatherpress-alpha` checkout when it has no entries, so commit that file with the header change. The Version Bump workflow has no sibling checkout, so after it, add the entry by hand ("Track the GatherPress X.Y.Z release, which the plugin is version-locked to.", or "patch release" for a patch). Then let the core release workflow's `alpha-handoff` job dispatch alpha's release (automatic with the `GATHERPRESS_ALPHA_TOKEN` secret; otherwise run the `gh workflow run release.yml` one-liner from the job summary, a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha still works too, tagged on the branch that version lives on: `main` for a stable, `develop` for a pre-release). Alpha's release train mirrors core's, so its stable releases also want a develop→main merge before the tag. Merge alpha's own rollup PR afterward, then do alpha's **changelog parity** too: since alpha split `develop` from `main` (alpha #74) its rollup lands on one branch only, so cherry-pick that squash across to the other, the same way as core's parity step above. Alpha's `main` also runs whatever copy of the workflow it has, which lags `develop` until alpha's next release merge; if a dispatch from the Actions tab builds the wrong branch, dispatch with `--ref main` (alpha #79 makes the checkout follow the version instead).
 - [ ] **Bring the demo data in line with the new version**: follow the
   "Preparing demo-data for a new version of GatherPress" steps in the
   [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
@@ -279,14 +283,21 @@ on to the next minor.
     sweeps in anything untracked that happens to be in the working tree; an
     editor swap file rode into 0.35.3 that way and needed two PRs to take
     back out.
-3. **Version bump on the patch branch**: add the `X.Y.1` credits file (copy
-   the `X.Y.0` file forward, appending any new contributors) +
-   `npm run version:bump -- --version=X.Y.1` + lockfile refresh.
-   Run locally, the bump also rewrites the Version header in a sibling
-   `../gatherpress-alpha` checkout **on whichever branch it has checked
-   out**. For a patch that must be alpha's `main`; if alpha is on
-   `develop`, revert that file there and open alpha's `version-X.Y.1` PR
-   against `main` by hand (it is a one-line header change).
+3. **Version bump on the patch branch**: push `version-X.Y.1`, then run the
+   **Version Bump** workflow with version `X.Y.1` and branch
+   `version-X.Y.1`. It starts the `X.Y.1` credits file from `X.Y.0`'s when
+   there is none, folds in `credits/unreleased.json`, refreshes the lockfile,
+   commits the bump onto the branch, and opens the release PR to `main` if the
+   branch has none. Add any other contributors to the credits file first.
+   Its run summary is the reminder to open alpha's `version-X.Y.1` PR against
+   alpha's `main` by hand (it is a one-line header change); alpha's own
+   Version Bump workflow only targets its `develop`.
+
+   To bump locally instead, run `npm run version:bump -- --version=X.Y.1`
+   and `npm i --package-lock-only` on the patch branch. The local bump also
+   rewrites the Version header in a sibling `../gatherpress-alpha` checkout
+   **on whichever branch it has checked out**. For a patch that must be
+   alpha's `main`; if alpha is on `develop`, revert that file there.
 4. **PR `version-X.Y.1` → main, merge, tag `X.Y.1` on main.** The workflow
    ships it exactly like a stable release (it is one), and opens
    `release/X.Y.1` → develop.

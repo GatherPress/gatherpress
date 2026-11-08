@@ -41,7 +41,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-mailer.php:728](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L728)
+- [includes/core/classes/class-mailer.php:744](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L744)
 ```php
 apply_filters( 'gatherpress_email_pre_enqueue_job', null, $hook, $args )
 ```

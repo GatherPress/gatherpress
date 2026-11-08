@@ -32,7 +32,7 @@ The subsystem segment names a single area of the plugin. The current set:
 | `event_*` | Event lifecycle, queries, feed output. |
 | `venue_*` | Venue post type resolution, structured-address sync. |
 | `rsvp_*` | RSVP storage (comment-based), attendee management, comment-query coexistence. |
-| `calendar_*` | The calendar. Its `calendar_external_*` area gets events into calendars outside GatherPress: iCal / Outlook / Google / Yahoo URL builders, .ics file & feed responses, `<head>` alternate-link tags. |
+| `calendar_*` | The calendar: the weekend days, the post limit and the time grid rows of a calendar view, and the action before a calendar entry renders. Its `calendar_external_*` area gets events into calendars outside GatherPress: iCal / Outlook / Google / Yahoo URL builders, .ics file & feed responses, `<head>` alternate-link tags. |
 | `geocode_*` / `async_geocode_*` | Photon geocoding (sync filters use `geocode_`, async/cron lifecycle uses `async_geocode_`). |
 | `map_*` | Map config that applies to **both** interactive and static rendering (zoom, height, provider registry). |
 | `interactive_map_*` | Leaflet client-side basemap **only** (tile URL, attribution). |
@@ -42,6 +42,7 @@ The subsystem segment names a single area of the plugin. The current set:
 | `site_message_*` | Messages sent from the Email page in the Events menu. |
 | `settings_*` | Admin settings UI surfaces. |
 | `shadow_*` | Shadow taxonomies (`_<post_type>`) auto-registered for `gatherpress-shadow-source` CPTs and the wiring that attaches them to event-bearing CPTs. |
+| `query_loop_*` | GatherPress's Query Loop handling: the `WP_Query` arguments built for event, shadow-source and calendar Query Loops. |
 | `template_*` | Theme-override-aware template path resolution shared across subsystems (see `Utility::locate_template()`). |
 
 When adding a hook in a subsystem that's not on this list, add the subsystem

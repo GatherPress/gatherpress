@@ -21,6 +21,14 @@
 
 - [`gatherpress_calendar_external_max_age`](gatherpress_calendar_external_max_age.md) Filters how long calendar responses may be reused by clients and caches.
 
+## class-calendar-entries.php
+
+- [`gatherpress_calendar_entry_render`](gatherpress_calendar_entry_render.md) Fires before the calendar renders the entry template of one event.
+
+## class-check-in-registry.php
+
+- [`gatherpress_register_rsvp_check_in_states`](gatherpress_register_rsvp_check_in_states.md) Fires so plugins can register check-in states.
+
 ## class-email.php
 
 - [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
@@ -29,13 +37,12 @@
 
 ## class-event-query.php
 
-- [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/core/classes/blocks/class-event-query.php
+- [`gatherpress_query_loop_vars`](gatherpress_query_loop_vars.md) This filter is documented in includes/core/classes/blocks/class-event-query.php
 
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
 - [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
-- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -61,6 +68,10 @@
 - [`gatherpress_geocode_rate_limit_per_minute`](gatherpress_geocode_rate_limit_per_minute.md) Filter the per-user requests-per-minute ceiling for the
 - [`gatherpress_log_geocoding_errors`](gatherpress_log_geocoding_errors.md) Filters whether to write a PHP error-log line when Photon returns a body
 - [`gatherpress_photon_api_url`](gatherpress_photon_api_url.md) Filters the Photon API base URL used for geocoding and address search.
+
+## class-html-renderer.php
+
+- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
 
 ## class-import.php
 
@@ -115,6 +126,10 @@
 - [`gatherpress_geocode_query`](gatherpress_geocode_query.md) Filters the address sent to the geocoder.
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
 
+## class-reminder.php
+
+- [`gatherpress_event_reminder_timings`](gatherpress_event_reminder_timings.md) Filters the timings an event reminder can go out at.
+
 ## class-roles.php
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
@@ -126,6 +141,13 @@
 ## class-rsvp.php
 
 - [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
+
+## class-scheduler.php
+
+- [`gatherpress_event_end_cache_keys`](gatherpress_event_end_cache_keys.md) Filters cache keys to invalidate when an event ends.
+- [`gatherpress_event_ended`](gatherpress_event_ended.md) This action is documented in includes/core/classes/event/class-scheduler.php
+- [`gatherpress_event_starting`](gatherpress_event_starting.md) Fires when an event starts, for code that acts on it then.
+- [`gatherpress_event_upcoming_tracking_enabled`](gatherpress_event_upcoming_tracking_enabled.md) Filters whether the upcoming event IDs of every post type with event dates are tracked.
 
 ## class-settings.php
 
@@ -149,6 +171,10 @@
 - [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
 - [`the_title`](the_title.md)
 
+## class-status.php
+
+- [`gatherpress_event_statuses`](gatherpress_event_statuses.md) Filters the operational statuses an event can be in.
+
 ## class-storage.php
 
 - [`gatherpress_save_rsvp`](gatherpress_save_rsvp.md)
@@ -163,6 +189,7 @@
 
 ## class-user.php
 
+- [`gatherpress_event_reminders_default_opt_in`](gatherpress_event_reminders_default_opt_in.md) Filters the default state of the event reminders opt-in.
 - [`gatherpress_event_updates_default_opt_in`](gatherpress_event_updates_default_opt_in.md) Filters the default state of the event updates opt-in.
 
 ## class-utility.php
@@ -181,6 +208,6 @@
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## network-page.php
+## index.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

@@ -132,4 +132,18 @@ abstract class Base {
 	public function supported_map_types(): array {
 		return array( 'roadmap' );
 	}
+
+	/**
+	 * Where the provider's images come from, for the static map cache.
+	 *
+	 * Saved static maps render again when it changes. Empty for a provider
+	 * whose images depend only on the map's own settings.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @return string The image source, or an empty string.
+	 */
+	public function get_cache_source(): string {
+		return '';
+	}
 }

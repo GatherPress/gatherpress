@@ -140,6 +140,64 @@ export function isEventPostType( postType = null ) {
 }
 
 /**
+ * Whether a shadow-source post type's event activity filter can apply.
+ *
+ * It applies when the post type declares `gatherpress-shadow-source` and its
+ * shadow taxonomy is on at least one post type declaring
+ * `gatherpress-event-date`.
+ *
+ * @since TBD
+ *
+ * @param {Function} selectFn       Data store selector.
+ * @param {string}   sourcePostType Shadow-source post type to check.
+ *
+ * @return {boolean} True if the filter can apply.
+ */
+function resolveEventActivityFilterSupport( selectFn, sourcePostType ) {
+	const isShadowSource =
+		!! sourcePostType &&
+		!! selectFn( 'core' ).getPostType( sourcePostType )?.supports?.[
+			'gatherpress-shadow-source'
+		];
+	const taxonomy = isShadowSource
+		? selectFn( 'core' ).getTaxonomy( `_${ sourcePostType }` )
+		: undefined;
+
+	if ( ! taxonomy?.types?.length ) {
+		return false;
+	}
+
+	const eventPostTypes = (
+		selectFn( 'core' ).getPostTypes( { per_page: -1, context: 'edit' } ) ??
+		[]
+	)
+		.filter( ( type ) => type?.supports?.[ 'gatherpress-event-date' ] )
+		.map( ( type ) => type.slug );
+
+	return eventPostTypes.some( ( slug ) => taxonomy.types.includes( slug ) );
+}
+
+/**
+ * Hook for whether a shadow-source post type's event activity filter can apply.
+ *
+ * Re-renders once the post type and taxonomy data load, since the first
+ * render often runs before they have.
+ *
+ * @since TBD
+ *
+ * @param {string} sourcePostType Shadow-source post type to check.
+ *
+ * @return {boolean} True if the filter can apply.
+ */
+export function useHasEventActivityFilterSupport( sourcePostType ) {
+	return useSelect(
+		( wpSelect ) =>
+			resolveEventActivityFilterSupport( wpSelect, sourcePostType ),
+		[ sourcePostType ],
+	);
+}
+
+/**
  * Checks if a post type declares `gatherpress-rsvp` support.
  *
  * Sibling to `isEventPostType()` — used to gate RSVP-only UI (sidebar

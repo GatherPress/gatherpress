@@ -29,7 +29,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/calendar/class-time-grid.php:147](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/calendar/class-time-grid.php#L147)
+- [includes/core/classes/calendar/class-time-grid.php:162](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/calendar/class-time-grid.php#L162)
 ```php
 apply_filters( 'gatherpress_calendar_time_slot_duration', 1 )
 ```

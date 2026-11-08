@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Email;
+use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -154,6 +155,26 @@ class Test_Email extends Base {
 	}
 
 	/**
+	 * Check that no promotion email goes out while waiting list emails are off.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::queue_promotion_email
+	 *
+	 * @return void
+	 */
+	public function test_promotion_email_skipped_while_turned_off(): void {
+		$event = $this->event_with_waiting_list( 'Board game night' );
+
+		Settings::get_instance()->set( 'enable_waiting_list_emails', false );
+		( new Rsvp( $event['id'] ) )->save( $event['attendee'], 'not_attending' );
+		$this->run_mail_jobs();
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertSame( array(), $this->sent );
+	}
+
+	/**
 	 * Check that no promotion email goes out when the attendee cancels before the job runs.
 	 *
 	 * @covers ::get_promoted_attendee
@@ -234,6 +255,138 @@ class Test_Email extends Base {
 	}
 
 	/**
+	 * Create an online event that starts tomorrow, with its start in the events table.
+	 *
+	 * @param string $title Event title.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_online_event( string $title ): int {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => $title,
+			)
+		);
+		$event   = new Event( $post_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS + HOUR_IN_SECONDS ),
+				'timezone'       => 'UTC',
+			)
+		);
+		$event->set_online( true, 'https://meet.example.test/room' );
+
+		return $post_id;
+	}
+
+	/**
+	 * Check that a reminder goes to the attending RSVPs while its start still holds.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::queue_reminder_email
+	 * @covers ::get_reminder_attendees
+	 *
+	 * @return void
+	 */
+	public function test_get_reminder_attendees(): void {
+		$post_id   = $this->create_online_event( 'Standup' );
+		$rsvp      = new Rsvp( $post_id );
+		$start     = (string) get_post_meta( $post_id, Scheduler::START_META_KEY, true );
+		$attendees = static fn( string $start ): array => Utility::invoke_hidden_method(
+			Email::get_instance(),
+			'get_reminder_attendees',
+			array(
+				array(
+					'post_id' => $post_id,
+					'start'   => $start,
+				),
+			)
+		);
+
+		$rsvp->save( 'yes@example.test', 'attending', 0, 0 );
+		$rsvp->save( 'no@example.test', 'not_attending', 0, 0 );
+
+		$this->assertSame( array( 'yes@example.test' ), array_column( $attendees( $start ), 'email' ) );
+		$this->assertSame( array(), $attendees( '2000-01-01 00:00:00' ), 'A moved start gets nobody.' );
+		$this->assertTrue( Email::get_instance()->queue_reminder_email( $post_id, $start ) );
+
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			)
+		);
+		$this->assertSame( array(), $attendees( $start ), 'An unpublished event gets nobody.' );
+
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+		$started = gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS );
+		update_post_meta( $post_id, Scheduler::START_META_KEY, $started );
+		$this->assertSame( array(), $attendees( $started ), 'An event that has started gets nobody.' );
+	}
+
+	/**
+	 * Check the reminder's subject, message, online link, calendar links and button.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::compose_reminder_email
+	 * @covers ::build_event_email
+	 *
+	 * @return void
+	 */
+	public function test_compose_reminder_email(): void {
+		$post_id = $this->create_online_event( 'Standup' );
+
+		add_filter( 'gatherpress_email_subject', static fn( string $subject ): string => "[Site] {$subject}" );
+
+		$email = Utility::invoke_hidden_method(
+			Email::get_instance(),
+			'compose_reminder_email',
+			array( array(), array( 'post_id' => $post_id ) )
+		);
+
+		remove_all_filters( 'gatherpress_email_subject' );
+
+		$this->assertSame( '[Site] Reminder: Standup', $email['subject'] );
+		$this->assertStringContainsString( 'This is a reminder that you are attending Standup.', $email['body'] );
+		$this->assertStringContainsString( 'https://meet.example.test/room', $email['body'] );
+		$this->assertStringContainsString( 'Google Calendar', $email['body'] );
+		$this->assertStringContainsString( 'View or change your RSVP', $email['body'] );
+		$this->assertStringNotContainsString( 'RSVP Now', $email['body'] );
+	}
+
+	/**
+	 * Check that an event update leaves out the reminder's online and calendar links.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::compose_event_email
+	 *
+	 * @return void
+	 */
+	public function test_event_email_leaves_out_reminder_sections(): void {
+		$post_id = $this->create_online_event( 'Standup' );
+		$email   = Utility::invoke_hidden_method(
+			Email::get_instance(),
+			'compose_event_email',
+			array( array(), array( 'post_id' => $post_id ) )
+		);
+
+		$this->assertStringNotContainsString( 'https://meet.example.test/room', $email['body'] );
+		$this->assertStringNotContainsString( 'Google Calendar', $email['body'] );
+		$this->assertStringContainsString( 'RSVP Now', $email['body'] );
+	}
+
+	/**
 	 * Check that get_recipients() builds the list for an event update.
 	 *
 	 * @covers ::get_recipients
@@ -292,6 +445,13 @@ class Test_Email extends Base {
 			'A promotion is about the attendee\'s own RSVP, so it should skip the opt-in.'
 		);
 		$this->assertArrayNotHasKey( 'users', $types[ Email::PROMOTION_TYPE ] );
+		$this->assertArrayHasKey( Email::REMINDER_TYPE, $types );
+		$this->assertSame(
+			Mailer::CONTEXT_REMINDER,
+			$types[ Email::REMINDER_TYPE ]['context'],
+			'A reminder follows the reminder opt-in.'
+		);
+		$this->assertArrayNotHasKey( 'users', $types[ Email::REMINDER_TYPE ] );
 	}
 
 	/**

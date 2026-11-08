@@ -40,6 +40,12 @@ class Test_Modal extends Base {
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
 				'priority' => 10,
+				'callback' => array( $instance, 'render_as_dialog' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
 				'callback' => array( $instance, 'apply_modal_attributes' ),
 			),
 			array(
@@ -86,30 +92,17 @@ class Test_Modal extends Base {
 		$output_html = $instance->apply_modal_attributes( $input_html, $block );
 
 		$this->assertStringContainsString(
-			'role="dialog"',
-			$output_html,
-			'Output should contain dialog role'
-		);
-		$this->assertStringContainsString(
-			'aria-modal="true"',
-			$output_html,
-			'Output should contain aria-modal attribute'
-		);
-		$this->assertStringContainsString(
-			'aria-hidden="true"',
-			$output_html,
-			'Output should contain aria-hidden attribute'
-		);
-		$this->assertStringContainsString(
 			'aria-label="Custom Modal Name"',
 			$output_html,
 			'Output should contain custom aria-label'
 		);
-		$this->assertStringContainsString(
-			'tabindex="-1"',
-			$output_html,
-			'Output should contain negative tabindex'
-		);
+		foreach ( array( 'role=', 'aria-modal=', 'aria-hidden=', 'tabindex=' ) as $attribute ) {
+			$this->assertStringNotContainsString(
+				$attribute,
+				$output_html,
+				'The <dialog> carries its own role, and showModal() makes it modal.'
+			);
+		}
 	}
 
 	/**
@@ -129,29 +122,49 @@ class Test_Modal extends Base {
 		$output_html = $instance->apply_modal_attributes( $input_html, $block );
 
 		$this->assertStringContainsString(
-			'role="dialog"',
-			$output_html,
-			'Output should contain dialog role'
-		);
-		$this->assertStringContainsString(
-			'aria-modal="true"',
-			$output_html,
-			'Output should contain aria-modal attribute'
-		);
-		$this->assertStringContainsString(
-			'aria-hidden="true"',
-			$output_html,
-			'Output should contain aria-hidden attribute'
-		);
-		$this->assertStringContainsString(
 			'aria-label="Modal"',
 			$output_html,
 			'Output should contain default aria-label'
 		);
-		$this->assertStringContainsString(
-			'tabindex="-1"',
-			$output_html,
-			'Output should contain negative tabindex'
+		foreach ( array( 'role=', 'aria-modal=', 'aria-hidden=', 'tabindex=' ) as $attribute ) {
+			$this->assertStringNotContainsString(
+				$attribute,
+				$output_html,
+				'The <dialog> carries its own role, and showModal() makes it modal.'
+			);
+		}
+	}
+
+	/**
+	 * Tests render_as_dialog turns the saved <div> into a <dialog>.
+	 *
+	 * @since TBD
+	 * @covers ::render_as_dialog
+	 *
+	 * @return void
+	 */
+	public function test_render_as_dialog(): void {
+		$instance = Modal::get_instance();
+
+		$this->assertSame(
+			'<dialog class="wp-block-gatherpress-modal" style="z-index: 1000;">'
+				. '<div class="wp-block-gatherpress-modal-content"><p>Hi</p></div></dialog>',
+			$instance->render_as_dialog(
+				"\n<div class=\"wp-block-gatherpress-modal\" style=\"z-index: 1000;\">"
+				. "<div class=\"wp-block-gatherpress-modal-content\"><p>Hi</p></div></div>\n"
+			),
+			'Only the outer <div> becomes the <dialog>.'
+		);
+		$this->assertSame( '', $instance->render_as_dialog( '' ), 'A removed modal stays removed.' );
+		$this->assertSame(
+			'<section class="wp-block-gatherpress-modal"></section>',
+			$instance->render_as_dialog( '<section class="wp-block-gatherpress-modal"></section>' ),
+			'Markup that is not a <div> is left alone.'
+		);
+		$this->assertSame(
+			'<div class="wp-block-gatherpress-modal">',
+			$instance->render_as_dialog( '<div class="wp-block-gatherpress-modal">' ),
+			'An unclosed <div> is left alone.'
 		);
 	}
 

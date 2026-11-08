@@ -18,9 +18,10 @@ import EventInheritedQueryControls from './slots/inherited-query-controls';
 import {
 	EventQueryControlsSlotFill,
 	EventInheritedQueryControlsSlotFill,
+	useQueryControlVisibility,
 } from './components';
 import { useIsPostTypeLoaded, usePostTypeSupports } from '../../../helpers/event';
-import { usePostTypeLabel } from '../../../helpers/editor';
+import { isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * Builds the block name the event query panel gives an event query loop.
@@ -63,10 +64,10 @@ const isEventQueryLoop = ( props ) => {
 /**
  * Auto-transforms a plain `core/query` block into the GatherPress "Event
  * Query" variation when the user selects any post type that declares
- * `gatherpress-event-date` support. Reactive so the transform fires on
- * first selection of a custom event-supporting post type, not only after
- * routing through `gatherpress_event` first (#1608). Skips blocks that
- * already carry a namespace so other variations (e.g. AQL) aren't hijacked.
+ * `gatherpress-event-date` or `gatherpress-shadow-source` support. Reactive so
+ * the transform fires on first selection of a custom supported post type, not
+ * only after routing through `gatherpress_event` first (#1608). Skips blocks
+ * that already carry a namespace so other variations (e.g. AQL) aren't hijacked.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    - Block attributes.
@@ -81,25 +82,40 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 		'gatherpress-event-date',
 		postType,
 	);
+	const supportsShadowSource = usePostTypeSupports(
+		'gatherpress-shadow-source',
+		postType,
+	);
+	const supportsGatherPressQuery = supportsEventDate || supportsShadowSource;
 	useEffect( () => {
 		// Only auto-transform blocks without a namespace set.
 		// Blocks with an existing namespace (e.g., 'advanced-query-loop') should not be overwritten.
-		if ( supportsEventDate && ! namespace ) {
+		if ( supportsGatherPressQuery && ! namespace ) {
 			const newAttributes = {
 				...attributes,
 				namespace: NAME,
 				query: {
 					...attributes.query,
-					gatherpress_event_query: 'upcoming',
-					include_unfinished: 1,
-					order: 'asc',
-					orderBy: 'datetime',
+					...( supportsEventDate
+						? {
+							gatherpress_event_query: 'upcoming',
+							include_unfinished: 1,
+							order: 'asc',
+							orderBy: 'datetime',
+						}
+						: {} ),
 					inherit: false,
 				},
 			};
 			setAttributes( newAttributes );
 		}
-	}, [ supportsEventDate, namespace, attributes, setAttributes ] );
+	}, [
+		supportsGatherPressQuery,
+		supportsEventDate,
+		namespace,
+		attributes,
+		setAttributes,
+	] );
 };
 
 /**
@@ -110,10 +126,10 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * has early-return paths for non-query blocks where we don't want to read
  * supports at all.
  *
- * Hides itself when the queried post type doesn't support
- * `gatherpress-event-date`, so changing a loop's post type away from events
- * (without removing the variation) collapses the now-irrelevant panel
- * instead of leaving stale event-only controls visible.
+ * Shows the panel when the queried post type declares
+ * `gatherpress-event-date` support, or declares `gatherpress-shadow-source`
+ * support and has a control to show. Otherwise the panel collapses to
+ * nothing.
  *
  * @param {Object} props - Block props passed through from the HOC.
  *
@@ -132,6 +148,14 @@ export const EventQueryControlsPanel = ( props ) => {
 		'gatherpress-event-date',
 		queryPostType,
 	);
+	const queryPostTypeSupportsShadowSource = usePostTypeSupports(
+		'gatherpress-shadow-source',
+		queryPostType,
+	);
+	const {
+		showShadowSourceFilterControl,
+		showHasEventsFilterControl,
+	} = useQueryControlVisibility( props, isInFSETemplate() );
 
 	// `usePostTypeSupports` is also false while the post type is still
 	// loading, so both effects below wait for the post type before they
@@ -228,16 +252,21 @@ export const EventQueryControlsPanel = ( props ) => {
 	] );
 
 	// Strip the event-only query vars when the selected post type doesn't
-	// support event dates. `orderBy: 'datetime'` (and 'rand') are added to the
-	// REST orderby enum only for event-date post types, so leaving them on a
-	// plain post/page/venue query makes the core endpoint reject the request
-	// (rest_invalid_param) and the Query Loop spins forever (#1756). The
-	// gatherpress_event_query / include_unfinished vars are harmless on those
-	// endpoints but meaningless there, so drop them too. Guarded on the vars
-	// still being present so this doesn't re-fire in a loop, and on the post
-	// type having loaded so an event loop isn't stripped on open (#2495).
+	// support event dates, and the activity-filter vars when it doesn't
+	// support shadow sources, each group under its own gate. `orderBy:
+	// 'datetime'` (and 'rand') are added to the REST orderby enum only for
+	// event-date post types, so leaving them on a plain post/page/venue query
+	// makes the core endpoint reject the request (rest_invalid_param) and the
+	// Query Loop spins forever (#1756). The other vars are meaningless there,
+	// and the activity vars would silently turn the filter back on when a
+	// shadow-source type is selected again. Guarded on the vars still being
+	// present so this doesn't re-fire in a loop, and on the post type having
+	// loaded so an event loop isn't stripped on open (#2495).
 	useEffect( () => {
-		if ( ! isQueryPostTypeLoaded || queryPostTypeSupportsEvents ) {
+		if (
+			! isQueryPostTypeLoaded ||
+			( queryPostTypeSupportsEvents && queryPostTypeSupportsShadowSource )
+		) {
 			return;
 		}
 
@@ -247,29 +276,65 @@ export const EventQueryControlsPanel = ( props ) => {
 		const hasEventOnlyVars =
 			undefined !== query.gatherpress_event_query ||
 			undefined !== query.include_unfinished ||
+			undefined !== query.gatherpress_has_events_filter ||
+			undefined !== query.gatherpress_upcoming_events_only ||
 			hasEventOnlyOrderBy;
 
 		if ( ! hasEventOnlyVars ) {
 			return;
 		}
 
-		const {
-			gatherpress_event_query: removedEventQuery,
-			include_unfinished: removedIncludeUnfinished,
-			...remainingQuery
-		} = query;
+		const remainingQuery = { ...query };
 
 		// Reset the GatherPress-only ordering to the core default the
 		// posts/pages endpoint accepts; leave any other orderBy intact.
-		if ( hasEventOnlyOrderBy ) {
+		if ( ! queryPostTypeSupportsEvents && hasEventOnlyOrderBy ) {
 			remainingQuery.orderBy = 'date';
 			remainingQuery.order = 'desc';
+		}
+
+		if ( ! queryPostTypeSupportsEvents ) {
+			delete remainingQuery.gatherpress_event_query;
+			delete remainingQuery.include_unfinished;
+		}
+
+		if ( ! queryPostTypeSupportsShadowSource ) {
+			delete remainingQuery.gatherpress_has_events_filter;
+			delete remainingQuery.gatherpress_upcoming_events_only;
+		}
+
+		// The context params stay on event queries: the REST-side preview
+		// consumes them there too (rest_query forwards them when the
+		// queried type supports event dates). Delete them only when the
+		// queried type supports neither feature, or the strip fights the
+		// ShadowSourceFilterControls backfill effect and the block
+		// ping-pongs between two states.
+		if (
+			! queryPostTypeSupportsShadowSource &&
+			! queryPostTypeSupportsEvents
+		) {
+			delete remainingQuery.gatherpress_shadow_source_post_id;
+			delete remainingQuery.gatherpress_shadow_source_post_type;
+		}
+
+		// A shadow-source query carrying only activity vars trips the presence
+		// check above while nothing is actually stripped; skip the write when
+		// the remaining query is unchanged so this doesn't re-fire in a loop.
+		const unchanged = Object.keys( remainingQuery ).every(
+			( key ) => remainingQuery[ key ] === query[ key ],
+		);
+		if (
+			unchanged &&
+			Object.keys( remainingQuery ).length === Object.keys( query ).length
+		) {
+			return;
 		}
 
 		updateBlockAttributes( clientId, { query: remainingQuery } );
 	}, [
 		isQueryPostTypeLoaded,
 		queryPostTypeSupportsEvents,
+		queryPostTypeSupportsShadowSource,
 		props.attributes,
 		clientId,
 		updateBlockAttributes,
@@ -284,7 +349,11 @@ export const EventQueryControlsPanel = ( props ) => {
 		__( 'Event', 'gatherpress' ),
 	);
 
-	if ( ! queryPostTypeSupportsEvents ) {
+	const hasShadowSourceControls =
+		queryPostTypeSupportsShadowSource &&
+		( showShadowSourceFilterControl || showHasEventsFilterControl );
+
+	if ( ! queryPostTypeSupportsEvents && ! hasShadowSourceControls ) {
 		return null;
 	}
 
@@ -296,9 +365,7 @@ export const EventQueryControlsPanel = ( props ) => {
 				singularLabel,
 			) }>
 				{ false === props.attributes.query.inherit ? (
-					<EventQueryControls.Slot
-						fillProps={ { ...props } }
-					/>
+					<EventQueryControls.Slot fillProps={ { ...props } } />
 				) : (
 					<EventInheritedQueryControls.Slot
 						fillProps={ { ...props } }

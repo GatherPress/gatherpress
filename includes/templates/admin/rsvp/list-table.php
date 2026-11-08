@@ -11,7 +11,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 
-if ( ! isset( $rsvp_table, $search_term, $status, $post_id, $responses ) ) {
+if ( ! isset( $rsvp_table, $search_term, $status, $post_id, $responses, $check_in ) ) {
 	return;
 }
 
@@ -21,11 +21,8 @@ $rsvp_table->prepare_items();
 <div class="wrap">
 	<h1 class="wp-heading-inline">
 	<?php
-	// phpcs:disable WordPress.Security.NonceVerification.Recommended
-	$gatherpress_post_id = 0;
-	if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
-		$gatherpress_post_id = intval( $_REQUEST['post_id'] );
-	}
+	// Already read from the request by List_Table::get_filtered_post_id().
+	$gatherpress_post_id = (int) $post_id;
 
 	if ( $gatherpress_post_id ) {
 		printf(
@@ -36,7 +33,6 @@ $rsvp_table->prepare_items();
 	} else {
 		esc_html_e( 'RSVPs', 'gatherpress' );
 	}
-	// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	?>
 	</h1>
 
@@ -85,6 +81,10 @@ $rsvp_table->prepare_items();
 
 		<?php if ( ! empty( $responses ) ) : ?>
 			<input type="hidden" name="response" value="<?php echo esc_attr( implode( ',', $responses ) ); ?>" />
+		<?php endif; ?>
+
+		<?php if ( ! empty( $check_in ) ) : ?>
+			<input type="hidden" name="check_in" value="<?php echo esc_attr( $check_in ); ?>" />
 		<?php endif; ?>
 	</form>
 

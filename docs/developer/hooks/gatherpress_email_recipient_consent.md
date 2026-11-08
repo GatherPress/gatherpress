@@ -39,11 +39,11 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-mailer.php:197](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L197)
+- [includes/core/classes/class-mailer.php:213](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-mailer.php#L213)
 ```php
 apply_filters(
 			'gatherpress_email_recipient_consent',
-			self::CONTEXT_RSVP === $context || $this->is_eligible( $recipient ),
+			self::CONTEXT_RSVP === $context || $this->is_eligible( $recipient, $context ),
 			$recipient,
 			$context
 		)

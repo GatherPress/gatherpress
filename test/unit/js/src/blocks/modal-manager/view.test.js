@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { afterEach, describe, expect, it, jest, beforeEach } from '@jest/globals';
 
 /**
  * Mock the Interactivity API with a namespace-merging store so every
@@ -45,7 +45,7 @@ jest.mock(
 /**
  * WordPress dependencies
  */
-import { store, withSyncEvent } from '@wordpress/interactivity';
+import { getElement, store, withSyncEvent } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies
@@ -77,13 +77,14 @@ describe( 'modal-manager openModal', () => {
 		expect( actions.openModalOnEnter.sync ).toBe( true );
 		expect( actions.closeModal.sync ).toBe( true );
 		expect( actions.closeModalOnEnter.sync ).toBe( true );
+		expect( actions.closeModalOnOverlay.sync ).toBe( true );
 	} );
 
 	it( 'falls back to event.target when no element is given', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
 				<button type="button">Open</button>
-				<div class="wp-block-gatherpress-modal"></div>
+				<dialog class="wp-block-gatherpress-modal"></dialog>
 			</div>
 		`;
 
@@ -93,18 +94,14 @@ describe( 'modal-manager openModal', () => {
 		actions.openModal( event );
 
 		expect( event.preventDefault ).toHaveBeenCalled();
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( true );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( true );
 	} );
 
 	it( 'uses the explicit element when one is given', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
 				<button type="button">Open</button>
-				<div class="wp-block-gatherpress-modal"></div>
+				<dialog class="wp-block-gatherpress-modal"></dialog>
 			</div>
 		`;
 
@@ -112,18 +109,14 @@ describe( 'modal-manager openModal', () => {
 
 		actions.openModal( null, button );
 
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( true );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( true );
 	} );
 
 	it( 'openModalOnEnter opens the modal on Enter or Space key', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
 				<button type="button">Open</button>
-				<div class="wp-block-gatherpress-modal"></div>
+				<dialog class="wp-block-gatherpress-modal"></dialog>
 			</div>
 		`;
 
@@ -135,39 +128,27 @@ describe( 'modal-manager openModal', () => {
 		// Other keys should not open the modal.
 		actions.openModalOnEnter( tabEvent );
 		expect( tabEvent.preventDefault ).not.toHaveBeenCalled();
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( false );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( false );
 
 		// Enter should open the modal.
 		actions.openModalOnEnter( enterEvent );
 		expect( enterEvent.preventDefault ).toHaveBeenCalled();
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( true );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( true );
 
 		// Reset visibility.
-		document.querySelector( '.wp-block-gatherpress-modal' ).classList.remove( 'gatherpress--is-visible' );
+		document.querySelector( '.wp-block-gatherpress-modal' ).close();
 
 		// Space should open the modal.
 		actions.openModalOnEnter( spaceEvent );
 		expect( spaceEvent.preventDefault ).toHaveBeenCalled();
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( true );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( true );
 	} );
 
 	it( 'closeModalOnEnter closes the modal on Enter or Space key', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
 				<button type="button">Close</button>
-				<div class="wp-block-gatherpress-modal gatherpress--is-visible"></div>
+				<dialog class="wp-block-gatherpress-modal" open></dialog>
 			</div>
 		`;
 
@@ -179,32 +160,20 @@ describe( 'modal-manager openModal', () => {
 		// Other keys should not close the modal.
 		actions.closeModalOnEnter( tabEvent );
 		expect( tabEvent.preventDefault ).not.toHaveBeenCalled();
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( true );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( true );
 
 		// Enter should close the modal.
 		actions.closeModalOnEnter( enterEvent );
 		expect( enterEvent.preventDefault ).toHaveBeenCalled();
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( false );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( false );
 
 		// Reset visibility.
-		document.querySelector( '.wp-block-gatherpress-modal' ).classList.add( 'gatherpress--is-visible' );
+		document.querySelector( '.wp-block-gatherpress-modal' ).setAttribute( 'open', '' );
 
 		// Space should close the modal.
 		actions.closeModalOnEnter( spaceEvent );
 		expect( spaceEvent.preventDefault ).toHaveBeenCalled();
-		expect(
-			document
-				.querySelector( '.wp-block-gatherpress-modal' )
-				.classList.contains( 'gatherpress--is-visible' ),
-		).toBe( false );
+		expect( document.querySelector( '.wp-block-gatherpress-modal' ).open ).toBe( false );
 	} );
 } );
 
@@ -228,11 +197,11 @@ describe( 'modal-manager closeModal focus return', () => {
 				<div class="gatherpress-modal--trigger-open">
 					<a href="/event/" role="button">9:00</a>
 				</div>
-				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+				<dialog class="wp-block-gatherpress-modal" open>
 					<div class="wp-block-gatherpress-modal-content">
 						<button type="button" class="close">Close</button>
 					</div>
-				</div>
+				</dialog>
 			</div>
 		`;
 
@@ -251,11 +220,11 @@ describe( 'modal-manager closeModal focus return', () => {
 				<div class="wp-block-button gatherpress-modal--trigger-open">
 					<a class="wp-block-button__link" role="button" tabindex="0">Open</a>
 				</div>
-				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+				<dialog class="wp-block-gatherpress-modal" open>
 					<div class="wp-block-gatherpress-modal-content">
 						<button type="button" class="close">Close</button>
 					</div>
-				</div>
+				</dialog>
 			</div>
 		`;
 
@@ -272,11 +241,11 @@ describe( 'modal-manager closeModal focus return', () => {
 				<div class="gatherpress-modal--trigger-open">
 					<button type="button">Open</button>
 				</div>
-				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+				<dialog class="wp-block-gatherpress-modal" open>
 					<div class="wp-block-gatherpress-modal-content">
 						<button type="button" class="close">Close</button>
 					</div>
-				</div>
+				</dialog>
 			</div>
 		`;
 
@@ -291,11 +260,11 @@ describe( 'modal-manager closeModal focus return', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
 				<a href="/event/" class="gatherpress-modal--trigger-open" role="button">Open</a>
-				<div class="wp-block-gatherpress-modal gatherpress--is-visible">
+				<dialog class="wp-block-gatherpress-modal" open>
 					<div class="wp-block-gatherpress-modal-content">
 						<button type="button" class="close">Close</button>
 					</div>
-				</div>
+				</dialog>
 			</div>
 		`;
 
@@ -326,13 +295,13 @@ describe( 'modal-manager openModal naming', () => {
 		document.body.innerHTML = `
 			<div class="wp-block-gatherpress-modal-manager">
 				<button type="button" class="open">Open</button>
-				<div class="wp-block-gatherpress-modal" role="dialog" aria-label="Modal" ${ modalAttrs }>
+				<dialog class="wp-block-gatherpress-modal" aria-label="Modal" ${ modalAttrs }>
 					<div class="wp-block-gatherpress-modal-content">${ content }</div>
-				</div>
+				</dialog>
 			</div>
 		`;
 		actions.openModal( null, document.querySelector( '.open' ) );
-		return document.querySelector( '[role="dialog"]' );
+		return document.querySelector( 'dialog' );
 	};
 
 	it( 'skips hidden headings and uses the first visible one', () => {
@@ -373,5 +342,223 @@ describe( 'modal-manager openModal naming', () => {
 
 		expect( modal.hasAttribute( 'aria-labelledby' ) ).toBe( false );
 		expect( document.querySelector( 'h3' ).id ).toBe( '' );
+	} );
+} );
+
+/**
+ * The modal is a <dialog>: showModal() opens it as a modal, and Escape
+ * (the dialog's cancel event) and a click on its overlay close it through
+ * closeModal, so focus returns the way a close button returns it.
+ */
+describe( 'modal-manager dialog', () => {
+	let actions;
+
+	const render = ( modalAttrs = '' ) => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-modal-manager">
+				<button type="button" class="gatherpress-modal--trigger-open">Open</button>
+				<dialog class="wp-block-gatherpress-modal" ${ modalAttrs }>
+					<div class="wp-block-gatherpress-modal-content">
+						<button type="button" class="close">Close</button>
+					</div>
+				</dialog>
+			</div>
+		`;
+
+		return document.querySelector( 'dialog' );
+	};
+
+	let showModal;
+	let close;
+
+	beforeEach( () => {
+		( { actions } = store( 'gatherpress' ) );
+		showModal = jest.spyOn( window.HTMLDialogElement.prototype, 'showModal' );
+		close = jest.spyOn( window.HTMLDialogElement.prototype, 'close' );
+	} );
+
+	afterEach( () => {
+		jest.restoreAllMocks();
+	} );
+
+	it( 'opens the modal with showModal(), which focuses its first control', () => {
+		const modal = render();
+
+		actions.openModal( null, document.querySelector( '.gatherpress-modal--trigger-open' ) );
+
+		expect( showModal ).toHaveBeenCalledTimes( 1 );
+		expect( modal.open ).toBe( true );
+		expect( document.activeElement ).toBe( document.querySelector( '.close' ) );
+	} );
+
+	it( 'leaves a modal that is already open alone', () => {
+		render( 'open' );
+
+		actions.openModal( null, document.querySelector( '.gatherpress-modal--trigger-open' ) );
+
+		expect( showModal ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does not close a modal that is already closed', () => {
+		render();
+
+		actions.closeModal( null, document.querySelector( '.close' ) );
+
+		expect( close ).not.toHaveBeenCalled();
+	} );
+
+	it( 'closes on Escape through the cancel event and returns focus to the trigger', () => {
+		const modal = render( 'open' );
+		const event = { preventDefault: jest.fn(), target: modal };
+
+		actions.closeModal( event );
+
+		expect( event.preventDefault ).toHaveBeenCalled();
+		expect( modal.open ).toBe( false );
+		expect( document.activeElement ).toBe(
+			document.querySelector( '.gatherpress-modal--trigger-open' ),
+		);
+	} );
+
+	it( 'closes on a click on the overlay', () => {
+		const modal = render( 'open' );
+		const event = { preventDefault: jest.fn(), target: modal, currentTarget: modal };
+
+		actions.closeModalOnOverlay( event );
+
+		expect( modal.open ).toBe( false );
+	} );
+
+	it( 'stays open on a click inside the content', () => {
+		const modal = render( 'open' );
+		const event = {
+			preventDefault: jest.fn(),
+			target: document.querySelector( '.close' ),
+			currentTarget: modal,
+		};
+
+		actions.closeModalOnOverlay( event );
+
+		expect( event.preventDefault ).not.toHaveBeenCalled();
+		expect( modal.open ).toBe( true );
+	} );
+} );
+
+/**
+ * Without JavaScript, the server opens a modal a reload asks for with the
+ * `open` attribute, which leaves it non-modal. With JavaScript, the view
+ * script takes it over and reopens it as a modal dialog.
+ */
+describe( 'modal-manager takeOverOpenedModal', () => {
+	let callbacks;
+	let showModal;
+
+	const render = ( containerClass = '', modalAttrs = 'open data-gatherpress-opened-on-load="true"' ) => {
+		document.body.innerHTML = `
+			<div class="${ containerClass }">
+				<div class="wp-block-gatherpress-modal-manager">
+					<button type="button" class="gatherpress-modal--trigger-open">Open</button>
+					<dialog class="wp-block-gatherpress-modal" ${ modalAttrs }>
+						<button type="submit" class="gatherpress-modal__backdrop" tabindex="-1" aria-hidden="true"></button>
+						<div class="wp-block-gatherpress-modal-content">
+							<button type="button" class="close">Close</button>
+						</div>
+					</dialog>
+				</div>
+			</div>
+		`;
+
+		const modal = document.querySelector( 'dialog' );
+
+		getElement.mockReturnValue( { ref: modal } );
+
+		return modal;
+	};
+
+	beforeEach( () => {
+		jest.useFakeTimers();
+		( { callbacks } = store( 'gatherpress' ) );
+		showModal = jest.spyOn( window.HTMLDialogElement.prototype, 'showModal' );
+		window.history.replaceState( null, '', '/event/?gatherpress_modal=42-1&ref=x#gatherpress-modal-manager-42-1' );
+	} );
+
+	afterEach( () => {
+		jest.useRealTimers();
+		jest.restoreAllMocks();
+		window.history.replaceState( null, '', '/' );
+	} );
+
+	it( 'reopens the modal with showModal() once hydration is done, and steps the overlay button aside', () => {
+		const modal = render();
+
+		callbacks.takeOverOpenedModal();
+
+		// Hydration would move a dialog made modal right away out of the top layer.
+		expect( showModal ).not.toHaveBeenCalled();
+
+		jest.runAllTimers();
+
+		expect( showModal ).toHaveBeenCalledTimes( 1 );
+		expect( modal.open ).toBe( true );
+		expect( document.querySelector( '.gatherpress-modal__backdrop' ).hidden ).toBe( true );
+		expect( document.activeElement ).toBe( document.querySelector( '.close' ) );
+	} );
+
+	it( 'drops the query arg so a reload does not open the modal again', () => {
+		render();
+
+		callbacks.takeOverOpenedModal();
+
+		expect( window.location.search ).toBe( '?ref=x' );
+		expect( window.location.hash ).toBe( '#gatherpress-modal-manager-42-1' );
+	} );
+
+	it( 'leaves a modal the server did not open alone', () => {
+		render( '', '' );
+
+		callbacks.takeOverOpenedModal();
+
+		expect( showModal ).not.toHaveBeenCalled();
+		expect( window.location.search ).toBe( '?gatherpress_modal=42-1&ref=x' );
+	} );
+
+	it( 'closes a modal inside a hidden RSVP status, so it opens as a modal dialog when the status shows', () => {
+		const modal = render( 'gatherpress--is-hidden' );
+
+		callbacks.takeOverOpenedModal();
+		jest.runAllTimers();
+
+		expect( showModal ).not.toHaveBeenCalled();
+		expect( modal.open ).toBe( false );
+		expect( document.querySelector( '.gatherpress-modal__backdrop' ).hidden ).toBe( true );
+		expect( window.location.search ).toBe( '?ref=x' );
+
+		document.querySelector( '.gatherpress--is-hidden' ).classList.remove( 'gatherpress--is-hidden' );
+		store( 'gatherpress' ).actions.openModal( null, document.querySelector( '.gatherpress-modal--trigger-open' ) );
+
+		expect( showModal ).toHaveBeenCalledTimes( 1 );
+		expect( modal.open ).toBe( true );
+	} );
+
+	it( 'works without a no-JavaScript overlay button', () => {
+		const modal = render();
+
+		document.querySelector( '.gatherpress-modal__backdrop' ).remove();
+		callbacks.takeOverOpenedModal();
+		jest.runAllTimers();
+
+		expect( modal.open ).toBe( true );
+		expect( showModal ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'does not reopen a modal that closed before the next task', () => {
+		const modal = render();
+
+		callbacks.takeOverOpenedModal();
+		modal.close();
+		jest.runAllTimers();
+
+		expect( showModal ).not.toHaveBeenCalled();
+		expect( modal.open ).toBe( false );
 	} );
 } );

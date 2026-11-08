@@ -147,8 +147,7 @@ final class Network {
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreEnd
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-		$page     = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$page     = Utility::get_http_input( INPUT_GET, 'page', 'sanitize_key' );
 		$config   = self::get_config();
 		$settings = Settings::get_instance();
 		$locked   = array_filter(
@@ -236,8 +235,7 @@ final class Network {
 	 * @return void
 	 */
 	public function maybe_redirect_to_default_tab(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check on a navigation parameter.
-		if ( isset( $_GET['tab'] ) ) {
+		if ( '' !== Utility::get_http_input( INPUT_GET, 'tab' ) ) {
 			return;
 		}
 
@@ -346,8 +344,7 @@ final class Network {
 	 * @return string
 	 */
 	protected function get_current_tab( array $sub_pages ): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab selection is a navigation parameter.
-		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+		$tab = Utility::get_http_input( INPUT_GET, 'tab', 'sanitize_key' );
 
 		if ( '' !== $tab && isset( $sub_pages[ $tab ] ) ) {
 			return $tab;
@@ -375,6 +372,8 @@ final class Network {
 		// subprocess isolation.
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreStart
+		// Direct read on purpose: the option is an array, and
+		// Utility::get_http_input() only returns strings.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
 		$raw = isset( $_POST[ self::OPTION_NAME ] ) && is_array( $_POST[ self::OPTION_NAME ] )
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
@@ -413,16 +412,15 @@ final class Network {
 		// subprocess isolation.
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreStart
+		// Direct read on purpose: the option is an array, and
+		// Utility::get_http_input() only returns strings.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
 		$raw = isset( $_POST[ Settings::OPTION_NAME ] ) && is_array( $_POST[ Settings::OPTION_NAME ] )
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
 			? wp_unslash( $_POST[ Settings::OPTION_NAME ] )
 			: array();
 
-		$submitted = sanitize_key(
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
-			isset( $_POST['gatherpress_tab'] ) ? wp_unslash( $_POST['gatherpress_tab'] ) : ''
-		);
+		$submitted = Utility::get_http_input( INPUT_POST, 'gatherpress_tab', 'sanitize_key' );
 
 		$settings       = Settings::get_instance();
 		$sub_pages      = $settings->get_sub_pages();
