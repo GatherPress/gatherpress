@@ -409,8 +409,8 @@ final class External {
 	 * raw semicolon separates parameters; a literal newline breaks the
 	 * property record. Calendar clients that strictly conform to the spec
 	 * truncate or split values on unescaped occurrences — most user-visible
-	 * venue addresses contain at least a comma. Escape before folding so the
-	 * fold doesn't split inside an escape sequence.
+	 * venue addresses contain at least a comma. Escape before folding, so the
+	 * fold counts the escaped octets.
 	 *
 	 * @since 0.34.0
 	 *
