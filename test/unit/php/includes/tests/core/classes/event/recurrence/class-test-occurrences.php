@@ -110,6 +110,7 @@ class Test_Occurrences extends Base {
 		$this->assertStringContainsString( 'CREATE TABLE ' . Occurrences::table() . ' (', $schema );
 		$this->assertStringContainsString( 'override_post_id bigint(20) unsigned NOT NULL default \'0\'', $schema );
 		$this->assertStringContainsString( 'PRIMARY KEY  (series_post_id,recurrence_id)', $schema );
+		$this->assertStringContainsString( 'KEY end_gmt (datetime_end_gmt)', $schema );
 		$this->assertStringContainsString(
 			'KEY series_status_start (series_post_id,status,datetime_start_gmt)',
 			$schema

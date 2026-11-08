@@ -141,6 +141,7 @@ CREATE TABLE {$prefix}gatherpress_event_occurrences (
     override_post_id   bigint(20) unsigned NOT NULL default '0',
     PRIMARY KEY  (series_post_id,recurrence_id),
     KEY start_gmt (datetime_start_gmt),
+    KEY end_gmt (datetime_end_gmt),
     KEY series_status_start (series_post_id,status,datetime_start_gmt)
 );
 ```
