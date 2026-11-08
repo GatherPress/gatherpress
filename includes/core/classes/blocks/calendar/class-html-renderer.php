@@ -187,16 +187,14 @@ final class Html_Renderer {
 			return Utility::render_template(
 				sprintf( '%s/includes/templates/blocks/calendar/table.php', GATHERPRESS_CORE_PATH ),
 				array(
-					'table_class'   => $table_class,
-					'table_style'   => $table_style,
-					'caption'       => $unit['caption'],
-					'show_weekdays' => $show_weekdays,
-					'header_cells'  => $this->render_header_cells(
-						$unit['day_names'],
-						$render_week_numbers,
-						$is_time_grid
-					),
-					'weeks'         => $this->render_calendar_weeks( $unit['weeks'], $render_week_numbers ),
+					'table_class'         => $table_class,
+					'table_style'         => $table_style,
+					'caption'             => $unit['caption'],
+					'show_weekdays'       => $show_weekdays,
+					'day_names'           => $unit['day_names'],
+					'render_week_numbers' => $render_week_numbers,
+					'is_time_grid'        => $is_time_grid,
+					'weeks'               => $this->render_calendar_weeks( $unit['weeks'], $render_week_numbers ),
 				)
 			);
 		} finally {
@@ -361,40 +359,6 @@ final class Html_Renderer {
 			$this->build_wrapper_attributes( $view_type, $unit_count, $is_time_grid ),
 			$tables
 		);
-	}
-
-	/**
-	 * Render the column header cells of a table.
-	 *
-	 * @since TBD
-	 *
-	 * @param string[] $day_names           Weekday names.
-	 * @param bool     $render_week_numbers Whether rows get a week number header.
-	 * @param bool     $is_time_grid        Whether time grid is active.
-	 *
-	 * @return string Escaped header cells HTML.
-	 */
-	private function render_header_cells( array $day_names, bool $render_week_numbers, bool $is_time_grid ): string {
-		$cells = '';
-
-		// Prepend empty header for the time gutter column.
-		if ( $is_time_grid ) {
-			$cells .= '<th scope="col" class="gatherpress-calendar__time-gutter-header" aria-hidden="true"></th>';
-		}
-
-		// Header for the hidden week number column, so the row headers line up.
-		if ( $render_week_numbers ) {
-			$cells .= sprintf(
-				'<th scope="col" class="gatherpress--screen-reader-text">%s</th>',
-				esc_html_x( 'Week', 'week number column header', 'gatherpress' )
-			);
-		}
-
-		foreach ( $day_names as $day_name ) {
-			$cells .= sprintf( '<th scope="col">%s</th>', esc_html( $day_name ) );
-		}
-
-		return $cells;
 	}
 
 	/**

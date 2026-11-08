@@ -151,7 +151,6 @@ class Test_Calendar extends Base {
 	 * @covers ::render
 	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::generate_calendar_html
 	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::render_unit_table
-	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::render_header_cells
 	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::render_calendar_weeks
 	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::build_wrapper_attributes
 	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::build_table_style
@@ -197,8 +196,8 @@ class Test_Calendar extends Base {
 
 		$this->assertStringContainsString( 'gatherpress--is-view-day', $output );
 		$this->assertStringNotContainsString( 'Week', $output );
-		$this->assertStringContainsString(
-			'<th scope="col">Thu</th><th scope="col">Fri</th><th scope="col">Sat</th>',
+		$this->assertMatchesRegularExpression(
+			'#<th scope="col">Thu</th>\s*<th scope="col">Fri</th>\s*<th scope="col">Sat</th>#',
 			$output
 		);
 		$this->assertStringContainsString( 'gap: 4px var(--wp--preset--spacing--20)', $output );
@@ -213,7 +212,6 @@ class Test_Calendar extends Base {
 	 * A week view sorted by event date can show the time grid.
 	 *
 	 * @covers ::render
-	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::render_header_cells
 	 * @covers \GatherPress\Core\Blocks\Calendar\Html_Renderer::build_table_style
 	 *
 	 * @return void
