@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The site name in a calendar download or feed is now escaped and folded at 75 octets, like the event lines, so a long name or one with a comma, a semicolon or an ampersand comes through intact.
