@@ -114,7 +114,7 @@ In fact, after the initial setup, you may notice that in your code editor, there
 
 ### Installing Dependencies
 
-1. Install the version of Node in `.nvmrc.`. [NVM](https://github.com/nvm-sh/nvm) can be used to achieve this.
+1. Install the version of Node in `.nvmrc` (Node.js 26). [NVM](https://github.com/nvm-sh/nvm) can be used to achieve this.
 2. Install [Composer](https://getcomposer.org/doc/00-intro.md)
 3. In your terminal window, `cd` to the `gatherpress` directory
 4. Run `npm install` to get node dependencies

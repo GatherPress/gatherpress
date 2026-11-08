@@ -19,7 +19,7 @@ composer install
 ```
 
 > [!NOTE]
-> You also need to use Node.js 20 or later
+> You also need Node.js 26, the version in `.nvmrc`
 
 Install the dependencies to create the Playground testing instance, using the following command:
 
