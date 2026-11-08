@@ -108,7 +108,7 @@ final class Query {
 			return;
 		}
 
-		$query->query_vars['cache_domain'] .= ':gatherpress_' . md5(
+		$query->query_vars['cache_domain'] .= ':gatherpress_' . md5( // NOSONAR.
 			wp_json_encode( $query->query_vars['tax_query'] ) . wp_cache_get_last_changed( 'terms' )
 		);
 	}
