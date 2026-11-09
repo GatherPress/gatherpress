@@ -63,6 +63,32 @@ class Test_Occurrences extends Base {
 	}
 
 	/**
+	 * An event's occurrences.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return Occurrences The occurrences.
+	 */
+	protected function occurrences( int $post_id ): Occurrences {
+		return ( new Event( $post_id ) )->occurrences();
+	}
+
+	/**
+	 * An event's occurrences in December 2026.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return Occurrence[] The occurrences.
+	 */
+	protected function december( int $post_id ): array {
+		return $this->occurrences( $post_id )->in_range( $this->utc( '2026-12-01' ), $this->utc( '2027-01-01' ) );
+	}
+
+	/**
 	 * A date in UTC.
 	 *
 	 * @since TBD
@@ -97,14 +123,17 @@ class Test_Occurrences extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::in_range
+	 * @covers ::__construct
+	 * @covers ::post_id
 	 * @covers ::single
 	 * @covers \GatherPress\Core\Event\Occurrence::__construct
+	 * @covers \GatherPress\Core\Event::occurrences
 	 *
 	 * @return void
 	 */
 	public function test_in_range_returns_the_one_date(): void {
 		$post_id     = $this->event();
-		$occurrences = Occurrences::in_range( $post_id, $this->utc( '2026-12-01' ), $this->utc( '2027-01-01' ) );
+		$occurrences = $this->december( $post_id );
 
 		$this->assertCount( 1, $occurrences );
 		$this->assertSame( $post_id, $occurrences[0]->series_post_id );
@@ -130,19 +159,35 @@ class Test_Occurrences extends Base {
 
 		$this->assertSame(
 			array(),
-			Occurrences::in_range( $post_id, $this->utc( '2027-01-01' ), $this->utc( '2027-02-01' ) ),
+			$this->occurrences( $post_id )->in_range( $this->utc( '2027-01-01' ), $this->utc( '2027-02-01' ) ),
 			'A range after the event is empty.'
 		);
 		$this->assertSame(
 			array(),
-			Occurrences::in_range( $post_id, $this->utc( '2026-11-01' ), $this->utc( '2026-12-12 01:00:00' ) ),
+			$this->occurrences( $post_id )->in_range( $this->utc( '2026-11-01' ), $this->utc( '2026-12-12 01:00:00' ) ),
 			'A range that ends as the event starts is empty.'
 		);
 		$this->assertCount(
 			1,
-			Occurrences::in_range( $post_id, $this->utc( '2026-12-12 02:00:00' ), $this->utc( '2026-12-13' ) ),
+			$this->occurrences( $post_id )->in_range( $this->utc( '2026-12-12 02:00:00' ), $this->utc( '2026-12-13' ) ),
 			'A range that starts while the event runs includes it.'
 		);
+	}
+
+	/**
+	 * The one date is worked out once per instance.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::single
+	 *
+	 * @return void
+	 */
+	public function test_single_is_worked_out_once(): void {
+		$post_id     = $this->event();
+		$occurrences = $this->occurrences( $post_id );
+
+		$this->assertSame( $occurrences->find( '20261211T200000' ), $occurrences->find( '20261211T200000' ) );
 	}
 
 	/**
@@ -161,10 +206,10 @@ class Test_Occurrences extends Base {
 		$from    = $this->utc( '2000-01-01' );
 		$to      = $this->utc( '2100-01-01' );
 
-		$this->assertSame( array(), Occurrences::in_range( $post, $from, $to ), 'A post has no dates.' );
+		$this->assertSame( array(), $this->occurrences( $post )->in_range( $from, $to ), 'A post has no dates.' );
 		$this->assertSame(
 			array(),
-			Occurrences::in_range( $no_date, $from, $to ),
+			$this->occurrences( $no_date )->in_range( $from, $to ),
 			'An event without a start has no dates.'
 		);
 	}
@@ -183,7 +228,7 @@ class Test_Occurrences extends Base {
 
 		delete_post_meta( $post_id, 'gatherpress_datetime_end_gmt' );
 
-		$occurrence = Occurrences::find( $post_id, '20261211T200000' );
+		$occurrence = $this->occurrences( $post_id )->find( '20261211T200000' );
 
 		$this->assertEquals( $occurrence->start, $occurrence->end );
 	}
@@ -199,7 +244,7 @@ class Test_Occurrences extends Base {
 	 */
 	public function test_an_all_day_event_is_keyed_by_date(): void {
 		$post_id     = $this->event( true );
-		$occurrences = Occurrences::in_range( $post_id, $this->utc( '2026-12-01' ), $this->utc( '2027-01-01' ) );
+		$occurrences = $this->december( $post_id );
 
 		$this->assertSame( '20261211', $occurrences[0]->recurrence_id );
 		$this->assertTrue( $occurrences[0]->all_day );
@@ -237,7 +282,7 @@ class Test_Occurrences extends Base {
 			static function ( Occurrence $occurrence ): string {
 				return $occurrence->recurrence_id;
 			},
-			Occurrences::in_range( $post_id, $this->utc( '2026-12-01' ), $this->utc( '2027-01-01' ) )
+			$this->december( $post_id )
 		);
 
 		$this->assertSame( array( '20261204T200000', '20261211T200000' ), $keys );
@@ -255,8 +300,10 @@ class Test_Occurrences extends Base {
 	public function test_find(): void {
 		$post_id = $this->event();
 
-		$this->assertSame( '20261211T200000', Occurrences::find( $post_id, '20261211T200000' )->recurrence_id );
-		$this->assertNull( Occurrences::find( $post_id, '20261212T200000' ), 'Another key finds nothing.' );
+		$found = $this->occurrences( $post_id )->find( '20261211T200000' );
+
+		$this->assertSame( '20261211T200000', $found->recurrence_id );
+		$this->assertNull( $this->occurrences( $post_id )->find( '20261212T200000' ), 'Another key finds nothing.' );
 	}
 
 	/**
@@ -292,7 +339,7 @@ class Test_Occurrences extends Base {
 			3
 		);
 
-		$this->assertSame( $other, Occurrences::find( $post_id, '20261218T200000' ) );
-		$this->assertNull( Occurrences::find( $post_id, '20261225T200000' ) );
+		$this->assertSame( $other, $this->occurrences( $post_id )->find( '20261218T200000' ) );
+		$this->assertNull( $this->occurrences( $post_id )->find( '20261225T200000' ) );
 	}
 }
