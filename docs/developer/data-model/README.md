@@ -96,7 +96,7 @@ Admin list tables also store per-user screen options under the usual `{$screen}_
 
 ## The events table
 
-GatherPress creates the `{$wpdb->prefix}gatherpress_events` table in `Setup::create_tables()` via `dbDelta()`, next to the [occurrence table](#the-occurrence-table):
+GatherPress creates exactly one table, `{$wpdb->prefix}gatherpress_events`, in `Setup::create_tables()` via `dbDelta()`:
 
 ```sql
 CREATE TABLE {$prefix}gatherpress_events (
@@ -123,37 +123,6 @@ Every event query is a date-range query: upcoming, past, between two dates, orde
 The GMT columns are what queries sort and filter on. The local columns exist for display, so a listing does not have to convert every row back.
 
 On multisite the table is per-site: every site in the network gets its own.
-
-## The occurrence table
-
-`{$wpdb->prefix}gatherpress_event_occurrences` is the start of recurring events (#80). It treats every event as a series with one or more occurrences: an event without a repeat rule is a series of one. It is created in the same `Setup::create_tables()` call:
-
-```sql
-CREATE TABLE {$prefix}gatherpress_event_occurrences (
-    series_post_id     bigint(20) unsigned NOT NULL default '0',
-    recurrence_id      varchar(20) NOT NULL default '',
-    datetime_start     datetime NOT NULL default '0000-00-00 00:00:00',
-    datetime_start_gmt datetime NOT NULL default '0000-00-00 00:00:00',
-    datetime_end       datetime NOT NULL default '0000-00-00 00:00:00',
-    datetime_end_gmt   datetime NOT NULL default '0000-00-00 00:00:00',
-    timezone           varchar(255) default NULL,
-    status             varchar(20) NOT NULL default 'scheduled',
-    override_post_id   bigint(20) unsigned NOT NULL default '0',
-    PRIMARY KEY  (series_post_id,recurrence_id),
-    KEY start_gmt (datetime_start_gmt),
-    KEY end_gmt (datetime_end_gmt),
-    KEY series_status_start (series_post_id,status,datetime_start_gmt)
-);
-```
-
-- **One post per series.** A row holds only what differs per date. The title, description and other content stay on the series post, so repeating an event never copies its content.
-- **An occurrence is identified by its series and its start.** `recurrence_id` is the occurrence's local start in the RFC 5545 `RECURRENCE-ID` form, `Ymd\THis`, from `Occurrences::recurrence_id()`.
-- **`status`** is `scheduled` for now. A later change adds canceled dates.
-- **`override_post_id`** is `0`. It is reserved for a date that needs its own title, description or speaker: a post for that one date, read in place of the series post.
-
-`Event\Recurrence\Occurrences::sync_single()` keeps one row per event in step with the events table: `Event::save_datetimes()` calls it after writing the event's dates, and a new start replaces the row. Deleting an event removes its rows on `delete_post`.
-
-**Nothing reads this table yet.** The events table stays the source of truth for every query. Reads move over in a later release, and repeat rules write their dates here then. Existing events get their row from a GatherPress Alpha migration.
 
 ## REST endpoints
 

@@ -12,7 +12,6 @@ namespace GatherPress\Core\Uninstall;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Event\Recurrence\Occurrences;
 
 /**
  * Class Events.
@@ -64,14 +63,13 @@ final class Events extends Post_Type {
 	}
 
 	/**
-	 * Drop the current site's event date and occurrence tables.
+	 * Drop the current site's event date table.
 	 *
-	 * The tables are per-site: they are named from `$wpdb->prefix`, which changes
+	 * The table is per-site: it is named from `$wpdb->prefix`, which changes
 	 * inside `switch_to_blog()`, so the drop belongs in the per-site pass and
 	 * never in the network one.
 	 *
 	 * @since 0.36.0
-	 * @since TBD Also drops the occurrence table.
 	 *
 	 * @global \wpdb $wpdb WordPress database abstraction object.
 	 *
@@ -80,9 +78,9 @@ final class Events extends Post_Type {
 	protected function drop_table(): void {
 		global $wpdb;
 
-		foreach ( array( Event::table(), Occurrences::table() ) as $table ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- Dropping a plugin-owned table on uninstall.
-			$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table ) );
-		}
+		$table = Event::table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- Dropping a plugin-owned table on uninstall.
+		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table ) );
 	}
 }

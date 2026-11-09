@@ -19,7 +19,6 @@ use GatherPress\Core\Admin\Dashboard;
 use GatherPress\Core\Admin\Email;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
 use GatherPress\Core\Admin\Plugin_Row;
-use GatherPress\Core\Event\Recurrence\Occurrences;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -447,7 +446,6 @@ final class Setup {
 	 * updated array of table names to be dropped during site deletion.
 	 *
 	 * @since 0.27.0
-	 * @since TBD Also drops the occurrence table.
 	 *
 	 * @param string[] $tables An array of names of the site tables to be dropped.
 	 *
@@ -455,7 +453,6 @@ final class Setup {
 	 */
 	public function on_site_delete( array $tables ): array {
 		$tables[] = Event::table();
-		$tables[] = Occurrences::table();
 
 		return $tables;
 	}
@@ -470,7 +467,6 @@ final class Setup {
 	 * and to set a flag for flushing rewrite rules.
 	 *
 	 * @since 0.27.0
-	 * @since TBD Also creates the occurrence table.
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 * @return void
@@ -494,7 +490,6 @@ final class Setup {
 					KEY datetime_start_gmt (datetime_start_gmt),
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
-		$sql[] = Occurrences::schema();
 
 		// Loading WordPress core file for dbDelta function, not importing a class.
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php'; // NOSONAR.
