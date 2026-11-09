@@ -362,6 +362,101 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A UTC offset spelling is stored in the form `DateTimeZone` accepts.
+	 *
+	 * @since TBD
+	 * @covers ::save_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_save_datetimes_normalizes_the_timezone(): void {
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event   = new Event( $post_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2026-12-11 20:00:00',
+				'datetime_end'   => '2026-12-11 22:00:00',
+				'timezone'       => 'UTC+5.5',
+			)
+		);
+
+		$this->assertSame( '+05:30', $event->get_datetime()['timezone'], 'The table stores the normalized timezone.' );
+		$this->assertSame(
+			'+05:30',
+			get_post_meta( $post_id, 'gatherpress_timezone', true ),
+			'The meta stores the normalized timezone.'
+		);
+	}
+
+	/**
+	 * Saving datetimes fires an action with the saved values and, after the
+	 * first save, the values they replaced.
+	 *
+	 * @since TBD
+	 * @covers ::save_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_save_datetimes_fires_the_saved_action(): void {
+		$post_id  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $post_id );
+		$captured = array();
+
+		add_action(
+			'gatherpress_event_datetimes_saved',
+			static function ( int $id, array $saved, ?array $previous ) use ( &$captured ): void {
+				$captured[] = array( $id, $saved, $previous );
+			},
+			10,
+			3
+		);
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2026-12-11 20:00:00',
+				'datetime_end'   => '2026-12-11 22:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2026-12-11 19:00:00',
+				'datetime_end'   => '2026-12-11 21:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		remove_all_actions( 'gatherpress_event_datetimes_saved' );
+
+		$this->assertCount( 2, $captured, 'The action fires once per save.' );
+		$this->assertSame( $post_id, $captured[0][0], 'The action passes the event ID.' );
+		$this->assertNull( $captured[0][2], 'The first save has nothing to replace.' );
+		$this->assertSame(
+			array(
+				'datetime_start'     => '2026-12-11 19:00:00',
+				'datetime_end'       => '2026-12-11 21:00:00',
+				'timezone'           => 'America/New_York',
+				'datetime_start_gmt' => '2026-12-12 00:00:00',
+				'datetime_end_gmt'   => '2026-12-12 02:00:00',
+			),
+			$captured[1][1],
+			'The action passes the saved datetimes.'
+		);
+		$this->assertSame(
+			array(
+				'datetime_start'     => '2026-12-11 20:00:00',
+				'datetime_start_gmt' => '2026-12-12 01:00:00',
+				'datetime_end'       => '2026-12-11 22:00:00',
+				'datetime_end_gmt'   => '2026-12-12 03:00:00',
+				'timezone'           => 'America/New_York',
+			),
+			$captured[1][2],
+			'The action passes the datetimes the save replaced.'
+		);
+	}
+
+	/**
 	 * A post that is not an event has nothing to attach datetimes to, so the
 	 * save reports failure and writes no meta.
 	 *
