@@ -413,6 +413,96 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 	} );
 } );
 
+describe( 'venue-map Edit venue name for the map marker', () => {
+	/**
+	 * Builds a select mock for a venue with the given title.
+	 *
+	 * @param {number}      currentPostId The post open in the editor.
+	 * @param {string|null} title         The venue title both stores report.
+	 *
+	 * @return {Function} The select mock.
+	 */
+	const titleSelect = ( currentPostId, title ) => ( storeName ) => {
+		switch ( storeName ) {
+			case 'core/editor':
+				return {
+					getCurrentPostId: () => currentPostId,
+					getCurrentPostType: () => 'gatherpress_venue',
+					getEditedPostAttribute: ( key ) =>
+						'title' === key ? title : null,
+					getCurrentPost: () => null,
+				};
+			case 'core':
+				return {
+					getEditedEntityRecord: () => ( { id: 99, meta: {}, title } ),
+				};
+			default:
+				return noVenueMockSelect( storeName );
+		}
+	};
+
+	/**
+	 * Renders the block for a venue and returns the captured selector.
+	 *
+	 * @param {boolean} isEditing Whether the venue itself is open in the editor.
+	 *
+	 * @return {Function} The venue-state selector.
+	 */
+	const renderFor = ( isEditing ) => {
+		isVenuePostType.mockReturnValue( isEditing );
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 99, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>,
+		);
+
+		return capturedVenueStateSelector;
+	};
+
+	beforeEach( () => {
+		capturedVenueStateSelector = null;
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	it( 'reads the edited title when the venue itself is open', () => {
+		const selector = renderFor( true );
+
+		expect( selector( titleSelect( 99, 'QA Venue Hall' ) ).venueName ).toBe(
+			'QA Venue Hall',
+		);
+		expect( selector( titleSelect( 99, null ) ).venueName ).toBe( '' );
+	} );
+
+	it( 'reads the venue record title in a Query Loop or an event', () => {
+		const selector = renderFor( false );
+
+		expect( selector( titleSelect( 0, 'QA Venue Hall' ) ).venueName ).toBe(
+			'QA Venue Hall',
+		);
+		expect( selector( titleSelect( 0, undefined ) ).venueName ).toBe( '' );
+		expect( selector( noVenueMockSelect ).venueName ).toBe( '' );
+	} );
+
+	it( 'is empty when there is no venue', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>,
+		);
+
+		expect(
+			capturedVenueStateSelector( noVenueMockSelect ).venueName,
+		).toBe( '' );
+	} );
+} );
+
 describe( 'venue-map Edit Google map type control', () => {
 	/**
 	 * Settings mock for a Google-platform site.

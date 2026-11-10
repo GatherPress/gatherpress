@@ -182,6 +182,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		staticMapDescriptors,
 		venuePostId,
 		venuePostType,
+		venueName,
 	} = useSelect(
 		( select ) => {
 			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
@@ -204,6 +205,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					staticMapDescriptors: EMPTY_STATIC_MAP_DESCRIPTORS,
 					venuePostId: 0,
 					venuePostType: '',
+					venueName: '',
 				};
 			}
 
@@ -235,6 +237,10 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						EMPTY_STATIC_MAP_DESCRIPTORS,
 					venuePostId: effectiveVenuePostId,
 					venuePostType: resolvedVenuePostType,
+					venueName:
+						select( 'core/editor' )?.getEditedPostAttribute(
+							'title',
+						) || '',
 				};
 			}
 
@@ -255,6 +261,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					meta?.gatherpress_static_map || EMPTY_STATIC_MAP_DESCRIPTORS,
 				venuePostId: effectiveVenuePostId,
 				venuePostType: context?.postType || '',
+				venueName: venuePost?.title || '',
 			};
 		},
 		[ context?.postId, context?.postType ],
@@ -622,6 +629,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				>
 					<MapEmbed
 						location={ address }
+						markerLabel={ venueName }
 						latitude={ latitude }
 						longitude={ longitude }
 						zoom={ zoom }
