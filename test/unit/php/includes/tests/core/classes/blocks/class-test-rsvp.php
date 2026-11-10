@@ -682,6 +682,16 @@ class Test_Rsvp extends Base {
 			. 'updateGuestCount action.'
 		);
 		$this->assertStringContainsString(
+			'data-wp-on--blur="actions.saveGuestCount"',
+			$result,
+			'A guest count still waiting to be saved is saved when the field loses focus.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--focus="actions.prepareGuestCount"',
+			$result,
+			'The nonce is fetched when the field gets focus, before any count waits to be saved.'
+		);
+		$this->assertStringContainsString(
 			'max="5"',
 			$result,
 			'The handle_rsvp_form_fields method should add the max attribute with the guest limit value.'
