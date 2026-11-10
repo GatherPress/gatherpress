@@ -50,6 +50,35 @@ class Test_Saved_Image extends Base {
 	private const KEY = '15x800x400xroadmap';
 
 	/**
+	 * Delete unused files at once, so a test can check which files go.
+	 *
+	 * The delay itself is covered by `test_delete_unused_files_waits()`.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+
+		add_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+	}
+
+	/**
+	 * Remove the delay filter and any queued delete.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+		wp_clear_scheduled_hook( Saved_Image::DELETE_CRON_ACTION );
+
+		parent::tearDown();
+	}
+
+	/**
 	 * Write an empty PNG file at a static map URL.
 	 *
 	 * @since 0.36.2
@@ -345,6 +374,90 @@ class Test_Saved_Image extends Base {
 		wp_delete_file( $path );
 
 		$this->assertNull( $usable( $legacy, self::INFO ), 'Failed to assert a missing PNG is not usable.' );
+	}
+
+	/**
+	 * A replaced PNG stays on disk until the delete event runs.
+	 *
+	 * A page cache can still serve HTML with the old URL, so the file is
+	 * deleted later, and only when no venue points at it again by then.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused
+	 * @covers ::delete_unused_files
+	 * @covers ::delete_unused_now
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_waits(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$old      = Saved_Image::url( 'qa-replaced-map.png' );
+		$again    = Saved_Image::url( 'qa-used-again-map.png' );
+		$paths    = array( $this->touch_image( $old ), $this->touch_image( $again ) );
+		$venue_id = $this->factory->post->create();
+		$before   = time();
+
+		( new Saved_Image( self::files( $old, $again ), 'osm', self::KEY ) )->delete_unused();
+
+		$this->assertFileExists( $paths[0], 'Failed to assert a replaced PNG stays until the event runs.' );
+		$this->assertFileExists( $paths[1], 'Failed to assert a replaced 2x PNG stays until the event runs.' );
+
+		$next = wp_next_scheduled( Saved_Image::DELETE_CRON_ACTION, array( array( $old, $again ) ) );
+
+		$this->assertIsInt( $next, 'Failed to assert the delete is scheduled.' );
+		$this->assertGreaterThanOrEqual( $before + Saved_Image::DEFAULT_DELETE_DELAY, $next );
+
+		// A venue points at one of the files again before the event runs.
+		update_post_meta(
+			$venue_id,
+			Map::META_KEY,
+			array( 'osm' => array( self::KEY => self::files( $again ) ) )
+		);
+
+		do_action( 'gatherpress_static_map_delete_unused_run', array( $old, $again ) );
+
+		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert an unused PNG is deleted when the event runs.' );
+		$this->assertFileExists( $paths[1], 'Failed to assert a PNG a venue uses again is kept.' );
+
+		Saved_Image::delete_unused_now( 'not a list' );
+		Saved_Image::delete_unused_now( array( 'https://cdn.example.test/map.png' ) );
+
+		$this->assertFileExists( $paths[1], 'Failed to assert other input deletes nothing.' );
+
+		wp_delete_file( $paths[1] );
+	}
+
+	/**
+	 * Nothing is scheduled when no file needs to go.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused_files
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_schedules_nothing_to_delete(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$kept = Saved_Image::url( 'qa-kept-map.png' );
+		$path = $this->touch_image( $kept );
+
+		$missing = Saved_Image::url( 'qa-not-on-disk.png' );
+
+		( new Saved_Image( self::files( $kept ), 'osm', self::KEY ) )->delete_unused( array( $kept ) );
+		( new Saved_Image( self::files( $missing ), 'osm', self::KEY ) )->delete_unused();
+
+		$scheduled = 0;
+
+		foreach ( (array) _get_cron_array() as $hooks ) {
+			$scheduled += count( $hooks[ Saved_Image::DELETE_CRON_ACTION ] ?? array() );
+		}
+
+		$this->assertSame( 0, $scheduled, 'Failed to assert nothing is scheduled.' );
+
+		wp_delete_file( $path );
 	}
 
 	/**

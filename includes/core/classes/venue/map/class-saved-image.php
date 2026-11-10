@@ -25,6 +25,25 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 final class Saved_Image {
 
 	/**
+	 * Cron action that deletes replaced PNG files no venue uses any longer.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const DELETE_CRON_ACTION = 'gatherpress_static_map_delete_unused_run';
+
+	/**
+	 * Default seconds a replaced PNG stays on disk before it is deleted.
+	 *
+	 * A page cache or CDN can still serve HTML that points at the old file,
+	 * so the file stays until that cached HTML has most likely expired.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const DEFAULT_DELETE_DELAY = WEEK_IN_SECONDS;
+
+	/**
 	 * Saved descriptor.
 	 *
 	 * @since 0.36.2
@@ -416,7 +435,12 @@ final class Saved_Image {
 	/**
 	 * Delete the PNG files at these URLs that no venue uses any longer.
 	 *
+	 * The files are deleted later, by a cron event, so a page cache or CDN
+	 * that still serves HTML with the old URLs keeps showing the map. The
+	 * event checks again that no venue uses each file before it deletes it.
+	 *
 	 * @since 0.36.2
+	 * @since TBD Deletes the files later, after the delete delay.
 	 *
 	 * @param string[] $urls PNG URLs.
 	 * @param string[] $keep URLs to keep without a lookup.
@@ -424,15 +448,70 @@ final class Saved_Image {
 	 * @return void
 	 */
 	private static function delete_unused_files( array $urls, array $keep = array() ): void {
-		global $wpdb;
-
-		$keep = array_map( array( self::class, 'without_query' ), $keep );
+		$keep  = array_map( array( self::class, 'without_query' ), $keep );
+		$queue = array();
 
 		foreach ( $urls as $url ) {
 			$url  = self::without_query( (string) $url );
 			$path = self::path( $url );
 
 			if ( null === $path || in_array( $url, $keep, true ) || ! is_file( $path ) ) {
+				continue;
+			}
+
+			$queue[] = $url;
+		}
+
+		if ( empty( $queue ) ) {
+			return;
+		}
+
+		/**
+		 * Filters how long a replaced static map PNG stays on disk.
+		 *
+		 * A page cache or CDN can still serve HTML that points at the old
+		 * file. Return 0 to delete the files at once.
+		 *
+		 * @since TBD
+		 *
+		 * @param int $delay Seconds before the files are deleted.
+		 *
+		 * @return int Seconds before the files are deleted.
+		 */
+		$delay = (int) apply_filters( 'gatherpress_static_map_delete_unused_delay', self::DEFAULT_DELETE_DELAY );
+		$delay = max( 0, $delay );
+
+		if ( 0 === $delay ) {
+			self::delete_unused_now( $queue );
+
+			return;
+		}
+
+		$queue = array_values( array_unique( $queue ) );
+
+		wp_schedule_single_event( time() + $delay, self::DELETE_CRON_ACTION, array( $queue ) );
+	}
+
+	/**
+	 * Delete the PNG files at these URLs that no venue uses, now.
+	 *
+	 * Runs on the delete cron event. Each file is checked again, because a
+	 * venue can point at it again after it was queued.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $urls PNG URLs.
+	 *
+	 * @return void
+	 */
+	public static function delete_unused_now( mixed $urls ): void {
+		global $wpdb;
+
+		foreach ( is_array( $urls ) ? $urls : array() as $url ) {
+			$url  = self::without_query( (string) $url );
+			$path = self::path( $url );
+
+			if ( null === $path || ! is_file( $path ) ) {
 				continue;
 			}
 
