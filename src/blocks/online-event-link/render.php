@@ -13,6 +13,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Online_Event;
 use GatherPress\Core\Event;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
@@ -46,10 +47,18 @@ if ( $gatherpress_is_event ) {
 
 $gatherpress_has_link = ! empty( $gatherpress_online_event_link );
 
+// The saved link text can carry an "attendees only" tooltip, which explains
+// why there is no link. A working link shows the text without it. The
+// context keeps the full text, so view.js can restore the tooltip when the
+// link goes away after an RSVP change.
+$gatherpress_link_html = $gatherpress_has_link
+	? Online_Event::get_instance()->remove_tooltips( $gatherpress_link_text )
+	: $gatherpress_link_text;
+
 $gatherpress_context_json = wp_json_encode(
 	array(
 		'postId'   => $gatherpress_current_post_id,
-		'linkText' => $gatherpress_link_text,
+		'linkText' => wp_kses_post( $gatherpress_link_text ),
 	),
 	JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
 );
@@ -62,7 +71,7 @@ $gatherpress_context_json = wp_json_encode(
 	data-wp-watch="callbacks.updateOnlineEventLink">
 	<?php if ( $gatherpress_has_link ) : ?>
 		<a class="gatherpress-online-event__text" href="<?php echo esc_url( $gatherpress_online_event_link ); ?>" target="_blank" rel="noopener noreferrer">
-			<?php echo wp_kses_post( $gatherpress_link_text ); ?>
+			<?php echo wp_kses_post( $gatherpress_link_html ); ?>
 		</a>
 	<?php else : ?>
 		<span class="gatherpress-online-event__text">

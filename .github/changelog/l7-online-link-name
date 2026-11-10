@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+For an attendee who can open the online event link, the link no longer shows or announces "Link available for attendees only." People who cannot open the link still see the note. Events saved before this change get the fix too.

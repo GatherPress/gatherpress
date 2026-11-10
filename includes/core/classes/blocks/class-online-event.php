@@ -17,6 +17,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup;
 use WP_Block;
+use WP_HTML_Tag_Processor;
 use WP_Post;
 
 /**
@@ -193,5 +194,33 @@ final class Online_Event {
 		remove_filter( 'render_block_context', $filter_block_context, PHP_INT_MIN );
 
 		return $block_content;
+	}
+
+	/**
+	 * Removes tooltip markup from the online event link text.
+	 *
+	 * The block template wraps "Online event" in a tooltip that says the link
+	 * is for attendees only. That note explains why there is no link, so it
+	 * must not stay in the name of a link that works. The tooltip element
+	 * stays in place as a plain element, so its text and any other markup
+	 * are kept. Saved content is changed only in the output.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $html The link text HTML.
+	 *
+	 * @return string The link text HTML without tooltip markup.
+	 */
+	public function remove_tooltips( string $html ): string {
+		$tags = new WP_HTML_Tag_Processor( $html );
+
+		while ( $tags->next_tag( array( 'class_name' => 'gatherpress-tooltip' ) ) ) {
+			$tags->remove_class( 'gatherpress-tooltip' );
+			$tags->remove_attribute( 'data-gatherpress-tooltip' );
+			$tags->remove_attribute( 'data-gatherpress-tooltip-text-color' );
+			$tags->remove_attribute( 'data-gatherpress-tooltip-bg-color' );
+		}
+
+		return $tags->get_updated_html();
 	}
 }
