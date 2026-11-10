@@ -99,8 +99,7 @@ const { actions } = store( 'gatherpress', {
 		 * items and on out of the dropdown, and the panel closes when focus
 		 * leaves it. Escape and an outside click close it as well.
 		 *
-		 * @since 0.33.0
-		 * @since TBD Closes when focus leaves the dropdown, with no focus trap. Added `returnFocus`.
+		 * @since TBD
 		 *
 		 * @param {Event|null}  event       The triggering event, if any.
 		 * @param {Object|null} element     The element from `getElement()`; read when omitted.
