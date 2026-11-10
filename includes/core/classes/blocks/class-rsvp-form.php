@@ -179,9 +179,11 @@ final class Rsvp_Form {
 	 * Converts the block's div container to a form element and adds necessary
 	 * hidden inputs for RSVP processing. Sets the form action to wp-comments-post.php
 	 * and method to POST to enable form submission handling through WordPress's
-	 * comment system. Generates a unique form ID for redirect handling.
+	 * comment system. Generates a unique form ID for redirect handling, and
+	 * names the form "RSVP" for assistive technology.
 	 *
 	 * @since 0.33.0
+	 * @since TBD Names the form.
 	 *
 	 * @param string               $block_content The original block content.
 	 * @param array<string, mixed> $block         The block instance array, used to determine the event.
@@ -250,6 +252,12 @@ final class Rsvp_Form {
 		$tag->set_attribute( 'action', site_url( 'wp-comments-post.php' ) );
 		$tag->set_attribute( 'method', 'post' );
 		$tag->set_attribute( 'id', $unique_form_id );
+
+		// Name the form, so a screen reader can tell it from the theme's comment
+		// form, which asks for the same Name and Email. A name the author set wins.
+		if ( null === $tag->get_attribute( 'aria-label' ) && null === $tag->get_attribute( 'aria-labelledby' ) ) {
+			$tag->set_attribute( 'aria-label', _x( 'RSVP', 'Accessible name of the RSVP form', 'gatherpress' ) );
+		}
 
 		// Add interactivity attributes for Ajax form handling.
 		$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
