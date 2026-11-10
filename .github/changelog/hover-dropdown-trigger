@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+A Dropdown block set to open on hover now has a working button for keyboard and screen reader users. Enter or Space opens it, it announces whether it is expanded, and focus alone no longer opens it.
