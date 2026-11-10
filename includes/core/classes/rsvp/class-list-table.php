@@ -53,6 +53,27 @@ final class List_Table extends WP_List_Table {
 	const STATUS_LINK_TEMPLATE = '<a href="%s"%s>%s <span class="count">(%s)</span></a>';
 
 	/**
+	 * Query args that carry the result of an action to the notice after its redirect.
+	 *
+	 * Each holds a count of RSVPs. The names follow edit-comments.php, and
+	 * `Setup::prepare_rsvp_admin_page()` makes the ones core does not already
+	 * remove from the address bar removable too.
+	 *
+	 * @since TBD
+	 *
+	 * @var string[]
+	 */
+	const RESULT_ARGS = array(
+		'approved',
+		'unapproved',
+		'spammed',
+		'unspammed',
+		'deleted',
+		'check_in_updated',
+		'skipped',
+	);
+
+	/**
 	 * Post type whose RSVPs this table lists.
 	 *
 	 * Each RSVP-supporting post type gets its own RSVPs admin page, and
@@ -450,10 +471,10 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * Prepares items for display in the RSVP table.
 	 *
-	 * Sets up the table headers, processes bulk actions, determines pagination settings,
-	 * and retrieves the appropriate RSVP items for the current page view. The method:
+	 * Sets up the table headers, determines pagination settings, and retrieves
+	 * the appropriate RSVP items for the current page view. Actions are processed
+	 * earlier, before the screen sends output (see `process_bulk_action()`). The method:
 	 * - Configures columns (visible, hidden, and sortable)
-	 * - Processes any pending bulk actions
 	 * - Determines the appropriate per-page count (from user preferences or default)
 	 * - Calculates pagination parameters based on total items and per-page count
 	 * - Fetches the RSVP items for the current page
@@ -468,8 +489,6 @@ final class List_Table extends WP_List_Table {
 		$sortable = $this->get_sortable_columns();
 
 		$this->_column_headers = array( $columns, $hidden, $sortable );
-
-		$this->process_bulk_action();
 
 		$user     = get_current_user_id();
 		$option   = sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
@@ -1038,11 +1057,16 @@ final class List_Table extends WP_List_Table {
 	 * unapproval, marking as spam, or deletion of RSVPs. Requires appropriate nonce
 	 * verification and capability checks before processing any actions.
 	 *
-	 * @since 0.34.0
+	 * Runs from the screen's `load-` action, before any output, so the screen
+	 * can redirect to `get_action_redirect_url()` with the result.
 	 *
-	 * @return void
+	 * @since 0.34.0
+	 * @since TBD Returns the result, and no longer runs while the screen renders.
+	 *
+	 * @return array<string, int> How many RSVPs each result covers, keyed by one of `RESULT_ARGS`.
+	 *                            Empty when no action was processed.
 	 */
-	public function process_bulk_action(): void {
+	public function process_bulk_action(): array {
 		// Requests reach this method carrying different nonces under `_wpnonce`
 		// depending on how they were made: core's `bulk-<plural>` nonce from the
 		// bulk form, the comment-type nonce from the view links, and the
@@ -1080,7 +1104,7 @@ final class List_Table extends WP_List_Table {
 		}
 
 		if ( ! $valid_nonce || ! current_user_can( Rsvp::CAPABILITY ) ) {
-			return;
+			return array();
 		}
 
 		$rsvp_ids = array();
@@ -1096,7 +1120,7 @@ final class List_Table extends WP_List_Table {
 		}
 
 		if ( empty( $rsvp_ids ) ) {
-			return;
+			return array();
 		}
 
 		$current_action    = $this->current_action();
@@ -1106,22 +1130,163 @@ final class List_Table extends WP_List_Table {
 			'spam'      => 'spam',
 			'unspam'    => 'approve',
 		);
+		// The query arg that carries each status action's count to the notice.
+		$action_result_map = array(
+			'approve'   => 'approved',
+			'unapprove' => 'unapproved',
+			'spam'      => 'spammed',
+			'unspam'    => 'unspammed',
+		);
+		$result            = array();
 
+		// Counts each RSVP the action was applied to, as edit-comments.php does.
 		if ( 'delete' === $current_action ) {
+			$result['deleted'] = 0;
+
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				wp_delete_comment( $rsvp_id, true );
+				++$result['deleted'];
 			}
 		} elseif ( is_string( $current_action ) && isset( Check_In_Controls::get_actions()[ $current_action ] ) ) {
+			$result = array(
+				'check_in_updated' => 0,
+				'skipped'          => 0,
+			);
+
 			foreach ( $rsvp_ids as $rsvp_id ) {
-				Check_In_Controls::apply_action( $rsvp_id, $current_action );
+				$applied = Check_In_Controls::apply_action( $rsvp_id, $current_action );
+
+				++$result[ $applied ? 'check_in_updated' : 'skipped' ];
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
-			$status = $action_status_map[ $current_action ];
+			$status     = $action_status_map[ $current_action ];
+			$result_arg = $action_result_map[ $current_action ];
+
+			$result[ $result_arg ] = 0;
 
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				wp_set_comment_status( $rsvp_id, $status );
+				++$result[ $result_arg ];
 			}
 		}
+
+		return $result;
+	}
+
+	/**
+	 * Builds the URL to redirect to after an action, with its result.
+	 *
+	 * Starts from the current screen, so the filters, search and page stay,
+	 * and drops the action, its IDs and its nonce, so a reload cannot repeat
+	 * it. The counts go on as query args for `get_action_notice()`.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, int> $result Counts from `process_bulk_action()`, keyed by result arg.
+	 *
+	 * @return string The URL to redirect to.
+	 */
+	public function get_action_redirect_url( array $result ): string {
+		// INPUT_SERVER is unreliable under FastCGI.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$clean_url   = remove_query_arg(
+			array_merge(
+				array( 'action', 'action2', 'gatherpress_rsvp_id', '_wpnonce', '_wp_http_referer' ),
+				self::RESULT_ARGS
+			),
+			$current_url
+		);
+
+		return add_query_arg( $result, $clean_url );
+	}
+
+	/**
+	 * Gets the notice that reports the result of the last action.
+	 *
+	 * Reads the counts that `get_action_redirect_url()` put on the URL, and
+	 * says what happened in one line per result, as edit-comments.php does.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The notice markup, or an empty string when there is no result to show.
+	 */
+	public function get_action_notice(): string {
+		$messages = array();
+		$changed  = 0;
+
+		foreach ( self::RESULT_ARGS as $result_arg ) {
+			$count = (int) Utility::get_http_input( INPUT_GET, $result_arg, 'absint' );
+
+			if ( 0 < $count ) {
+				$messages[] = sprintf( $this->get_result_message( $result_arg, $count ), number_format_i18n( $count ) );
+				$changed   += 'skipped' === $result_arg ? 0 : $count;
+			}
+		}
+
+		if ( empty( $messages ) ) {
+			return '';
+		}
+
+		return wp_get_admin_notice(
+			implode( "<br />\n", array_map( 'esc_html', $messages ) ),
+			array(
+				'id'          => 'moderated',
+				// Only skipped RSVPs means the action changed nothing.
+				'type'        => 0 < $changed ? 'success' : 'warning',
+				'dismissible' => true,
+			)
+		);
+	}
+
+	/**
+	 * Gets the message format for one result of an action.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $result_arg One of `RESULT_ARGS`.
+	 * @param int    $count      How many RSVPs the result covers.
+	 *
+	 * @return string The message, with `%s` for the count.
+	 */
+	private function get_result_message( string $result_arg, int $count ): string {
+		return match ( $result_arg ) {
+			/* translators: %s: Number of RSVPs. */
+			'approved'         => _n( '%s RSVP approved.', '%s RSVPs approved.', $count, 'gatherpress' ),
+			/* translators: %s: Number of RSVPs. */
+			'unapproved'       => _n( '%s RSVP unapproved.', '%s RSVPs unapproved.', $count, 'gatherpress' ),
+			/* translators: %s: Number of RSVPs. */
+			'spammed'          => _n( '%s RSVP marked as spam.', '%s RSVPs marked as spam.', $count, 'gatherpress' ),
+			/* translators: %s: Number of RSVPs. */
+			'unspammed'        => _n(
+				'%s RSVP marked as not spam.',
+				'%s RSVPs marked as not spam.',
+				$count,
+				'gatherpress'
+			),
+			/* translators: %s: Number of RSVPs. */
+			'deleted'          => _n(
+				'%s RSVP permanently deleted.',
+				'%s RSVPs permanently deleted.',
+				$count,
+				'gatherpress'
+			),
+			/* translators: %s: Number of RSVPs. */
+			'check_in_updated' => _n(
+				'Check-in updated for %s RSVP.',
+				'Check-in updated for %s RSVPs.',
+				$count,
+				'gatherpress'
+			),
+			// The last of RESULT_ARGS, 'skipped'.
+			/* translators: %s: Number of RSVPs. */
+			default            => _n(
+				'%s RSVP skipped, because only an approved RSVP has a check-in.',
+				'%s RSVPs skipped, because only an approved RSVP has a check-in.',
+				$count,
+				'gatherpress'
+			),
+		};
 	}
 
 	/**

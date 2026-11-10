@@ -3052,4 +3052,376 @@ class Test_List_Table extends Base {
 			'Failed to assert a negative event parameter is made absolute.'
 		);
 	}
+
+	/**
+	 * Creates RSVPs for the test event with one approval status.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $count    How many RSVPs to create.
+	 * @param string $approved The comment_approved value: '1', '0' or 'spam'.
+	 *
+	 * @return int[] The RSVP comment IDs.
+	 */
+	private function create_rsvps( int $count, string $approved ): array {
+		return $this->factory->comment->create_many(
+			$count,
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->event_id,
+				'comment_approved' => $approved,
+			)
+		);
+	}
+
+	/**
+	 * Runs one action as the admin screen would, with the comment-type nonce.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $action   The action.
+	 * @param int[]  $rsvp_ids The RSVP comment IDs.
+	 *
+	 * @return array<string, int> What process_bulk_action() returned.
+	 */
+	private function run_action( string $action, array $rsvp_ids ): array {
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
+		$_REQUEST['action']              = $action;
+		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_ids;
+
+		$result = $this->list_table->process_bulk_action();
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+
+		return $result;
+	}
+
+	/**
+	 * Each action returns how many RSVPs it covered, under its result arg.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_returns_the_count_of_each_action(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$expected = array(
+			'approve'   => array( '0', array( 'approved' => 2 ), '1' ),
+			'unapprove' => array( '1', array( 'unapproved' => 2 ), '0' ),
+			'spam'      => array( '1', array( 'spammed' => 2 ), 'spam' ),
+			'unspam'    => array( 'spam', array( 'unspammed' => 2 ), '1' ),
+		);
+
+		foreach ( $expected as $action => list( $before, $result, $after ) ) {
+			$rsvp_ids = $this->create_rsvps( 2, $before );
+
+			$this->assertSame(
+				$result,
+				$this->run_action( $action, $rsvp_ids ),
+				sprintf( 'Failed to assert the %s result.', $action )
+			);
+			$this->assertSame(
+				$after,
+				get_comment( $rsvp_ids[0] )->comment_approved,
+				sprintf( 'Failed to assert the %s action ran.', $action )
+			);
+		}
+
+		$rsvp_ids = $this->create_rsvps( 2, '1' );
+
+		$this->assertSame(
+			array( 'deleted' => 2 ),
+			$this->run_action( 'delete', $rsvp_ids ),
+			'Failed to assert the delete result.'
+		);
+		$this->assertNull( get_comment( $rsvp_ids[0] ), 'Failed to assert the delete action ran.' );
+	}
+
+	/**
+	 * A check-in action counts the RSVPs it updated and the ones it skipped.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_counts_check_ins_and_skipped_rsvps(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$approved = $this->create_rsvps( 2, '1' );
+		$pending  = $this->create_rsvps( 1, '0' );
+
+		$this->assertSame(
+			array(
+				'check_in_updated' => 2,
+				'skipped'          => 1,
+			),
+			$this->run_action( 'check_in-checked-in', array_merge( $approved, $pending ) ),
+			'Failed to assert a check-in action counts updated and skipped RSVPs.'
+		);
+		$this->assertSame(
+			'checked-in',
+			Check_In_Registry::get_instance()->get_state( $approved[0] )::SLUG,
+			'Failed to assert the check-in action ran.'
+		);
+	}
+
+	/**
+	 * Apply_action() says whether it applied the action or skipped the RSVP.
+	 *
+	 * @since TBD
+	 *
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_apply_action_returns_whether_it_applied(): void {
+		$this->assertTrue(
+			Check_In_Controls::apply_action( $this->create_rsvps( 1, '1' )[0], 'check_in-no-show' ),
+			'Failed to assert an approved RSVP is checked in.'
+		);
+		$this->assertFalse(
+			Check_In_Controls::apply_action( $this->create_rsvps( 1, '0' )[0], 'check_in-no-show' ),
+			'Failed to assert a pending RSVP is skipped.'
+		);
+	}
+
+	/**
+	 * A refused or empty request returns no result, so the screen does not redirect.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_returns_no_result_when_nothing_ran(): void {
+		$rsvp_ids = $this->create_rsvps( 1, '0' );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame(
+			array(),
+			$this->run_action( 'approve', $rsvp_ids ),
+			'Failed to assert no capability gives no result.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			array(),
+			$this->run_action( 'approve', array() ),
+			'Failed to assert no RSVPs give no result.'
+		);
+		$this->assertSame(
+			array(),
+			$this->run_action( '-1', $rsvp_ids ),
+			'Failed to assert no action gives no result.'
+		);
+
+		// No nonce at all, as from a hand-typed URL.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_ids;
+
+		$this->assertSame(
+			array(),
+			$this->list_table->process_bulk_action(),
+			'Failed to assert a missing nonce gives no result.'
+		);
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_ids[0] )->comment_approved,
+			'Failed to assert nothing ran.'
+		);
+	}
+
+	/**
+	 * Rendering the list no longer runs an action from the URL.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::prepare_items
+	 *
+	 * @return void
+	 */
+	public function test_prepare_items_does_not_run_an_action(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_ids = $this->create_rsvps( 1, '0' );
+
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_ids;
+
+		$this->list_table->prepare_items();
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_ids[0] )->comment_approved,
+			'Failed to assert rendering the list does not approve an RSVP.'
+		);
+	}
+
+	/**
+	 * The redirect URL keeps the screen and its filters and drops the action.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_action_redirect_url
+	 *
+	 * @return void
+	 */
+	public function test_get_action_redirect_url_drops_the_action_and_keeps_the_filters(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		$_SERVER['REQUEST_URI'] = '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp&post_id=5'
+			. '&paged=2&action=approve&action2=-1&gatherpress_rsvp_id%5B0%5D=11&_wpnonce=abc123'
+			. '&_wp_http_referer=%2Fwp-admin%2F&deleted=4';
+
+		$this->assertSame(
+			'/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp&post_id=5&paged=2&approved=3',
+			$this->list_table->get_action_redirect_url( array( 'approved' => 3 ) ),
+			'Failed to assert the redirect drops the action, its IDs, its nonce and an old result.'
+		);
+
+		unset( $_SERVER['REQUEST_URI'] );
+
+		$this->assertSame(
+			'?approved=3',
+			$this->list_table->get_action_redirect_url( array( 'approved' => 3 ) ),
+			'Failed to assert a missing request URI still carries the result.'
+		);
+
+		$_SERVER['REQUEST_URI'] = $request_uri;
+	}
+
+	/**
+	 * The notice says what each result did, in the singular and the plural.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_action_notice
+	 * @covers ::get_result_message
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_reports_each_result(): void {
+		$expected = array(
+			'approved'         => array( '1 RSVP approved.', '2 RSVPs approved.' ),
+			'unapproved'       => array( '1 RSVP unapproved.', '2 RSVPs unapproved.' ),
+			'spammed'          => array( '1 RSVP marked as spam.', '2 RSVPs marked as spam.' ),
+			'unspammed'        => array( '1 RSVP marked as not spam.', '2 RSVPs marked as not spam.' ),
+			'deleted'          => array( '1 RSVP permanently deleted.', '2 RSVPs permanently deleted.' ),
+			'check_in_updated' => array( 'Check-in updated for 1 RSVP.', 'Check-in updated for 2 RSVPs.' ),
+		);
+
+		$this->assertSame(
+			array_merge( array_keys( $expected ), array( 'skipped' ) ),
+			List_Table::RESULT_ARGS,
+			'Failed to assert every result arg is tested.'
+		);
+
+		foreach ( $expected as $result_arg => $messages ) {
+			foreach ( $messages as $index => $message ) {
+				remove_all_filters( 'gatherpress_pre_get_http_input' );
+				$this->set_url_params( array( $result_arg => (string) ( $index + 1 ) ) );
+
+				$notice = $this->list_table->get_action_notice();
+
+				$this->assertStringContainsString(
+					'<div id="moderated" class="notice notice-success is-dismissible"><p>' . $message . '</p></div>',
+					$notice,
+					sprintf( 'Failed to assert the %s notice.', $result_arg )
+				);
+			}
+		}
+	}
+
+	/**
+	 * Skipped RSVPs alone give a warning; with a change they join a success.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_action_notice
+	 * @covers ::get_result_message
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_warns_when_every_rsvp_was_skipped(): void {
+		$this->set_url_params( array( 'skipped' => '2' ) );
+
+		$notice = $this->list_table->get_action_notice();
+
+		$this->assertStringContainsString(
+			'2 RSVPs skipped, because only an approved RSVP has a check-in.',
+			$notice,
+			'Failed to assert the skipped message.'
+		);
+		$this->assertStringContainsString(
+			'notice-warning',
+			$notice,
+			'Failed to assert only skipped RSVPs give a warning.'
+		);
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		$this->set_url_params(
+			array(
+				'check_in_updated' => '1',
+				'skipped'          => '1',
+			)
+		);
+
+		$notice = $this->list_table->get_action_notice();
+
+		$this->assertStringContainsString(
+			"Check-in updated for 1 RSVP.<br />\n1 RSVP skipped, because only an approved RSVP has a check-in.",
+			$notice,
+			'Failed to assert one line per result.'
+		);
+		$this->assertStringContainsString(
+			'notice-success',
+			$notice,
+			'Failed to assert a change with skips is a success.'
+		);
+	}
+
+	/**
+	 * No result, or a count that is not a positive number, shows no notice.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_action_notice
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_is_empty_without_a_result(): void {
+		$this->assertSame(
+			'',
+			$this->list_table->get_action_notice(),
+			'Failed to assert no result gives no notice.'
+		);
+
+		$this->set_url_params(
+			array(
+				'approved' => '0',
+				'deleted'  => 'abc',
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$this->list_table->get_action_notice(),
+			'Failed to assert a zero or non-numeric count gives no notice.'
+		);
+	}
 }

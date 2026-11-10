@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+On the RSVPs screen, approving, unapproving, marking as spam, deleting or setting the check-in of an RSVP now shows a notice that says what happened, and returns to a clean address, so reloading the page no longer repeats the action. The IP address and email links next to each attendee are now large enough to tap easily.

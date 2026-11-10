@@ -1623,4 +1623,190 @@ class Test_Setup extends Base {
 			'Failed to assert opening the screen enqueues the components stylesheet.'
 		);
 	}
+
+	/**
+	 * Requests a row action on the RSVP screen, as its Approve link does.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $rsvp_id The RSVP comment ID.
+	 *
+	 * @return string|null The request URI before, for the test to put back.
+	 */
+	private function request_approve( int $rsvp_id ): ?string {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+
+		$nonce = wp_create_nonce( Rsvp::COMMENT_TYPE );
+
+		$this->set_url_params( array( '_wpnonce' => $nonce ) );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = (string) $rsvp_id;
+		$_SERVER['REQUEST_URI']          = '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp'
+			. '&action=approve&gatherpress_rsvp_id=' . $rsvp_id . '&_wpnonce=' . $nonce;
+
+		return $request_uri;
+	}
+
+	/**
+	 * Creates a pending RSVP on a new event.
+	 *
+	 * @since TBD
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function create_pending_rsvp(): int {
+		return $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_approved' => '0',
+			)
+		);
+	}
+
+	/**
+	 * An action redirects to the list without the action, with its result.
+	 *
+	 * A reload of the URL it lands on cannot repeat the action.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 * @covers ::redirect_after_action
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_redirects_after_an_action(): void {
+		$rsvp_id     = $this->create_pending_rsvp();
+		$request_uri = $this->request_approve( $rsvp_id );
+
+		$redirect = array();
+
+		// Stop at the redirect, before the exit that follows it.
+		add_filter(
+			'wp_redirect',
+			static function ( $location, $status ) use ( &$redirect ) {
+				$redirect = array( $location, $status );
+
+				throw new \Exception( 'gatherpress_test_redirect' );
+			},
+			9999,
+			2
+		);
+
+		try {
+			Setup::get_instance()->prepare_rsvp_admin_page();
+			$this->fail( 'Failed to assert an action redirects.' );
+		} catch ( \Exception $exception ) {
+			$this->assertSame( 'gatherpress_test_redirect', $exception->getMessage() );
+		} finally {
+			unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+			$_SERVER['REQUEST_URI'] = $request_uri;
+			set_current_screen( 'front' );
+		}
+
+		$this->assertSame(
+			array( '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp&approved=1', 303 ),
+			$redirect,
+			'Failed to assert the redirect drops the action and its nonce and carries the result.'
+		);
+		$this->assertSame( '1', get_comment( $rsvp_id )->comment_approved, 'Failed to assert the action ran once.' );
+	}
+
+	/**
+	 * A cancelled redirect leaves the screen to load as before.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 * @covers ::redirect_after_action
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_loads_when_the_redirect_is_cancelled(): void {
+		$rsvp_id     = $this->create_pending_rsvp();
+		$request_uri = $this->request_approve( $rsvp_id );
+
+		add_filter( 'wp_redirect', '__return_false', 9999 );
+
+		Setup::get_instance()->prepare_rsvp_admin_page();
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		$_SERVER['REQUEST_URI'] = $request_uri;
+		set_current_screen( 'front' );
+
+		$this->assertSame( '1', get_comment( $rsvp_id )->comment_approved, 'Failed to assert the action ran.' );
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert the screen goes on loading.'
+		);
+	}
+
+	/**
+	 * Without an action there is no redirect, and the result args are removable.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 * @covers ::redirect_after_action
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_does_not_redirect_without_an_action(): void {
+		$redirected = false;
+
+		add_filter(
+			'wp_redirect',
+			static function () use ( &$redirected ) {
+				$redirected = true;
+
+				return false;
+			},
+			9999
+		);
+
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		Setup::get_instance()->prepare_rsvp_admin_page();
+		set_current_screen( 'front' );
+
+		$this->assertFalse( $redirected, 'Failed to assert the screen does not redirect without an action.' );
+
+		foreach ( List_Table::RESULT_ARGS as $result_arg ) {
+			$this->assertContains(
+				$result_arg,
+				wp_removable_query_args(),
+				sprintf( 'Failed to assert %s is removed from the address bar.', $result_arg )
+			);
+		}
+	}
+
+	/**
+	 * The screen shows the result of the last action as a notice.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_render_rsvp_admin_page_shows_the_action_notice(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->set_url_params( array( 'approved' => '1' ) );
+
+		ob_start();
+		Setup::get_instance()->render_rsvp_admin_page();
+		$output = ob_get_clean();
+
+		$this->assertMatchesRegularExpression(
+			'#<hr class="wp-header-end">\s*<div id="moderated" class="notice notice-success is-dismissible">'
+				. '<p>1 RSVP approved\.</p></div>#',
+			$output,
+			'Failed to assert the notice follows the header.'
+		);
+	}
 }

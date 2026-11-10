@@ -11,6 +11,15 @@
 	> div:last-child {
 		min-width: 0;
 		overflow-wrap: anywhere;
+
+		// The email and IP address links stack one per line. WCAG 2.5.8 asks
+		// for a 24 by 24 target, measured in CSS pixels, so the minimum stays
+		// in px: each link gets a full 24px line and at least 24px of width.
+		a {
+			display: inline-block;
+			min-width: 24px;
+			line-height: 24px;
+		}
 	}
 }
 

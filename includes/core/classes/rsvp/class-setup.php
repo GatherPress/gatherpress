@@ -404,8 +404,46 @@ final class Setup {
 
 		$this->list_table = new List_Table( array( 'post_type' => $screen_post_type ) );
 
+		$this->redirect_after_action( $this->list_table );
 		$this->setup_rsvp_list_table_screen_options();
 		$this->enqueue_rsvp_admin_assets();
+	}
+
+	/**
+	 * Processes a row or bulk action, then redirects to the list without it.
+	 *
+	 * Runs before the screen sends output, as edit-comments.php does. The
+	 * browser lands on a URL without the action and its nonce, so a reload
+	 * cannot repeat the action, and the counts on that URL become the notice
+	 * that says what happened.
+	 *
+	 * The result args are also made removable, so core takes them out of the
+	 * address bar and out of the table's paging and sorting links.
+	 *
+	 * @since TBD
+	 *
+	 * @param List_Table $list_table The list table for the current screen.
+	 *
+	 * @return void
+	 */
+	protected function redirect_after_action( List_Table $list_table ): void {
+		add_filter(
+			'removable_query_args',
+			static fn( array $args ): array => array_values(
+				array_unique( array_merge( $args, List_Table::RESULT_ARGS ) )
+			)
+		);
+
+		$result = $list_table->process_bulk_action();
+
+		// A wp_redirect filter can cancel the redirect, which leaves the screen
+		// to render as before. Tests stop inside that filter.
+		if ( ! empty( $result ) && wp_safe_redirect( $list_table->get_action_redirect_url( $result ), 303 ) ) {
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+			// @codeCoverageIgnoreStart
+			exit;
+			// @codeCoverageIgnoreEnd
+		}
 	}
 
 	/**
