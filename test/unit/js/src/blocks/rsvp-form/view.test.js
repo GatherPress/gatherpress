@@ -201,6 +201,25 @@ describe( 'RSVP form submission success', () => {
 		expect( form.querySelector( '.success-second' ) ).toBeVisible();
 		expect( form.querySelector( '.success-second' ) ).not.toHaveAttribute( 'tabindex' );
 	} );
+
+	it( 'submits the form normally and shows no error when no nonce arrives', async () => {
+		const form = buildForm();
+		const submitButton = form.querySelector( 'button[type="submit"]' );
+
+		// The nonce request fails, as a 500 response without JSON does.
+		global.fetch = jest.fn( () => Promise.reject( new Error( 'Server error' ) ) );
+		form.submit = jest.fn();
+
+		await submit( form );
+
+		expect( form.submit ).toHaveBeenCalledTimes( 1 );
+		expect( form.querySelector( `.${ FORM_ERROR_CLASS }` ) ).toBeNull();
+		expect( form.querySelector( '[role="alert"]' ) ).toBeNull();
+		expect( submitButton ).toHaveFocus();
+		expect( state.rsvpForm.isSubmitting ).toBe( false );
+		// Only the nonce was requested; the RSVP itself goes with the form.
+		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
+	} );
 } );
 
 describe( 'RSVP form initial visibility', () => {

@@ -80,11 +80,15 @@ const { state } = store( 'gatherpress', {
 				}
 			}
 
+			// Set when the form falls back to a regular submission, so the page is already loading.
+			let submittedWithoutAjax = false;
+
 			const makeRequest = async ( isRetry = false ) => {
 				const nonce = await getNonce();
 				if ( ! nonce ) {
 					// If we can't get a nonce, fall back to regular form submission.
 					state.rsvpForm.isSubmitting = false;
+					submittedWithoutAjax = true;
 					form.submit();
 					return;
 				}
@@ -113,6 +117,12 @@ const { state } = store( 'gatherpress', {
 
 			try {
 				const result = await makeRequest();
+
+				// The fallback submission has no result to report, and no error
+				// may show while the page loads its response.
+				if ( submittedWithoutAjax ) {
+					return;
+				}
 
 				if ( result?.success ) {
 					// Handle blocks with form visibility attributes.
