@@ -111,6 +111,7 @@ final class Rsvp {
 	 * - Adds `data-wp-interactive` attributes for interactivity.
 	 * - Dynamically renders and serializes inner blocks for each RSVP status.
 	 * - Ensures proper markup updates based on the RSVP status and event state.
+	 * - Marks the disabled buttons of the past and canceled templates as unavailable.
 	 *
 	 * @since 0.33.0
 	 *
@@ -181,11 +182,13 @@ final class Rsvp {
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
 			if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
-				$inner_blocks_markup = do_blocks(
-					$serialized_inner_blocks['canceled'] ?? $this->get_default_canceled_template()
+				$inner_blocks_markup = $this->mark_disabled_buttons(
+					do_blocks( $serialized_inner_blocks['canceled'] ?? $this->get_default_canceled_template() )
 				);
 			} elseif ( $event->has_event_past() ) {
-				$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
+				$inner_blocks_markup = $this->mark_disabled_buttons(
+					do_blocks( $serialized_inner_blocks['past'] ?? '' )
+				);
 			} else {
 				unset( $serialized_inner_blocks['past'], $serialized_inner_blocks['canceled'] );
 				// Render inner blocks for all statuses.
@@ -303,6 +306,43 @@ final class Rsvp {
 						$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
 					}
 				}
+			}
+		}
+
+		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Marks the disabled buttons of a past or canceled event's RSVP template as unavailable.
+	 *
+	 * The default past and canceled templates hold a Button block with the
+	 * `gatherpress--is-disabled` class, which only changes the pointer. The
+	 * button inside still takes keyboard focus and announces itself as an
+	 * operable button that does nothing. This adds `aria-disabled="true"` and
+	 * `tabindex="-1"`, as the plugin does for its other disabled controls, so
+	 * a screen reader announces the button as unavailable and Tab skips it.
+	 * It runs on the rendered markup, so templates already saved in events
+	 * get it too.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $markup The rendered inner blocks of the RSVP block.
+	 *
+	 * @return string The markup with its disabled buttons marked.
+	 */
+	private function mark_disabled_buttons( string $markup ): string {
+		$tag      = new WP_HTML_Tag_Processor( $markup );
+		$controls = array( 'A', 'BUTTON' );
+
+		while ( $tag->next_tag( array( 'class_name' => 'gatherpress--is-disabled' ) ) ) {
+			// The Button block puts its class on the wrapper, so the control is the next tag.
+			if ( ! in_array( $tag->get_tag(), $controls, true ) ) {
+				$tag->next_tag();
+			}
+
+			if ( in_array( $tag->get_tag(), $controls, true ) ) {
+				$tag->set_attribute( 'aria-disabled', 'true' );
+				$tag->set_attribute( 'tabindex', '-1' );
 			}
 		}
 
