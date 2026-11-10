@@ -8,7 +8,6 @@ import { store, getElement } from '@wordpress/interactivity';
  */
 import {
 	activateOnSpace as activateOnSpaceHelper,
-	manageFocusTrap,
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
 
@@ -93,15 +92,38 @@ const { actions } = store( 'gatherpress', {
 				dropdownTrigger.focus();
 			}
 		},
-		toggleDropdown( event = null, element = null, forceClose = false ) {
+		/**
+		 * Opens or closes the dropdown panel.
+		 *
+		 * The dropdown is a disclosure, not a menu: Tab moves through the
+		 * items and on out of the dropdown, and the panel closes when focus
+		 * leaves it. Escape and an outside click close it as well.
+		 *
+		 * @since 0.33.0
+		 * @since TBD Closes when focus leaves the dropdown, with no focus trap. Added `returnFocus`.
+		 *
+		 * @param {Event|null}  event       The triggering event, if any.
+		 * @param {Object|null} element     The element from `getElement()`; read when omitted.
+		 * @param {boolean}     forceClose  Close the panel instead of toggling it.
+		 * @param {boolean}     returnFocus Move focus to the trigger after closing.
+		 *
+		 * @return {void}
+		 */
+		toggleDropdown(
+			event = null,
+			element = null,
+			forceClose = false,
+			returnFocus = true,
+		) {
 			actions.preventDefault( event );
 			element = element ?? getElement();
 
-			const menu = element.ref.parentElement.querySelector(
+			const wrapper = element.ref.parentElement;
+			const menu = wrapper.querySelector(
 				'.wp-block-gatherpress-dropdown__menu',
 			);
 
-			const trigger = element.ref.parentElement.querySelector(
+			const trigger = wrapper.querySelector(
 				'.wp-block-gatherpress-dropdown__trigger',
 			);
 
@@ -119,58 +141,44 @@ const { actions } = store( 'gatherpress', {
 
 			trigger.setAttribute( 'aria-expanded', isVisible ? 'true' : 'false' );
 
-			// Create focusable elements array.
-			const focusableSelectors = [
-				'a[href]:not(.gatherpress--is-disabled)',
-			];
+			// Remove the handlers of an earlier opening before adding new
+			// ones, and remove them all when the panel closes.
+			if ( 'function' === typeof element.ref.cleanupFocusOut ) {
+				element.ref.cleanupFocusOut();
+			}
 
-			const focusableElements = [
-				trigger,
-				...menu.querySelectorAll( focusableSelectors.join( ',' ) ),
-			];
+			if ( 'function' === typeof element.ref.cleanupCloseHandlers ) {
+				element.ref.cleanupCloseHandlers();
+			}
 
 			if ( isVisible ) {
-				// Open dropdown: set focus trap and close handlers.
 				trigger.focus();
 
-				// Clean up any existing focus trap before creating a new one.
-				if ( 'function' === typeof element.ref.cleanupFocusTrap ) {
-					element.ref.cleanupFocusTrap();
-				}
+				// Close when focus moves to something outside the dropdown.
+				// No related target means the window lost focus or the click
+				// landed on something that takes no focus; the outside-click
+				// handler covers the second case.
+				const handleFocusOut = ( focusEvent ) => {
+					const next = focusEvent.relatedTarget;
 
-				// Set up focus trap.
-				element.ref.cleanupFocusTrap =
-					manageFocusTrap( focusableElements );
+					if ( next && ! wrapper.contains( next ) ) {
+						actions.toggleDropdown( null, element, true, false );
+					}
+				};
 
-				// Clean up any existing close handlers to prevent duplicates.
-				if ( 'function' === typeof element.ref.cleanupCloseHandlers ) {
-					element.ref.cleanupCloseHandlers();
-				}
+				wrapper.addEventListener( 'focusout', handleFocusOut );
+				element.ref.cleanupFocusOut = () => {
+					wrapper.removeEventListener( 'focusout', handleFocusOut );
+				};
 
-				// Set up close handlers.
 				element.ref.cleanupCloseHandlers = setupCloseHandlers(
 					'.wp-block-gatherpress-dropdown__menu',
 					null,
 					() => {
-						if (
-							'function' === typeof element.ref.cleanupFocusTrap
-						) {
-							element.ref.cleanupFocusTrap();
-						}
-
 						actions.toggleDropdown( null, element, true );
 					},
 				);
-			} else {
-				// Close dropdown: clean up focus trap and close handlers.
-				if ( 'function' === typeof element.ref.cleanupFocusTrap ) {
-					element.ref.cleanupFocusTrap();
-				}
-
-				if ( 'function' === typeof element.ref.cleanupCloseHandlers ) {
-					element.ref.cleanupCloseHandlers();
-				}
-
+			} else if ( returnFocus ) {
 				trigger.focus();
 			}
 		},

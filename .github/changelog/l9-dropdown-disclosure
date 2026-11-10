@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The list that opens from a Dropdown block, such as Add to Calendar, no longer traps keyboard focus: Tab moves through the items and then on to the rest of the page, and the list closes when focus leaves it. Escape still closes it and returns to the button. Screen readers also no longer announce the list as a region without a name.
