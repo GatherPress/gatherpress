@@ -661,6 +661,8 @@ describe( 'rsvp guest count saves once after the last change', () => {
 	/**
 	 * Sets the field to a value and runs the change action, as one arrow key step does.
 	 *
+	 * @since TBD
+	 *
 	 * @param {number} value The new guest count.
 	 *
 	 * @return {void}
@@ -826,6 +828,8 @@ describe( 'rsvp guest count saves once after the last change', () => {
 	/**
 	 * Makes the next RSVP request wait until the returned function is called.
 	 *
+	 * @since TBD
+	 *
 	 * @return {Function} Lets the held request answer.
 	 */
 	function holdNextSave() {
@@ -842,6 +846,31 @@ describe( 'rsvp guest count saves once after the last change', () => {
 
 		return release;
 	}
+
+	it( 'sends the count entered last when an RSVP button follows an older answer', async () => {
+		const release = holdNextSave();
+
+		step( 1 );
+		await jest.advanceTimersByTimeAsync( 500 );
+		step( 2 );
+
+		// The answer to the save of 1 puts 1 back in state while 2 waits.
+		release();
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		expect( state.posts[ POST_ID ].currentUser.guests ).toBe( 1 );
+
+		const button = document.createElement( 'button' );
+
+		button.dataset.setStatus = 'attending';
+		document.body.append( button );
+		getElement.mockReturnValue( { ref: button } );
+		actions.updateRsvp( { preventDefault: jest.fn() } );
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+		expect( JSON.parse( rsvpPosts()[ 1 ][ 1 ].body ).status ).toBe( 'attending' );
+	} );
 
 	it( 'sends a newer count only after the save on its way has answered', async () => {
 		const release = holdNextSave();

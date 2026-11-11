@@ -170,6 +170,8 @@ const { state, actions } = store( 'gatherpress', {
 			// announced, once the changes stop for the delay.
 			cancelGuestCount( postId );
 			pendingGuestCounts[ postId ] = {
+				// Kept here because a response to an older save replaces the count in state.
+				guests,
 				timer: setTimeout(
 					() => flushGuestCount( postId, true ),
 					GUEST_COUNT_SAVE_DELAY,
@@ -238,8 +240,15 @@ const { state, actions } = store( 'gatherpress', {
 			const postId = context?.postId || 0;
 
 			initPostContext( state, postId );
-			// This request sends the latest guest count too, so a waiting save is not needed.
-			cancelGuestCount( postId );
+
+			// This request sends the latest guest count too, so a waiting save is
+			// not needed. A response to an older save may have put an older count
+			// in state, so the count the person entered last goes back first.
+			const pendingGuestCount = cancelGuestCount( postId );
+
+			if ( pendingGuestCount ) {
+				state.posts[ postId ].currentUser.guests = pendingGuestCount.guests;
+			}
 
 			const setStatus = element.ref.dataset.setStatus ?? '';
 			const currentUserStatus = state.posts[ postId ].currentUser.status;
