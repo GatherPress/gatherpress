@@ -3172,7 +3172,7 @@ class Test_List_Table extends Base {
 	}
 
 	/**
-	 * Apply_action() says whether it applied the action or skipped the RSVP.
+	 * Apply_action() says whether it saved the state, failed, or skipped the RSVP.
 	 *
 	 * @since TBD
 	 *
@@ -3181,13 +3181,162 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_apply_action_returns_whether_it_applied(): void {
+		$approved = $this->create_rsvps( 2, '1' );
+		$deleted  = $this->create_rsvps( 1, '1' )[0];
+
+		wp_delete_comment( $deleted, true );
+
 		$this->assertTrue(
-			Check_In_Controls::apply_action( $this->create_rsvps( 1, '1' )[0], 'check_in-no-show' ),
+			Check_In_Controls::apply_action( $approved[0], 'check_in-no-show' ),
 			'Failed to assert an approved RSVP is checked in.'
 		);
-		$this->assertFalse(
+		$this->assertNull(
 			Check_In_Controls::apply_action( $this->create_rsvps( 1, '0' )[0], 'check_in-no-show' ),
 			'Failed to assert a pending RSVP is skipped.'
+		);
+		$this->assertFalse(
+			Check_In_Controls::apply_action( $deleted, 'check_in-no-show' ),
+			'Failed to assert a missing RSVP fails.'
+		);
+		$this->assertFalse(
+			Check_In_Controls::apply_action( $approved[1], 'check_in-not-a-state' ),
+			'Failed to assert a state that cannot be saved fails.'
+		);
+	}
+
+	/**
+	 * An RSVP the action could not change counts as failed, not as done.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_counts_failed_rsvps(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$approved = $this->create_rsvps( 1, '1' );
+		$pending  = $this->create_rsvps( 1, '0' );
+		$gone     = $this->create_rsvps( 3, '1' );
+
+		foreach ( $gone as $rsvp_id ) {
+			wp_delete_comment( $rsvp_id, true );
+		}
+
+		$this->assertSame(
+			array(
+				'approved' => 2,
+				'failed'   => 1,
+			),
+			$this->run_action( 'approve', array( $approved[0], $pending[0], $gone[0] ) ),
+			'Failed to assert an RSVP that already had the status counts, and a missing one fails.'
+		);
+		$this->assertSame(
+			array(
+				'deleted' => 0,
+				'failed'  => 1,
+			),
+			$this->run_action( 'delete', array( $gone[1] ) ),
+			'Failed to assert a missing RSVP is not counted as deleted.'
+		);
+		$this->assertSame(
+			array(
+				'check_in_updated' => 0,
+				'skipped'          => 0,
+				'failed'           => 1,
+			),
+			$this->run_action( 'check_in-checked-in', array( $gone[2] ) ),
+			'Failed to assert a missing RSVP is not counted as skipped.'
+		);
+	}
+
+	/**
+	 * Failed RSVPs have their own line, and make the notice a warning.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_action_notice
+	 * @covers ::get_result_message
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_warns_when_an_rsvp_failed(): void {
+		$this->set_url_params(
+			array(
+				'approved' => '2',
+				'failed'   => '1',
+			)
+		);
+
+		$notice = $this->list_table->get_action_notice();
+
+		$this->assertStringContainsString(
+			"2 RSVPs approved.<br />\n1 RSVP could not be changed.",
+			$notice,
+			'Failed to assert the failed message.'
+		);
+		$this->assertStringContainsString(
+			'notice-warning',
+			$notice,
+			'Failed to assert a failure gives a warning.'
+		);
+	}
+
+	/**
+	 * A request that still carries an action shows no result from an earlier one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_action_notice
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_is_empty_during_an_action_request(): void {
+		$this->set_url_params( array( 'approved' => '1' ) );
+		$_REQUEST['action'] = 'approve';
+
+		$notice = $this->list_table->get_action_notice();
+
+		unset( $_REQUEST['action'] );
+
+		$this->assertSame( '', $notice, 'Failed to assert a rejected action shows no earlier result.' );
+	}
+
+	/**
+	 * The row action links leave out the counts of the last action.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::column_attendee
+	 *
+	 * @return void
+	 */
+	public function test_column_attendee_links_drop_the_result_args(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		$_SERVER['REQUEST_URI'] = '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp'
+			. '&approved=1&failed=2&status=pending';
+
+		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
+
+		$_SERVER['REQUEST_URI'] = $request_uri;
+
+		$this->assertStringContainsString(
+			'status=pending',
+			$attendee_col,
+			'Failed to assert the links keep the filters.'
+		);
+		$this->assertStringNotContainsString(
+			'approved=1',
+			$attendee_col,
+			'Failed to assert the links drop the approved count.'
+		);
+		$this->assertStringNotContainsString(
+			'failed=2',
+			$attendee_col,
+			'Failed to assert the links drop the failed count.'
 		);
 	}
 
@@ -3326,7 +3475,7 @@ class Test_List_Table extends Base {
 		);
 
 		$this->assertSame(
-			array_merge( array_keys( $expected ), array( 'skipped' ) ),
+			array_merge( array_keys( $expected ), array( 'skipped', 'failed' ) ),
 			List_Table::RESULT_ARGS,
 			'Failed to assert every result arg is tested.'
 		);

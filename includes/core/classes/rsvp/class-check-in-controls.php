@@ -227,19 +227,25 @@ final class Check_In_Controls {
 	 * @param int    $rsvp_id The RSVP comment ID.
 	 * @param string $action  A key of `get_actions()`.
 	 *
-	 * @return bool True when the action was applied, false when the RSVP was skipped.
+	 * @return bool|null True when the state was saved, false when the RSVP does not exist
+	 *                   or the state could not be saved, null when the RSVP was skipped
+	 *                   because it is not approved.
 	 */
-	public static function apply_action( int $rsvp_id, string $action ): bool {
-		if ( '1' !== get_comment( $rsvp_id )?->comment_approved ) {
+	public static function apply_action( int $rsvp_id, string $action ): ?bool {
+		$rsvp = get_comment( $rsvp_id );
+
+		if ( ! $rsvp ) {
 			return false;
+		}
+
+		if ( '1' !== $rsvp->comment_approved ) {
+			return null;
 		}
 
 		$state = self::CLEAR_ACTION === $action
 			? Check_In_Registry::NOT_RECORDED
 			: substr( $action, strlen( self::ACTION_PREFIX ) );
 
-		Check_In_Registry::get_instance()->set_state( $rsvp_id, $state );
-
-		return true;
+		return Check_In_Registry::get_instance()->set_state( $rsvp_id, $state );
 	}
 }

@@ -71,6 +71,7 @@ final class List_Table extends WP_List_Table {
 		'deleted',
 		'check_in_updated',
 		'skipped',
+		'failed',
 	);
 
 	/**
@@ -895,6 +896,9 @@ final class List_Table extends WP_List_Table {
 		// INPUT_SERVER is unreliable under FastCGI.
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		// The counts of the last action stay out of the links, so they cannot
+		// report that action again after the next one.
+		$current_url = remove_query_arg( self::RESULT_ARGS, $current_url );
 		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
 		$actions     = array();
 		$is_approved = ( '1' === $item['comment_approved'] );
@@ -1137,15 +1141,24 @@ final class List_Table extends WP_List_Table {
 			'spam'      => 'spammed',
 			'unspam'    => 'unspammed',
 		);
-		$result            = array();
+		// The status `wp_get_comment_status()` reports after each status action.
+		$status_after_map = array(
+			'approve' => 'approved',
+			'hold'    => 'unapproved',
+			'spam'    => 'spam',
+		);
+		$result           = array();
 
 		// Counts each RSVP the action was applied to, as edit-comments.php does.
+		// An RSVP the action could not change, for example one deleted in
+		// another tab, counts under 'failed' instead.
 		if ( 'delete' === $current_action ) {
 			$result['deleted'] = 0;
 
 			foreach ( $rsvp_ids as $rsvp_id ) {
-				wp_delete_comment( $rsvp_id, true );
-				++$result['deleted'];
+				$outcome = wp_delete_comment( $rsvp_id, true ) ? 'deleted' : 'failed';
+
+				$result[ $outcome ] = ( $result[ $outcome ] ?? 0 ) + 1;
 			}
 		} elseif ( is_string( $current_action ) && isset( Check_In_Controls::get_actions()[ $current_action ] ) ) {
 			$result = array(
@@ -1155,8 +1168,13 @@ final class List_Table extends WP_List_Table {
 
 			foreach ( $rsvp_ids as $rsvp_id ) {
 				$applied = Check_In_Controls::apply_action( $rsvp_id, $current_action );
+				$outcome = match ( $applied ) {
+					true    => 'check_in_updated',
+					false   => 'failed',
+					default => 'skipped',
+				};
 
-				++$result[ $applied ? 'check_in_updated' : 'skipped' ];
+				$result[ $outcome ] = ( $result[ $outcome ] ?? 0 ) + 1;
 			}
 		} elseif ( isset( $action_status_map[ $current_action ] ) ) {
 			$status     = $action_status_map[ $current_action ];
@@ -1165,8 +1183,17 @@ final class List_Table extends WP_List_Table {
 			$result[ $result_arg ] = 0;
 
 			foreach ( $rsvp_ids as $rsvp_id ) {
-				wp_set_comment_status( $rsvp_id, $status );
-				++$result[ $result_arg ];
+				// Core clones the comment before it checks that it exists, so
+				// a missing RSVP would stop the request with a fatal error.
+				if ( get_comment( $rsvp_id ) ) {
+					wp_set_comment_status( $rsvp_id, $status );
+				}
+
+				// wp_set_comment_status() also returns false when the RSVP
+				// already has the status, so check the status it ends with.
+				$outcome = wp_get_comment_status( $rsvp_id ) === $status_after_map[ $status ] ? $result_arg : 'failed';
+
+				$result[ $outcome ] = ( $result[ $outcome ] ?? 0 ) + 1;
 			}
 		}
 
@@ -1212,15 +1239,28 @@ final class List_Table extends WP_List_Table {
 	 * @return string The notice markup, or an empty string when there is no result to show.
 	 */
 	public function get_action_notice(): string {
+		// A request that still carries an action was not redirected, for
+		// example because its nonce expired, so the counts on its URL are
+		// from an earlier action and do not describe this one.
+		if ( $this->current_action() ) {
+			return '';
+		}
+
 		$messages = array();
 		$changed  = 0;
+		$failed   = 0;
 
 		foreach ( self::RESULT_ARGS as $result_arg ) {
 			$count = (int) Utility::get_http_input( INPUT_GET, $result_arg, 'absint' );
 
 			if ( 0 < $count ) {
 				$messages[] = sprintf( $this->get_result_message( $result_arg, $count ), number_format_i18n( $count ) );
-				$changed   += 'skipped' === $result_arg ? 0 : $count;
+
+				if ( 'failed' === $result_arg ) {
+					$failed += $count;
+				} elseif ( 'skipped' !== $result_arg ) {
+					$changed += $count;
+				}
 			}
 		}
 
@@ -1232,8 +1272,9 @@ final class List_Table extends WP_List_Table {
 			implode( "<br />\n", array_map( 'esc_html', $messages ) ),
 			array(
 				'id'          => 'moderated',
-				// Only skipped RSVPs means the action changed nothing.
-				'type'        => 0 < $changed ? 'success' : 'warning',
+				// Only skipped RSVPs means the action changed nothing, and a
+				// failed one means it did not do all it was asked to.
+				'type'        => 0 < $changed && 0 === $failed ? 'success' : 'warning',
 				'dismissible' => true,
 			)
 		);
@@ -1278,11 +1319,18 @@ final class List_Table extends WP_List_Table {
 				$count,
 				'gatherpress'
 			),
-			// The last of RESULT_ARGS, 'skipped'.
 			/* translators: %s: Number of RSVPs. */
-			default            => _n(
+			'skipped'          => _n(
 				'%s RSVP skipped, because only an approved RSVP has a check-in.',
 				'%s RSVPs skipped, because only an approved RSVP has a check-in.',
+				$count,
+				'gatherpress'
+			),
+			// The last of RESULT_ARGS, 'failed'.
+			/* translators: %s: Number of RSVPs. */
+			default            => _n(
+				'%s RSVP could not be changed.',
+				'%s RSVPs could not be changed.',
 				$count,
 				'gatherpress'
 			),
