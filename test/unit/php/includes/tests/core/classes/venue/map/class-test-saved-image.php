@@ -416,6 +416,8 @@ class Test_Saved_Image extends Base {
 			array( 'osm' => array( self::KEY => self::files( $again ) ) )
 		);
 
+		// WP-Cron removes an event before it runs it.
+		wp_unschedule_event( $next, Saved_Image::DELETE_CRON_ACTION, array( array( $old, $again ) ) );
 		do_action( 'gatherpress_static_map_delete_unused_run', array( $old, $again ) );
 
 		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert an unused PNG is deleted when the event runs.' );
@@ -427,6 +429,95 @@ class Test_Saved_Image extends Base {
 		$this->assertFileExists( $paths[1], 'Failed to assert other input deletes nothing.' );
 
 		wp_delete_file( $paths[1] );
+	}
+
+	/**
+	 * An earlier delete event leaves a file that a later event also holds.
+	 *
+	 * Two venues can share a PNG. When one queues it and the other queues it
+	 * again days later, the first event must not delete it before the
+	 * second event's delay ends.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused_now
+	 * @covers ::queued_urls
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_now_leaves_a_file_a_later_event_holds(): void {
+		$shared = Saved_Image::url( 'qa-shared-map.png' );
+		$path   = $this->touch_image( $shared );
+		$first  = time() + DAY_IN_SECONDS;
+		$later  = time() + WEEK_IN_SECONDS;
+
+		wp_schedule_single_event( $first, Saved_Image::DELETE_CRON_ACTION, array( array( $shared ) ) );
+		wp_schedule_single_event( $later, Saved_Image::DELETE_CRON_ACTION, array( array( $shared, 'x' ) ) );
+
+		// The first event runs: WP-Cron removes it first, and the later one still holds the file.
+		wp_unschedule_event( $first, Saved_Image::DELETE_CRON_ACTION, array( array( $shared ) ) );
+		do_action( 'gatherpress_static_map_delete_unused_run', array( $shared ) );
+
+		$this->assertFileExists( $path, 'Failed to assert the file waits for the later event.' );
+
+		// The later event runs: no event holds the file any more.
+		wp_unschedule_event( $later, Saved_Image::DELETE_CRON_ACTION, array( array( $shared, 'x' ) ) );
+		do_action( 'gatherpress_static_map_delete_unused_run', array( $shared, 'x' ) );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the later event deletes the unused file.' );
+	}
+
+	/**
+	 * The delay filter sets when the files go; zero or less deletes at once.
+	 *
+	 * @since TBD
+	 *
+	 * @dataProvider data_delete_unused_delay
+	 * @covers ::delete_unused_files
+	 *
+	 * @param int  $delay     Filtered delay in seconds.
+	 * @param bool $scheduled Whether a delete event is expected.
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_honors_the_delay( int $delay, bool $scheduled ): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$url    = Saved_Image::url( 'qa-delay-map.png' );
+		$path   = $this->touch_image( $url );
+		$filter = static fn(): int => $delay;
+		$before = time();
+
+		add_filter( 'gatherpress_static_map_delete_unused_delay', $filter );
+		( new Saved_Image( self::files( $url ), 'osm', self::KEY ) )->delete_unused();
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', $filter );
+
+		$next = wp_next_scheduled( Saved_Image::DELETE_CRON_ACTION, array( array( $url ) ) );
+
+		if ( $scheduled ) {
+			$this->assertFileExists( $path, 'Failed to assert the file waits for the event.' );
+			$this->assertGreaterThanOrEqual( $before + $delay, $next, 'Failed to assert the delay sets the time.' );
+			$this->assertLessThanOrEqual( time() + $delay, $next );
+			wp_delete_file( $path );
+		} else {
+			$this->assertFileDoesNotExist( $path, 'Failed to assert the file is deleted at once.' );
+			$this->assertFalse( $next, 'Failed to assert no event is scheduled.' );
+		}
+	}
+
+	/**
+	 * Delays for test_delete_unused_files_honors_the_delay().
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array{0: int, 1: bool}>
+	 */
+	public function data_delete_unused_delay(): array {
+		return array(
+			'custom delay'   => array( HOUR_IN_SECONDS, true ),
+			'zero'           => array( 0, false ),
+			'negative delay' => array( -60, false ),
+		);
 	}
 
 	/**

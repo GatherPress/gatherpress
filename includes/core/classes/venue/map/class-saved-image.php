@@ -493,10 +493,33 @@ final class Saved_Image {
 	}
 
 	/**
+	 * Get the PNG URLs that queued delete events hold.
+	 *
+	 * @since TBD
+	 *
+	 * @return string[] URLs without a query string.
+	 */
+	private static function queued_urls(): array {
+		$urls = array();
+
+		foreach ( (array) _get_cron_array() as $hooks ) {
+			foreach ( (array) ( $hooks[ self::DELETE_CRON_ACTION ] ?? array() ) as $event ) {
+				foreach ( (array) ( $event['args'][0] ?? array() ) as $url ) {
+					$urls[] = self::without_query( (string) $url );
+				}
+			}
+		}
+
+		return $urls;
+	}
+
+	/**
 	 * Delete the PNG files at these URLs that no venue uses, now.
 	 *
 	 * Runs on the delete cron event. Each file is checked again, because a
-	 * venue can point at it again after it was queued.
+	 * venue can point at it again after it was queued. A file that a later
+	 * delete event also holds is left to that event, so the file stays for
+	 * the full delay after it was last replaced.
 	 *
 	 * @since TBD
 	 *
@@ -507,11 +530,14 @@ final class Saved_Image {
 	public static function delete_unused_now( mixed $urls ): void {
 		global $wpdb;
 
+		// WP-Cron removes an event before it runs, so every event still queued is a later one.
+		$queued_later = self::queued_urls();
+
 		foreach ( is_array( $urls ) ? $urls : array() as $url ) {
 			$url  = self::without_query( (string) $url );
 			$path = self::path( $url );
 
-			if ( null === $path || ! is_file( $path ) ) {
+			if ( null === $path || ! is_file( $path ) || in_array( $url, $queued_later, true ) ) {
 				continue;
 			}
 
