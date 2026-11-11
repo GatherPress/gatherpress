@@ -205,6 +205,69 @@ describe( 'dropdown toggleDropdown as a disclosure', () => {
 		expect( document.activeElement ).toBe( before );
 	} );
 
+	it( 'closes without moving focus when Tab leaves the page', () => {
+		jest.useFakeTimers();
+
+		const { trigger, menu, items } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, items[ 0 ] );
+
+		// Tab past the last element of the page: no related target, and
+		// focus goes to the browser, so nothing in the page has it.
+		items[ 0 ].dispatchEvent(
+			new FocusEvent( 'focusout', { bubbles: true, relatedTarget: null } ),
+		);
+		items[ 0 ].blur();
+		jest.runOnlyPendingTimers();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( document.activeElement ).not.toBe( trigger );
+
+		jest.useRealTimers();
+	} );
+
+	it( 'leaves a pointer press on a non-focusable spot to the outside-click handler', () => {
+		jest.useFakeTimers();
+
+		const { trigger, menu, items } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, items[ 0 ] );
+
+		document.body.dispatchEvent( new Event( 'pointerdown', { bubbles: true } ) );
+		items[ 0 ].dispatchEvent(
+			new FocusEvent( 'focusout', { bubbles: true, relatedTarget: null } ),
+		);
+		items[ 0 ].blur();
+		jest.runOnlyPendingTimers();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( true );
+
+		document.body.click();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( document.activeElement ).toBe( trigger );
+
+		jest.useRealTimers();
+	} );
+
+	it( 'keeps focus on a focusable element clicked outside the dropdown', () => {
+		const { trigger, menu, items, after } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, items[ 0 ] );
+
+		// A mouse press moves focus before the click event.
+		document.body.dispatchEvent( new Event( 'pointerdown', { bubbles: true } ) );
+		moveFocus( items[ 0 ], after );
+		after.click();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( document.activeElement ).toBe( after );
+	} );
+
 	it( 'stays open when focus goes nowhere, such as the window losing focus', () => {
 		const { trigger, menu } = setupDom();
 

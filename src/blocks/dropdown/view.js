@@ -153,21 +153,57 @@ const { actions } = store( 'gatherpress', {
 			if ( isVisible ) {
 				trigger.focus();
 
-				// Close when focus moves to something outside the dropdown.
-				// No related target means the window lost focus or the click
-				// landed on something that takes no focus; the outside-click
-				// handler covers the second case.
+				// Close when focus moves to something outside the dropdown, and
+				// leave focus where it went.
+				//
+				// No related target means one of three things. A pointer press
+				// on something that takes no focus: the outside-click handler
+				// closes the panel and returns focus to the trigger. The window
+				// losing focus: focus stays inside the dropdown, so the panel
+				// stays open. Tab leaving the page: focus is no longer inside,
+				// so the panel closes.
+				const ownerDocument = wrapper.ownerDocument;
+				let pointerPressed = false;
+
+				const handlePointerDown = () => {
+					pointerPressed = true;
+				};
+				const handleKeyDown = () => {
+					pointerPressed = false;
+				};
 				const handleFocusOut = ( focusEvent ) => {
 					const next = focusEvent.relatedTarget;
 
-					if ( next && ! wrapper.contains( next ) ) {
-						actions.toggleDropdown( null, element, true, false );
+					if ( next ) {
+						if ( ! wrapper.contains( next ) ) {
+							actions.toggleDropdown( null, element, true, false );
+						}
+
+						return;
 					}
+
+					if ( pointerPressed ) {
+						return;
+					}
+
+					// Focus has not settled yet while focusout runs.
+					setTimeout( () => {
+						if (
+							menu.classList.contains( 'gatherpress--is-visible' ) &&
+							! wrapper.contains( ownerDocument.activeElement )
+						) {
+							actions.toggleDropdown( null, element, true, false );
+						}
+					}, 0 );
 				};
 
 				wrapper.addEventListener( 'focusout', handleFocusOut );
+				ownerDocument.addEventListener( 'pointerdown', handlePointerDown, true );
+				ownerDocument.addEventListener( 'keydown', handleKeyDown, true );
 				element.ref.cleanupFocusOut = () => {
 					wrapper.removeEventListener( 'focusout', handleFocusOut );
+					ownerDocument.removeEventListener( 'pointerdown', handlePointerDown, true );
+					ownerDocument.removeEventListener( 'keydown', handleKeyDown, true );
 				};
 
 				element.ref.cleanupCloseHandlers = setupCloseHandlers(
