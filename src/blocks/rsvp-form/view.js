@@ -87,7 +87,10 @@ const { state } = store( 'gatherpress', {
 				const nonce = await getNonce();
 				if ( ! nonce ) {
 					// If we can't get a nonce, fall back to regular form submission.
-					state.rsvpForm.isSubmitting = false;
+					// The guard and the loading state stay on while the page
+					// loads, so a second press cannot send the form again.
+					// initRsvpForm() clears them if the browser brings the
+					// page back from its back/forward cache.
 					submittedWithoutAjax = true;
 					form.submit();
 					return;
@@ -203,8 +206,8 @@ const { state } = store( 'gatherpress', {
 					error,
 				);
 
-				// Let the form submit normally as a fallback.
-				state.rsvpForm.isSubmitting = false;
+				// Let the form submit normally as a fallback. The guard stays
+				// on, as in the no-nonce fallback above.
 				form.submit();
 				return;
 			}
@@ -229,6 +232,21 @@ const { state } = store( 'gatherpress', {
 
 			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;
+
+			// A fallback submission leaves the guard and the loading state on
+			// while the page loads. When the browser restores this page from
+			// its back/forward cache, this callback does not run again, so
+			// make the form usable here.
+			window.addEventListener( 'pageshow', ( event ) => {
+				if ( ! event.persisted ) {
+					return;
+				}
+
+				state.rsvpForm.isSubmitting = false;
+				form
+					.querySelector( '.gatherpress-submit-button' )
+					?.classList.remove( 'gatherpress--is-loading' );
+			} );
 
 			// Check if this is a success page (form was just submitted).
 			const urlParams = new URLSearchParams( window.location.search );
