@@ -142,6 +142,10 @@
 
 - [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
 
+## class-saved-image.php
+
+- [`gatherpress_static_map_delete_unused_delay`](gatherpress_static_map_delete_unused_delay.md) Filters how long a replaced static map PNG stays on disk.
+
 ## class-scheduler.php
 
 - [`gatherpress_event_end_cache_keys`](gatherpress_event_end_cache_keys.md) Filters cache keys to invalidate when an event ends.
