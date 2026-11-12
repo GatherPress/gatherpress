@@ -336,18 +336,13 @@ final class Rsvp {
 	private function mark_disabled_buttons( string $markup ): string {
 		$processor = WP_HTML_Processor::create_fragment( $markup );
 
-		// Markup the HTML API cannot parse is left as it is.
-		if ( null === $processor ) {
-			return $markup;
-		}
-
 		$controls = array( 'A', 'BUTTON' );
 		// Depths of the disabled elements that enclose the current tag. The
 		// Button block puts the class on a wrapper, so a control can be any
 		// descendant of a disabled element, but never a tag after it.
 		$disabled_depths = array();
 
-		while ( $processor->next_tag() ) {
+		while ( $processor?->next_tag() ) {
 			$depth = $processor->get_current_depth();
 
 			while ( ! empty( $disabled_depths ) && end( $disabled_depths ) >= $depth ) {
@@ -367,7 +362,7 @@ final class Rsvp {
 			}
 		}
 
-		return $processor->get_updated_html();
+		return $processor?->get_updated_html() ?? $markup;
 	}
 
 	/**
