@@ -23,12 +23,13 @@ import { getFromConfig } from '../helpers/editor-settings';
  *
  * @since 0.30.0
  *
- * @param {Object} props             - Component properties.
- * @param {string} props.location    - The location to be displayed on the map.
- * @param {string} props.latitude    - The latitude of the location to be displayed on the map.
- * @param {string} props.longitude   - The longitude of the location to be displayed on the map.
- * @param {number} [props.zoom=10]   - The zoom level of the map.
- * @param {string} [props.className] - Additional CSS class names for styling.
+ * @param {Object} props               - Component properties.
+ * @param {string} props.location      - The location to be displayed on the map.
+ * @param {string} [props.markerLabel] - The marker's accessible name, usually the venue name. Falls back to the location.
+ * @param {string} props.latitude      - The latitude of the location to be displayed on the map.
+ * @param {string} props.longitude     - The longitude of the location to be displayed on the map.
+ * @param {number} [props.zoom=10]     - The zoom level of the map.
+ * @param {string} [props.className]   - Additional CSS class names for styling.
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -37,6 +38,7 @@ const OpenStreetMap = ( props ) => {
 		zoom = 10,
 		className,
 		location,
+		markerLabel,
 		latitude,
 		longitude,
 		pluginUrl,
@@ -170,7 +172,14 @@ const OpenStreetMap = ( props ) => {
 			popupAnchor: [ 0, -20 ],
 			shadowAnchor: [ 12, 20 ],
 		} );
-		Leaflet.marker( [ latitude, longitude ], { icon: centeredIcon } )
+		// Leaflet renders the marker as a focusable `<img role="button">` and
+		// names it from `alt`, which defaults to "Marker". Outside the post
+		// editor (the Site Editor) the map is not inert, so name the marker
+		// after the venue, or the address when the venue has no title.
+		Leaflet.marker( [ latitude, longitude ], {
+			icon: centeredIcon,
+			alt: markerLabel || location,
+		} )
 			.addTo( map )
 			.bindPopup( location );
 
@@ -210,7 +219,7 @@ const OpenStreetMap = ( props ) => {
 				mapInstanceRef.current = null;
 			}
 		};
-	}, [ Leaflet, latitude, location, longitude, pluginUrl, zoom ] );
+	}, [ Leaflet, latitude, location, longitude, markerLabel, pluginUrl, zoom ] );
 
 	// Check for valid latitude and longitude before rendering.
 	const validLat = latitude && '' !== latitude && ! isNaN( parseFloat( latitude ) );
