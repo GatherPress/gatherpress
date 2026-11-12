@@ -488,8 +488,11 @@ final class Saved_Image {
 		}
 
 		$queue = array_values( array_unique( $queue ) );
+		$when  = time() + $delay;
 
-		wp_schedule_single_event( time() + $delay, self::DELETE_CRON_ACTION, array( $queue ) );
+		// The time in the args keeps WP-Cron from dropping this event as a
+		// duplicate of the same files queued less than ten minutes earlier.
+		wp_schedule_single_event( $when, self::DELETE_CRON_ACTION, array( $queue, $when ) );
 	}
 
 	/**

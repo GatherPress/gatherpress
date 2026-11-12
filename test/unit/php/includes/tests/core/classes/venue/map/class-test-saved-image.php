@@ -73,9 +73,42 @@ class Test_Saved_Image extends Base {
 	 */
 	public function tearDown(): void {
 		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
-		wp_clear_scheduled_hook( Saved_Image::DELETE_CRON_ACTION );
+		wp_unschedule_hook( Saved_Image::DELETE_CRON_ACTION );
 
 		parent::tearDown();
+	}
+
+	/**
+	 * The queued delete events, in run order.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<int, array{0: int, 1: array<int, mixed>}> Each event's time and args.
+	 */
+	private static function delete_events(): array {
+		$events = array();
+
+		foreach ( (array) _get_cron_array() as $timestamp => $hooks ) {
+			foreach ( (array) ( $hooks[ Saved_Image::DELETE_CRON_ACTION ] ?? array() ) as $event ) {
+				$events[] = array( (int) $timestamp, $event['args'] );
+			}
+		}
+
+		return $events;
+	}
+
+	/**
+	 * Run a queued delete event the way WP-Cron does: remove it, then fire it.
+	 *
+	 * @since TBD
+	 *
+	 * @param array{0: int, 1: array<int, mixed>} $event The event's time and args.
+	 *
+	 * @return void
+	 */
+	private static function run_delete_event( array $event ): void {
+		wp_unschedule_event( $event[0], Saved_Image::DELETE_CRON_ACTION, $event[1] );
+		do_action( 'gatherpress_static_map_delete_unused_run', $event[1][0] );
 	}
 
 	/**
@@ -404,10 +437,11 @@ class Test_Saved_Image extends Base {
 		$this->assertFileExists( $paths[0], 'Failed to assert a replaced PNG stays until the event runs.' );
 		$this->assertFileExists( $paths[1], 'Failed to assert a replaced 2x PNG stays until the event runs.' );
 
-		$next = wp_next_scheduled( Saved_Image::DELETE_CRON_ACTION, array( array( $old, $again ) ) );
+		$events = self::delete_events();
 
-		$this->assertIsInt( $next, 'Failed to assert the delete is scheduled.' );
-		$this->assertGreaterThanOrEqual( $before + Saved_Image::DEFAULT_DELETE_DELAY, $next );
+		$this->assertCount( 1, $events, 'Failed to assert the delete is scheduled.' );
+		$this->assertSame( array( $old, $again ), $events[0][1][0], 'Failed to assert the event holds both files.' );
+		$this->assertGreaterThanOrEqual( $before + Saved_Image::DEFAULT_DELETE_DELAY, $events[0][0] );
 
 		// A venue points at one of the files again before the event runs.
 		update_post_meta(
@@ -416,9 +450,7 @@ class Test_Saved_Image extends Base {
 			array( 'osm' => array( self::KEY => self::files( $again ) ) )
 		);
 
-		// WP-Cron removes an event before it runs it.
-		wp_unschedule_event( $next, Saved_Image::DELETE_CRON_ACTION, array( array( $old, $again ) ) );
-		do_action( 'gatherpress_static_map_delete_unused_run', array( $old, $again ) );
+		self::run_delete_event( $events[0] );
 
 		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert an unused PNG is deleted when the event runs.' );
 		$this->assertFileExists( $paths[1], 'Failed to assert a PNG a venue uses again is kept.' );
@@ -468,6 +500,49 @@ class Test_Saved_Image extends Base {
 	}
 
 	/**
+	 * The same files queued twice within ten minutes keep both deadlines.
+	 *
+	 * WP-Cron drops a single event that matches another of the same hook and
+	 * args within ten minutes. The second queue must still be scheduled, so
+	 * the first event does not delete the files before the later deadline.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused_files
+	 * @covers ::delete_unused_now
+	 * @covers ::queued_urls
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_keeps_a_requeue_within_ten_minutes(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$url   = Saved_Image::url( 'qa-requeued-map.png' );
+		$path  = $this->touch_image( $url );
+		$image = new Saved_Image( self::files( $url ), 'osm', self::KEY );
+		$delay = static fn(): int => WEEK_IN_SECONDS + 5 * MINUTE_IN_SECONDS;
+
+		$image->delete_unused();
+
+		// Queued again five minutes later.
+		add_filter( 'gatherpress_static_map_delete_unused_delay', $delay );
+		$image->delete_unused();
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', $delay );
+
+		$events = self::delete_events();
+
+		$this->assertCount( 2, $events, 'Failed to assert the second queue is scheduled.' );
+
+		self::run_delete_event( $events[0] );
+
+		$this->assertFileExists( $path, 'Failed to assert the first event leaves the file to the later one.' );
+
+		self::run_delete_event( $events[1] );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the later event deletes the file.' );
+	}
+
+	/**
 	 * The delay filter sets when the files go; zero or less deletes at once.
 	 *
 	 * @since TBD
@@ -492,7 +567,8 @@ class Test_Saved_Image extends Base {
 		( new Saved_Image( self::files( $url ), 'osm', self::KEY ) )->delete_unused();
 		remove_filter( 'gatherpress_static_map_delete_unused_delay', $filter );
 
-		$next = wp_next_scheduled( Saved_Image::DELETE_CRON_ACTION, array( array( $url ) ) );
+		$events = self::delete_events();
+		$next   = $events[0][0] ?? false;
 
 		if ( $scheduled ) {
 			$this->assertFileExists( $path, 'Failed to assert the file waits for the event.' );
