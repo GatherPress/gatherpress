@@ -401,6 +401,67 @@ describe( 'dropdown hover dismissal', () => {
 		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( true );
 	} );
 
+	it( 'marks a hovered panel expanded, and collapsed again when the pointer leaves', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		getElement.mockReturnValue( { ref: wrapper } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseenter' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+
+		actions.syncHoverExpanded( new MouseEvent( 'mouseleave' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+
+	it( 'keeps a panel opened by click expanded after the pointer leaves', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		hover( wrapper, true );
+		actions.toggleDropdown();
+		getElement.mockReturnValue( { ref: wrapper } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseleave' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'keeps a dismissed panel collapsed while the pointer stays over it', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		hover( wrapper, true );
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+
+		getElement.mockReturnValue( { ref: wrapper } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseenter' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+
+	it( 'leaves the expanded state alone on Escape when the pointer is elsewhere', () => {
+		const { trigger } = setupDom();
+
+		hover( trigger.parentElement, false );
+		trigger.setAttribute( 'aria-expanded', 'true' );
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'does nothing on hover without a panel', () => {
+		const { trigger, menu } = setupDom();
+
+		menu.remove();
+		getElement.mockReturnValue( { ref: trigger.parentElement } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseenter' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+
 	it( 'waits for one pointer leave however often the panel is dismissed', () => {
 		const { trigger } = setupDom();
 		const wrapper = trigger.parentElement;

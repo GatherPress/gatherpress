@@ -268,6 +268,13 @@ final class Dropdown {
 		$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 1001;
 		$dropdown_width            = $attributes['dropdownWidth'] ?? 240;
 
+		// Hover shows the menu, so the trigger's expanded state follows the pointer.
+		if ( 'hover' === $open_on && $tag->next_tag() ) {
+			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+			$tag->set_attribute( 'data-wp-on--mouseenter', 'actions.syncHoverExpanded' );
+			$tag->set_attribute( 'data-wp-on--mouseleave', 'actions.syncHoverExpanded' );
+		}
+
 		if (
 			$tag->next_tag(
 				array(

@@ -49,9 +49,35 @@ const { actions } = store( 'gatherpress', {
 			activateOnSpaceHelper( event, getElement().ref );
 		},
 		dismissHoverOnEscape( event ) {
-			if ( 'Escape' === event.key ) {
-				dismissHover( getElement().ref.parentElement );
+			if ( 'Escape' !== event.key ) {
+				return;
 			}
+
+			const trigger = getElement().ref;
+
+			dismissHover( trigger.parentElement );
+
+			if ( trigger.parentElement.classList.contains( 'gatherpress--hover-dismissed' ) ) {
+				trigger.setAttribute( 'aria-expanded', 'false' );
+			}
+		},
+		syncHoverExpanded( event ) {
+			const wrapper = getElement().ref;
+			const menu = wrapper.querySelector( '.wp-block-gatherpress-dropdown__menu' );
+			const trigger = wrapper.querySelector( '.wp-block-gatherpress-dropdown__trigger' );
+
+			if ( ! menu || ! trigger ) {
+				return;
+			}
+
+			// The menu shows while hovered, unless it was just dismissed, and
+			// stays open after the pointer leaves only when it was opened.
+			const hovered =
+				'mouseenter' === event.type &&
+				! wrapper.classList.contains( 'gatherpress--hover-dismissed' );
+			const open = hovered || menu.classList.contains( 'gatherpress--is-visible' );
+
+			trigger.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
 		},
 		linkHandler( event ) {
 			actions.preventDefault( event );

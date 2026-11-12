@@ -443,6 +443,11 @@ class Test_Dropdown extends Base {
 			$result,
 			'Only a hover trigger needs Escape to hide a menu shown by hover'
 		);
+		$this->assertStringNotContainsString(
+			'syncHoverExpanded',
+			$result,
+			'A click dropdown has no hover state to follow'
+		);
 	}
 
 	/**
@@ -489,6 +494,12 @@ class Test_Dropdown extends Base {
 			'data-wp-on-document--keydown="actions.dismissHoverOnEscape"',
 			$result,
 			'Escape should hide a menu shown by hover'
+		);
+		$this->assertStringContainsString(
+			'<div data-wp-interactive="gatherpress" data-wp-on--mouseenter="actions.syncHoverExpanded"'
+				. ' data-wp-on--mouseleave="actions.syncHoverExpanded">',
+			$result,
+			'The block should keep the trigger expanded state in step with hover'
 		);
 	}
 
