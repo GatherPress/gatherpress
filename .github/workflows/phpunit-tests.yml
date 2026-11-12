@@ -10,6 +10,7 @@ on:
     - 'test/unit/php**'
     - '*.php'
     - 'phpunit.xml.dist'
+    - 'phpunit-pure.xml.dist'
     - 'composer.*'
 
 # Cancel superseded runs on the same ref so stacked PR pushes do not pile up.
@@ -104,4 +105,41 @@ jobs:
           npm install
           npm run build
           npm run test:unit:php:multisite
+        if: ${{ success() || failure() }}
+
+  test-php-pure:
+    name: Pure Unit Tests (PHP 8.1)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+
+      - name: Composer Install
+        run: composer install --optimize-autoloader --prefer-dist
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Log debug information
+        run: |
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
+
+      - name: Running Pure PHPUnit Tests
+        run: |
+          php --version
+          npm install
+          npm run test:unit:php:pure
         if: ${{ success() || failure() }}
