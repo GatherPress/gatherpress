@@ -151,11 +151,12 @@ final class Dropdown {
 			esc_attr( $item_divider_color )
 		);
 
-		// Show the menu on hover. Keyboard users open it with Enter or Space, as in click mode.
+		// Show the menu on hover, unless it was just closed. Keyboard users open it with Enter or Space,
+		// as in click mode.
 		if ( 'hover' === $open_on ) {
 			$styles .= sprintf(
 				'
-					.%1$s:hover #%2$s {
+					.%1$s:not(.gatherpress--hover-dismissed):hover #%2$s {
 						display: block;
 					}
 				',
@@ -258,6 +259,7 @@ final class Dropdown {
 	public function apply_dropdown_attributes( string $block_content, array $block ): string {
 		$tag                       = new WP_HTML_Tag_Processor( $block_content );
 		$attributes                = $block['attrs'] ?? array();
+		$open_on                   = $attributes['openOn'] ?? 'click';
 		$label_color               = $attributes['labelColor'] ?? self::DEFAULT_COLOR_BLACK;
 		$dropdown_id               = $attributes['dropdownId'] ?? '';
 		$dropdown_border_thickness = $attributes['dropdownBorderThickness'] ?? 1;
@@ -286,6 +288,11 @@ final class Dropdown {
 			// activate on Enter, so Space must be wired up explicitly to
 			// honor the ARIA button pattern.
 			$tag->set_attribute( 'data-wp-on--keydown', 'actions.activateOnSpace' );
+
+			if ( 'hover' === $open_on ) {
+				// Escape hides a menu shown by hover, so it can be dismissed without moving the pointer.
+				$tag->set_attribute( 'data-wp-on-document--keydown', 'actions.dismissHoverOnEscape' );
+			}
 
 			$existing_styles = $tag->get_attribute( 'style' );
 

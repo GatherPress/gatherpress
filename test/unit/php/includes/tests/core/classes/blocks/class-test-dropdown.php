@@ -124,9 +124,9 @@ class Test_Dropdown extends Base {
 		$result        = $instance->generate_block_styles( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'.wp-block-gatherpress-dropdown:hover #hover-dropdown',
+			'.wp-block-gatherpress-dropdown:not(.gatherpress--hover-dismissed):hover #hover-dropdown',
 			$result,
-			'Hover styles are not being applied correctly.'
+			'Hover styles are not being applied correctly, or a dismissed menu would still show.'
 		);
 		$this->assertStringNotContainsString(
 			':focus-within',
@@ -438,6 +438,11 @@ class Test_Dropdown extends Base {
 			$result,
 			'Click trigger should have initial expanded state'
 		);
+		$this->assertStringNotContainsString(
+			'data-wp-on-document--keydown',
+			$result,
+			'Only a hover trigger needs Escape to hide a menu shown by hover'
+		);
 	}
 
 	/**
@@ -479,6 +484,11 @@ class Test_Dropdown extends Base {
 			'data-wp-on--keydown="actions.activateOnSpace"',
 			$result,
 			'Hover trigger should toggle on Space'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on-document--keydown="actions.dismissHoverOnEscape"',
+			$result,
+			'Escape should hide a menu shown by hover'
 		);
 	}
 

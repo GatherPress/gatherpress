@@ -11,6 +11,33 @@ import {
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
 
+/**
+ * Hides a panel shown by hover until the pointer leaves the dropdown.
+ *
+ * Content shown on hover must be dismissible without moving the pointer.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement} wrapper The dropdown block.
+ *
+ * @return {void}
+ */
+function dismissHover( wrapper ) {
+	if (
+		wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ||
+		! wrapper.matches( ':hover' )
+	) {
+		return;
+	}
+
+	wrapper.classList.add( 'gatherpress--hover-dismissed' );
+	wrapper.addEventListener(
+		'mouseleave',
+		() => wrapper.classList.remove( 'gatherpress--hover-dismissed' ),
+		{ once: true },
+	);
+}
+
 const { actions } = store( 'gatherpress', {
 	actions: {
 		preventDefault( event ) {
@@ -20,6 +47,11 @@ const { actions } = store( 'gatherpress', {
 		},
 		activateOnSpace( event ) {
 			activateOnSpaceHelper( event, getElement().ref );
+		},
+		dismissHoverOnEscape( event ) {
+			if ( 'Escape' === event.key ) {
+				dismissHover( getElement().ref.parentElement );
+			}
 		},
 		linkHandler( event ) {
 			actions.preventDefault( event );
@@ -139,6 +171,10 @@ const { actions } = store( 'gatherpress', {
 			}
 
 			trigger.setAttribute( 'aria-expanded', isVisible ? 'true' : 'false' );
+
+			if ( ! isVisible ) {
+				dismissHover( wrapper );
+			}
 
 			// Remove the handlers of an earlier opening before adding new
 			// ones, and remove them all when the panel closes.
