@@ -20,6 +20,7 @@ use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_HTML_Processor;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -287,7 +288,9 @@ final class Rsvp {
 					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
-				$target_found = $is_actionable_element;
+				// A control marked unavailable by mark_disabled_buttons() stays
+				// out of the Tab order and takes no click handler.
+				$target_found = $is_actionable_element && 'true' !== $tag->get_attribute( 'aria-disabled' );
 
 				// Apply RSVP attributes if target was found.
 				if ( $target_found ) {
@@ -331,22 +334,40 @@ final class Rsvp {
 	 * @return string The markup with its disabled buttons marked.
 	 */
 	private function mark_disabled_buttons( string $markup ): string {
-		$tag      = new WP_HTML_Tag_Processor( $markup );
-		$controls = array( 'A', 'BUTTON' );
+		$processor = WP_HTML_Processor::create_fragment( $markup );
 
-		while ( $tag->next_tag( array( 'class_name' => 'gatherpress--is-disabled' ) ) ) {
-			// The Button block puts its class on the wrapper, so the control is the next tag.
-			if ( ! in_array( $tag->get_tag(), $controls, true ) ) {
-				$tag->next_tag();
+		// Markup the HTML API cannot parse is left as it is.
+		if ( null === $processor ) {
+			return $markup;
+		}
+
+		$controls = array( 'A', 'BUTTON' );
+		// Depths of the disabled elements that enclose the current tag. The
+		// Button block puts the class on a wrapper, so a control can be any
+		// descendant of a disabled element, but never a tag after it.
+		$disabled_depths = array();
+
+		while ( $processor->next_tag() ) {
+			$depth = $processor->get_current_depth();
+
+			while ( ! empty( $disabled_depths ) && end( $disabled_depths ) >= $depth ) {
+				array_pop( $disabled_depths );
 			}
 
-			if ( in_array( $tag->get_tag(), $controls, true ) ) {
-				$tag->set_attribute( 'aria-disabled', 'true' );
-				$tag->set_attribute( 'tabindex', '-1' );
+			$is_disabled = $processor->has_class( 'gatherpress--is-disabled' );
+			$is_control  = in_array( $processor->get_tag(), $controls, true );
+
+			if ( $is_control && ( $is_disabled || ! empty( $disabled_depths ) ) ) {
+				$processor->set_attribute( 'aria-disabled', 'true' );
+				$processor->set_attribute( 'tabindex', '-1' );
+			}
+
+			if ( $is_disabled ) {
+				$disabled_depths[] = $depth;
 			}
 		}
 
-		return $tag->get_updated_html();
+		return $processor->get_updated_html();
 	}
 
 	/**
