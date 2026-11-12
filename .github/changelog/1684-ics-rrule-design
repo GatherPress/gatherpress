@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Developer docs now describe how recurring events should appear in iCal downloads and feeds once they land: one entry per series with a repeat rule, excluded dates for canceled ones, a named timezone, and what the current iCal output needs to change.
