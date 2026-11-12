@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Dropdown_Item;
+use GatherPress\Core\Calendar\External\Feed_Placeholder;
 use GatherPress\Tests\Base;
 
 /**
@@ -81,6 +82,25 @@ class Test_Dropdown_Item extends Base {
 		$this->assertStringContainsString( 'data-wp-on--click="actions.linkHandler"', $result );
 		$this->assertStringContainsString( 'tabindex="0"', $result );
 		$this->assertStringContainsString( 'role="button"', $result );
+	}
+
+	/**
+	 * Tests apply_dropdown_attributes with an unresolved calendar feed placeholder.
+	 *
+	 * The placeholder lost its href because it had no feed, so the item stays
+	 * plain text and does not become a button that does nothing.
+	 *
+	 * @since TBD
+	 * @covers ::apply_dropdown_attributes
+	 *
+	 * @return void
+	 */
+	public function test_apply_dropdown_attributes_unresolved_placeholder(): void {
+		$instance      = Dropdown_Item::get_instance();
+		$block_content = sprintf( '<a %s>Subscribe</a>', Feed_Placeholder::UNRESOLVED_ATTRIBUTE );
+		$result        = $instance->apply_dropdown_attributes( $block_content );
+
+		$this->assertSame( $block_content, $result );
 	}
 
 	/**

@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from '@wordpress/element';
  * @param {string} value    - Current value.
  * @param {Object} inputRef - Ref to the input or textarea DOM node.
  *
- * @return {Object} suppressNativeAutofill, unlockAddressInput.
+ * @return {Object} suppressNativeAutofill, unlockAddressInput, unlockAddressInputNow.
  */
 export function useAddressFieldAntiAutofill( value, inputRef ) {
 	const [ suppressNativeAutofill, setSuppressNativeAutofill ] = useState(
@@ -43,5 +43,25 @@ export function useAddressFieldAntiAutofill( value, inputRef ) {
 		} );
 	}, [] );
 
-	return { suppressNativeAutofill, unlockAddressInput };
+	/**
+	 * Unlocks the field at once when input arrives before the frames pass.
+	 *
+	 * The field stays read-only through focus, so the browser offers no
+	 * autofill list then. A key press or a context menu in that window is
+	 * input, and a read-only field drops it: a typed key, Ctrl+V, or the
+	 * context menu's Paste. Clearing the DOM property here, before the event's
+	 * default action runs, lets that input land.
+	 *
+	 * @since TBD
+	 *
+	 * @param {Event} event - The keydown or contextmenu event on the field.
+	 *
+	 * @return {void}
+	 */
+	const unlockAddressInputNow = useCallback( ( event ) => {
+		event.currentTarget.readOnly = false;
+		setSuppressNativeAutofill( false );
+	}, [] );
+
+	return { suppressNativeAutofill, unlockAddressInput, unlockAddressInputNow };
 }

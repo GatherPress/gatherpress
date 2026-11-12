@@ -18,6 +18,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PasswordHash;
 use PMC\Unit_Test\Utility;
+use WP_HTML_Tag_Processor;
 use WP_Post;
 
 /**
@@ -254,6 +255,60 @@ class Test_Rsvp_Form extends Base {
 		$this->assertStringContainsString( 'name="gatherpress_rsvp" value="1"', $transformed_content );
 		$this->assertStringContainsString( 'name="gatherpress_rsvp_form_id"', $transformed_content );
 		$this->assertStringContainsString( 'value="gatherpress_rsvp_', $transformed_content );
+	}
+
+	/**
+	 * Tests transform_block_content gives the form an accessible name.
+	 *
+	 * The theme's comment form asks for the same Name and Email, so the RSVP
+	 * form needs a name a screen reader can tell apart. A name the author set
+	 * is kept.
+	 *
+	 * @since TBD
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_names_the_form(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$block    = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$name     = static function ( string $html, string $attribute ) {
+			$tag = new WP_HTML_Tag_Processor( $html );
+
+			$tag->next_tag( array( 'tag_name' => 'form' ) );
+
+			return $tag->get_attribute( $attribute );
+		};
+
+		$default = $instance->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form">Fields</div>',
+			$block
+		);
+
+		$this->assertSame( 'RSVP', $name( $default, 'aria-label' ), 'Failed to assert the form is named RSVP.' );
+
+		$labeled = $instance->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form" aria-label="Sign up">Fields</div>',
+			$block
+		);
+
+		$this->assertSame( 'Sign up', $name( $labeled, 'aria-label' ), 'Failed to assert an author name is kept.' );
+
+		$labelledby = $instance->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form" aria-labelledby="rsvp-heading">Fields</div>',
+			$block
+		);
+
+		$this->assertNull( $name( $labelledby, 'aria-label' ), 'Failed to assert aria-labelledby is not overridden.' );
+		$this->assertSame(
+			'rsvp-heading',
+			$name( $labelledby, 'aria-labelledby' ),
+			'Failed to assert aria-labelledby is kept.'
+		);
 	}
 
 	/**

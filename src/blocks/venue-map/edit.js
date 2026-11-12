@@ -21,6 +21,8 @@ import {
 	__experimentalToolsPanelItem as ToolsPanelItem,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+import { __unstableStripHTML as stripHTML } from '@wordpress/dom';
 import { useEffect } from '@wordpress/element';
 import { Icon, link as linkIcon, mapMarker } from '@wordpress/icons';
 
@@ -135,6 +137,19 @@ const buildExternalMapUrl = ( destination, latitude, longitude, zoom ) => {
 };
 
 /**
+ * A venue title as plain text, for the map marker's name.
+ *
+ * Matches the front end: tags removed, entities decoded, and trimmed.
+ *
+ * @since TBD
+ *
+ * @param {string} title The venue title.
+ *
+ * @return {string} The plain-text title.
+ */
+const toPlainTitle = ( title ) => stripHTML( title || '' ).trim();
+
+/**
  * Edit component for the Venue Map block.
  *
  * @since 0.34.0
@@ -182,6 +197,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		staticMapDescriptors,
 		venuePostId,
 		venuePostType,
+		venueName,
 	} = useSelect(
 		( select ) => {
 			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
@@ -204,6 +220,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					staticMapDescriptors: EMPTY_STATIC_MAP_DESCRIPTORS,
 					venuePostId: 0,
 					venuePostType: '',
+					venueName: '',
 				};
 			}
 
@@ -235,6 +252,9 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						EMPTY_STATIC_MAP_DESCRIPTORS,
 					venuePostId: effectiveVenuePostId,
 					venuePostType: resolvedVenuePostType,
+					venueName: toPlainTitle(
+						select( 'core/editor' )?.getEditedPostAttribute( 'title' ),
+					),
 				};
 			}
 
@@ -255,6 +275,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					meta?.gatherpress_static_map || EMPTY_STATIC_MAP_DESCRIPTORS,
 				venuePostId: effectiveVenuePostId,
 				venuePostType: context?.postType || '',
+				venueName: toPlainTitle( venuePost?.title ),
 			};
 		},
 		[ context?.postId, context?.postType ],
@@ -622,6 +643,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				>
 					<MapEmbed
 						location={ address }
+						markerLabel={ venueName }
 						latitude={ latitude }
 						longitude={ longitude }
 						zoom={ zoom }

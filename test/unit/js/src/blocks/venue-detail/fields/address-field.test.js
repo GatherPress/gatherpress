@@ -224,6 +224,56 @@ describe( 'AddressField', () => {
 		expect( field.readOnly ).toBe( false );
 	} );
 
+	it( 'stays readOnly through focus until the frames pass', () => {
+		const frames = [];
+		global.requestAnimationFrame = jest.fn( ( cb ) => frames.push( cb ) );
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+
+		fireEvent.focus( field );
+
+		// Read-only while the browser decides whether to offer autofill.
+		expect( field.readOnly ).toBe( true );
+
+		act( () => frames.shift()() );
+		act( () => frames.shift()() );
+
+		expect( field.readOnly ).toBe( false );
+	} );
+
+	it( 'unlocks at once on a key press before the frames pass, so the key lands', () => {
+		global.requestAnimationFrame = jest.fn();
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+		let readOnlyInHandler = null;
+		// Runs after the field's own handler, where the default action would.
+		field.ownerDocument.addEventListener( 'keydown', () => {
+			readOnlyInHandler = field.readOnly;
+		} );
+
+		fireEvent.focus( field );
+		expect( field.readOnly ).toBe( true );
+
+		fireEvent.keyDown( field, { key: '1', code: 'Digit1' } );
+
+		expect( readOnlyInHandler ).toBe( false );
+		expect( field.readOnly ).toBe( false );
+		expect( defaultProps.onKeyDown ).toHaveBeenCalled();
+	} );
+
+	it( 'unlocks at once on a context menu before the frames pass, so Paste is offered', () => {
+		global.requestAnimationFrame = jest.fn();
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+
+		fireEvent.mouseDown( field, { button: 2 } );
+		expect( field.readOnly ).toBe( true );
+
+		fireEvent.contextMenu( field );
+
+		expect( field.readOnly ).toBe( false );
+	} );
+
 	it( 'does not call fetch for queries shorter than 3 characters after debounce', async () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
@@ -782,6 +832,30 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		expect(
 			screen.getByRole( 'combobox', { name: /full address/i } ),
 		).toBeTruthy();
+	} );
+
+	it( 'unlocks at once on a key press before the frames pass, so the key lands', () => {
+		global.requestAnimationFrame = jest.fn();
+		render( <ControlledSettingsAddressField { ...settingsProps } /> );
+		const field = screen.getByRole( 'combobox', { name: /full address/i } );
+
+		fireEvent.focus( field );
+		expect( field.readOnly ).toBe( true );
+
+		fireEvent.keyDown( field, { key: 'v', code: 'KeyV', ctrlKey: true } );
+
+		expect( field.readOnly ).toBe( false );
+	} );
+
+	it( 'unlocks at once on a context menu before the frames pass, so Paste is offered', () => {
+		global.requestAnimationFrame = jest.fn();
+		render( <ControlledSettingsAddressField { ...settingsProps } /> );
+		const field = screen.getByRole( 'combobox', { name: /full address/i } );
+		expect( field.readOnly ).toBe( true );
+
+		fireEvent.contextMenu( field );
+
+		expect( field.readOnly ).toBe( false );
 	} );
 
 	it( 'navigates suggestions with arrow keys and selects with Enter', async () => {
