@@ -52,9 +52,21 @@ jest.mock(
 );
 
 /**
+ * Mock the a11y module so the guest count tests can count announcements.
+ */
+jest.mock(
+	'@wordpress/a11y',
+	() => ( {
+		speak: jest.fn(),
+	} ),
+	{ virtual: true },
+);
+
+/**
  * WordPress dependencies
  */
 import { store, getElement, getContext } from '@wordpress/interactivity';
+import { speak } from '@wordpress/a11y';
 
 /**
  * Internal dependencies
@@ -626,5 +638,366 @@ describe( 'rsvp updateRsvp without JavaScript (#2039)', () => {
 
 		expect( guests.hasAttribute( 'form' ) ).toBe( false );
 		expect( anonymous.hasAttribute( 'form' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Each arrow key step in "Number of guests?" is a change. The count is saved
+ * and announced once, a moment after the last change, or at once when the
+ * field loses focus or the page is left.
+ */
+describe( 'rsvp guest count saves once after the last change', () => {
+	const POST_ID = 555;
+	let state;
+	let actions;
+	let input;
+	let rsvpResponse;
+
+	const rsvpPosts = () =>
+		global.fetch.mock.calls.filter( ( [ url ] ) => url.endsWith( '/rsvp' ) );
+	const sentGuests = () =>
+		rsvpPosts().map( ( [ , options ] ) => JSON.parse( options.body ).guests );
+
+	/**
+	 * Sets the field to a value and runs the change action, as one arrow key step does.
+	 *
+	 * @since TBD
+	 *
+	 * @param {number} value The new guest count.
+	 *
+	 * @return {void}
+	 */
+	function step( value ) {
+		input.value = String( value );
+		getElement.mockReturnValue( { ref: input } );
+		actions.updateGuestCount();
+	}
+
+	beforeEach( () => {
+		jest.useFakeTimers();
+		( { state, actions } = store( 'gatherpress' ) );
+
+		delete state.posts;
+		state.eventApiUrl = 'https://example.test/wp-json/gatherpress/v1';
+		state.i18n = {
+			rsvpAttending: 'Your RSVP was updated. You are attending.',
+			attendeeCountPlural: '%d attendees.',
+		};
+		state.posts = {
+			[ POST_ID ]: {
+				currentUser: { status: 'attending', guests: 0, anonymous: 0 },
+			},
+		};
+
+		getNonce.clearCache();
+		speak.mockClear();
+		window.alert = jest.fn();
+		jest.spyOn( console, 'warn' ).mockImplementation( () => {} );
+
+		document.body.innerHTML =
+			'<input type="number" name="gatherpress_rsvp_guests" value="0" />';
+		input = document.querySelector( 'input' );
+		jest.spyOn( input, 'focus' );
+		getContext.mockReturnValue( { postId: POST_ID } );
+
+		rsvpResponse = ( body ) => ( {
+			success: true,
+			status: 'attending',
+			guests: body.guests,
+			anonymous: 0,
+			responses: { attending: { count: 5 + body.guests } },
+		} );
+
+		global.fetch = jest.fn( ( url, options ) => {
+			if ( url.endsWith( '/nonce' ) ) {
+				return Promise.resolve( {
+					json: () => Promise.resolve( { nonce: 'test-nonce' } ),
+				} );
+			}
+
+			return Promise.resolve( {
+				status: 200,
+				json: () =>
+					Promise.resolve( rsvpResponse( JSON.parse( options.body ) ) ),
+			} );
+		} );
+	} );
+
+	afterEach( () => {
+		jest.useRealTimers();
+		jest.restoreAllMocks();
+		delete global.fetch;
+		delete state.i18n;
+	} );
+
+	it( 'sends one request and one announcement for the last of several steps', async () => {
+		step( 1 );
+		step( 2 );
+		await jest.advanceTimersByTimeAsync( 499 );
+
+		expect( rsvpPosts() ).toHaveLength( 0 );
+		// The count shown in the block follows each step at once.
+		expect( state.posts[ POST_ID ].currentUser.guests ).toBe( 2 );
+
+		step( 3 );
+		await jest.advanceTimersByTimeAsync( 499 );
+
+		expect( rsvpPosts() ).toHaveLength( 0 );
+
+		await jest.advanceTimersByTimeAsync( 1 );
+		await jest.advanceTimersByTimeAsync( 20 );
+
+		expect( sentGuests() ).toEqual( [ 3 ] );
+		expect( speak ).toHaveBeenCalledTimes( 1 );
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are attending. 8 attendees.',
+			'polite',
+		);
+		// Focus is still on the field, so it goes back there after the update.
+		expect( input.focus ).toHaveBeenCalled();
+	} );
+
+	it( 'saves the waiting count at once when the field loses focus, without taking focus back', async () => {
+		step( 1 );
+		step( 2 );
+		actions.saveGuestCount();
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		expect( sentGuests() ).toEqual( [ 2 ] );
+
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( sentGuests() ).toEqual( [ 2 ] );
+		expect( speak ).toHaveBeenCalledTimes( 1 );
+		expect( input.focus ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does nothing on blur when no count is waiting', async () => {
+		actions.saveGuestCount();
+		getContext.mockReturnValue( {} );
+		actions.saveGuestCount();
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( rsvpPosts() ).toHaveLength( 0 );
+	} );
+
+	it( 'saves the waiting count when the page is left', async () => {
+		step( 4 );
+		window.dispatchEvent( new Event( 'pagehide' ) );
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		expect( sentGuests() ).toEqual( [ 4 ] );
+		expect( rsvpPosts()[ 0 ][ 1 ].keepalive ).toBe( true );
+
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( rsvpPosts() ).toHaveLength( 1 );
+	} );
+
+	it( 'drops the waiting save when an RSVP button sends the latest count first', async () => {
+		step( 2 );
+
+		const button = document.createElement( 'button' );
+
+		button.dataset.setStatus = 'not_attending';
+		document.body.append( button );
+		getElement.mockReturnValue( { ref: button } );
+		actions.updateRsvp( { preventDefault: jest.fn() } );
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( rsvpPosts() ).toHaveLength( 1 );
+		expect( JSON.parse( rsvpPosts()[ 0 ][ 1 ].body ) ).toMatchObject( {
+			status: 'not_attending',
+			guests: 2,
+		} );
+	} );
+
+	it( 'shows one error when the save fails', async () => {
+		rsvpResponse = () => ( { success: false } );
+
+		step( 1 );
+		step( 2 );
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( rsvpPosts() ).toHaveLength( 1 );
+		expect( window.alert ).toHaveBeenCalledTimes( 1 );
+		expect( console ).toHaveWarned();
+		expect( speak ).not.toHaveBeenCalled();
+	} );
+
+	/**
+	 * Makes the next RSVP request wait until the returned function is called.
+	 *
+	 * @since TBD
+	 *
+	 * @return {Function} Lets the held request answer.
+	 */
+	function holdNextSave() {
+		const answer = rsvpResponse;
+		let release;
+		const gate = new Promise( ( resolve ) => {
+			release = resolve;
+		} );
+
+		rsvpResponse = ( body ) => {
+			rsvpResponse = answer;
+			return gate.then( () => answer( body ) );
+		};
+
+		return release;
+	}
+
+	it( 'sends the count entered last when an RSVP button follows an older answer', async () => {
+		const release = holdNextSave();
+
+		step( 1 );
+		await jest.advanceTimersByTimeAsync( 500 );
+		step( 2 );
+
+		// The answer to the save of 1 puts 1 back in state while 2 waits.
+		release();
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		expect( state.posts[ POST_ID ].currentUser.guests ).toBe( 1 );
+
+		const button = document.createElement( 'button' );
+
+		button.dataset.setStatus = 'attending';
+		document.body.append( button );
+		getElement.mockReturnValue( { ref: button } );
+		actions.updateRsvp( { preventDefault: jest.fn() } );
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+		expect( JSON.parse( rsvpPosts()[ 1 ][ 1 ].body ).status ).toBe( 'attending' );
+	} );
+
+	it( 'sends a newer count only after the save on its way has answered', async () => {
+		const release = holdNextSave();
+
+		step( 1 );
+		await jest.advanceTimersByTimeAsync( 500 );
+
+		expect( sentGuests() ).toEqual( [ 1 ] );
+
+		step( 2 );
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		// The first save has not answered, so the newer count waits.
+		expect( sentGuests() ).toEqual( [ 1 ] );
+
+		release();
+		await jest.advanceTimersByTimeAsync( 0 );
+		await jest.advanceTimersByTimeAsync( 20 );
+
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+		expect( state.posts[ POST_ID ].currentUser.guests ).toBe( 2 );
+	} );
+
+	it( 'keeps the newer count in the field when the answer to an older save arrives', async () => {
+		const release = holdNextSave();
+		const { callbacks } = store( 'gatherpress' );
+
+		step( 1 );
+		await jest.advanceTimersByTimeAsync( 500 );
+		step( 2 );
+		release();
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		// The answer for 1 is in the state, but 2 still waits to be saved.
+		expect( state.posts[ POST_ID ].currentUser.guests ).toBe( 1 );
+		getElement.mockReturnValue( { ref: input } );
+		callbacks.setGuestCount();
+		expect( input.value ).toBe( '2' );
+
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+		callbacks.setGuestCount();
+		expect( input.value ).toBe( '2' );
+	} );
+
+	it( 'keeps the newer count in the field while it is on its way', async () => {
+		const releaseFirst = holdNextSave();
+		const { callbacks } = store( 'gatherpress' );
+
+		step( 1 );
+		await jest.advanceTimersByTimeAsync( 500 );
+		step( 2 );
+		await jest.advanceTimersByTimeAsync( 500 );
+
+		const releaseSecond = holdNextSave();
+
+		releaseFirst();
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		// The answer for 1 is in the state, and the save of 2 is on its way.
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+		expect( state.posts[ POST_ID ].currentUser.guests ).toBe( 1 );
+		getElement.mockReturnValue( { ref: input } );
+		callbacks.setGuestCount();
+		expect( input.value ).toBe( '2' );
+
+		releaseSecond();
+		await jest.advanceTimersByTimeAsync( 20 );
+
+		// Nothing newer is left, so the field follows the saved count again.
+		input.value = '9';
+		callbacks.setGuestCount();
+		expect( input.value ).toBe( '2' );
+	} );
+
+	it( 'on blur, queues the count behind the save on its way without taking focus back', async () => {
+		const release = holdNextSave();
+
+		step( 1 );
+		await jest.advanceTimersByTimeAsync( 500 );
+		step( 2 );
+		actions.saveGuestCount();
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( sentGuests() ).toEqual( [ 1 ] );
+
+		// Focus has moved on to the next control.
+		const next = document.createElement( 'button' );
+
+		document.body.append( next );
+		next.focus();
+		release();
+		await jest.advanceTimersByTimeAsync( 0 );
+		await jest.advanceTimersByTimeAsync( 20 );
+
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+		// Neither the first save nor the queued one takes focus back.
+		expect( input.focus ).not.toHaveBeenCalled();
+		expect( document.activeElement ).toBe( next );
+	} );
+
+	it( 'sends the waiting count at once when the page is left, even while a save is on its way', async () => {
+		const release = holdNextSave();
+
+		step( 1 );
+		await jest.advanceTimersByTimeAsync( 500 );
+		step( 2 );
+		window.dispatchEvent( new Event( 'pagehide' ) );
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+
+		release();
+		await jest.advanceTimersByTimeAsync( 1000 );
+
+		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+	} );
+
+	it( 'fetches the nonce when the field gets focus', async () => {
+		actions.prepareGuestCount();
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		expect( global.fetch ).toHaveBeenCalledWith(
+			'https://example.test/wp-json/gatherpress/v1/nonce',
+			expect.anything(),
+		);
+		expect( rsvpPosts() ).toHaveLength( 0 );
 	} );
 } );
