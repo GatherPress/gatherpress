@@ -1,7 +1,14 @@
 /**
  * External dependencies
  */
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	jest,
+} from '@jest/globals';
 import { act, render } from '@testing-library/react';
 
 /**
@@ -51,9 +58,15 @@ const noVenueMockSelect = ( storeName ) => {
 	}
 };
 
+// The select the mocked useSelect hands to selectors. Tests may swap it.
+let mockSelect = noVenueMockSelect;
+
+// The props of the latest MapEmbed render.
+let mockMapEmbedProps = null;
+
 jest.mock( '@wordpress/data', () => ( {
 	useSelect: jest.fn( ( selector ) => {
-		const result = selector( noVenueMockSelect );
+		const result = selector( mockSelect );
 		// Identify the venue-state selector by its return shape.
 		if (
 			null !== result &&
@@ -138,7 +151,10 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
 	getFromSettings: jest.fn( () => null ),
 } ) );
 
-jest.mock( '@src/components/MapEmbed', () => () => null );
+jest.mock( '@src/components/MapEmbed', () => ( props ) => {
+	mockMapEmbedProps = props;
+	return null;
+} );
 
 jest.mock( '@src/components/GoogleMap', () => ( {
 	GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS: [ 'hybrid', 'terrain' ],
@@ -442,64 +458,74 @@ describe( 'venue-map Edit venue name for the map marker', () => {
 	};
 
 	/**
-	 * Renders the block for a venue and returns the captured selector.
+	 * Renders the interactive map for a venue and returns the marker label
+	 * handed to the map.
 	 *
-	 * @param {boolean} isEditing Whether the venue itself is open in the editor.
+	 * @param {boolean}     isEditing     Whether the venue itself is open in the editor.
+	 * @param {number}      currentPostId The post open in the editor.
+	 * @param {string|null} title         The venue title.
 	 *
-	 * @return {Function} The venue-state selector.
+	 * @return {string} The marker label.
 	 */
-	const renderFor = ( isEditing ) => {
+	const markerLabelFor = ( isEditing, currentPostId, title ) => {
 		isVenuePostType.mockReturnValue( isEditing );
+		mockSelect = titleSelect( currentPostId, title );
 		render(
 			<Edit
-				attributes={ DEFAULT_ATTRIBUTES }
+				attributes={ { ...DEFAULT_ATTRIBUTES, renderMode: 'interactive' } }
 				setAttributes={ jest.fn() }
 				context={ { postId: 99, postType: 'gatherpress_venue' } }
 				clientId=""
 			/>,
 		);
 
-		return capturedVenueStateSelector;
+		return mockMapEmbedProps.markerLabel;
 	};
 
 	beforeEach( () => {
-		capturedVenueStateSelector = null;
+		mockMapEmbedProps = null;
 		jest.clearAllMocks();
 		isVenuePostType.mockReturnValue( false );
 	} );
 
-	it( 'reads the edited title when the venue itself is open', () => {
-		const selector = renderFor( true );
-
-		expect( selector( titleSelect( 99, 'QA Venue Hall' ) ).venueName ).toBe(
-			'QA Venue Hall',
-		);
-		expect( selector( titleSelect( 99, null ) ).venueName ).toBe( '' );
+	afterEach( () => {
+		mockSelect = noVenueMockSelect;
 	} );
 
-	it( 'reads the venue record title in a Query Loop or an event', () => {
-		const selector = renderFor( false );
-
-		expect( selector( titleSelect( 0, 'QA Venue Hall' ) ).venueName ).toBe(
+	it( 'names the marker after the edited title when the venue itself is open', () => {
+		expect( markerLabelFor( true, 99, 'QA Venue Hall' ) ).toBe(
 			'QA Venue Hall',
 		);
-		expect( selector( titleSelect( 0, undefined ) ).venueName ).toBe( '' );
-		expect( selector( noVenueMockSelect ).venueName ).toBe( '' );
+		expect( markerLabelFor( true, 99, null ) ).toBe( '' );
 	} );
 
-	it( 'is empty when there is no venue', () => {
+	it( 'names the marker after the venue record title in a Query Loop or an event', () => {
+		expect( markerLabelFor( false, 0, 'QA Venue Hall' ) ).toBe(
+			'QA Venue Hall',
+		);
+		expect( markerLabelFor( false, 0, undefined ) ).toBe( '' );
+	} );
+
+	it( 'passes the title as plain text, like the front end', () => {
+		expect(
+			markerLabelFor( true, 99, '  <em>Hall</em> &amp; Gardens ' ),
+		).toBe( 'Hall & Gardens' );
+		expect(
+			markerLabelFor( false, 0, '<strong>Hall</strong> &amp; Gardens' ),
+		).toBe( 'Hall & Gardens' );
+	} );
+
+	it( 'passes no name when there is no venue', () => {
 		render(
 			<Edit
-				attributes={ DEFAULT_ATTRIBUTES }
+				attributes={ { ...DEFAULT_ATTRIBUTES, renderMode: 'interactive' } }
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
 			/>,
 		);
 
-		expect(
-			capturedVenueStateSelector( noVenueMockSelect ).venueName,
-		).toBe( '' );
+		expect( mockMapEmbedProps.markerLabel ).toBe( '' );
 	} );
 } );
 
