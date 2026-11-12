@@ -57,7 +57,7 @@ export default function AddressAutocompleteField( {
 	// so they don't steal focus and unnecessarily close the popover.
 	const [ isFieldFocused, setIsFieldFocused ] = useState( false );
 
-	const { suppressNativeAutofill, unlockAddressInput } =
+	const { suppressNativeAutofill, unlockAddressInput, unlockAddressInputNow } =
 		useAddressFieldAntiAutofill( value, inputRef );
 
 	const {
@@ -84,6 +84,13 @@ export default function AddressAutocompleteField( {
 			suggestionError,
 		);
 	const showSuggestionPanel = 0 < suggestions.length;
+
+	// A key that arrives while the field is still read-only unlocks it first,
+	// so the key is not lost.
+	const handleFieldKeyDown = ( event ) => {
+		unlockAddressInputNow( event );
+		handleKeyDown( event );
+	};
 	const showSuggestionError =
 		Boolean( suggestionError ) && ! showSuggestionPanel && ! isLoadingSuggestions;
 
@@ -208,13 +215,14 @@ export default function AddressAutocompleteField( {
 						rows={ 1 }
 						value={ value }
 						onChange={ ( e ) => handleChange( e.target.value ) }
-						onKeyDown={ handleKeyDown }
+						onKeyDown={ handleFieldKeyDown }
 						onFocus={ () => {
 							unlockAddressInput();
 							setIsFieldFocused( true );
 						} }
 						onBlur={ () => setIsFieldFocused( false ) }
 						onMouseDown={ unlockAddressInput }
+						onContextMenu={ unlockAddressInputNow }
 						placeholder={ placeholder }
 						readOnly={ suppressNativeAutofill }
 						role="combobox"
@@ -251,8 +259,9 @@ export default function AddressAutocompleteField( {
 					setIsFieldFocused( true );
 				} }
 				onBlur={ () => setIsFieldFocused( false ) }
-				onKeyDown={ handleKeyDown }
+				onKeyDown={ handleFieldKeyDown }
 				onMouseDown={ unlockAddressInput }
+				onContextMenu={ unlockAddressInputNow }
 				id={ fieldUid }
 				label={ __( 'Full Address', 'gatherpress' ) }
 				value={ value }
