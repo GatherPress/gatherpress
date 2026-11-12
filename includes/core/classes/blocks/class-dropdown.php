@@ -151,12 +151,12 @@ final class Dropdown {
 			esc_attr( $item_divider_color )
 		);
 
-		// Add hover or focus styles if `openOn` is set to `hover`.
+		// Show the menu on hover, unless it was just closed. Keyboard users open it with Enter or Space,
+		// as in click mode.
 		if ( 'hover' === $open_on ) {
 			$styles .= sprintf(
 				'
-					.%1$s:hover #%2$s,
-					.%1$s:focus-within #%2$s {
+					.%1$s:not(.gatherpress--hover-dismissed):hover #%2$s {
 						display: block;
 					}
 				',
@@ -268,6 +268,13 @@ final class Dropdown {
 		$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 1001;
 		$dropdown_width            = $attributes['dropdownWidth'] ?? 240;
 
+		// Hover shows the menu, so the trigger's expanded state follows the pointer.
+		if ( 'hover' === $open_on && $tag->next_tag() ) {
+			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+			$tag->set_attribute( 'data-wp-on--mouseenter', 'actions.syncHoverExpanded' );
+			$tag->set_attribute( 'data-wp-on--mouseleave', 'actions.syncHoverExpanded' );
+		}
+
 		if (
 			$tag->next_tag(
 				array(
@@ -280,20 +287,18 @@ final class Dropdown {
 		) {
 			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 			$tag->set_attribute( 'role', 'button' );
-
-			if ( 'click' === $open_on ) {
-				$tag->set_attribute( 'aria-controls', $dropdown_id );
-				$tag->set_attribute( 'aria-expanded', 'false' );
-				$tag->set_attribute( 'tabindex', '0' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
-				// The trigger is an anchor announced as a button; anchors only
-				// activate on Enter, so Space must be wired up explicitly to
-				// honor the ARIA button pattern.
-				$tag->set_attribute( 'data-wp-on--keydown', 'actions.activateOnSpace' );
-			}
+			$tag->set_attribute( 'aria-controls', $dropdown_id );
+			$tag->set_attribute( 'aria-expanded', 'false' );
+			$tag->set_attribute( 'tabindex', '0' );
+			$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
+			// The trigger is an anchor announced as a button; anchors only
+			// activate on Enter, so Space must be wired up explicitly to
+			// honor the ARIA button pattern.
+			$tag->set_attribute( 'data-wp-on--keydown', 'actions.activateOnSpace' );
 
 			if ( 'hover' === $open_on ) {
-				$tag->set_attribute( 'data-wp-on--click', 'actions.preventDefault' );
+				// Escape hides a menu shown by hover, so it can be dismissed without moving the pointer.
+				$tag->set_attribute( 'data-wp-on-document--keydown', 'actions.dismissHoverOnEscape' );
 			}
 
 			$existing_styles = $tag->get_attribute( 'style' );

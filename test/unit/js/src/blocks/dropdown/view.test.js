@@ -331,3 +331,169 @@ describe( 'dropdown toggleDropdown as a disclosure', () => {
 		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
 	} );
 } );
+
+describe( 'dropdown hover dismissal', () => {
+	let actions;
+
+	beforeEach( () => {
+		( { actions } = store( 'gatherpress' ) );
+	} );
+
+	afterEach( () => {
+		document
+			.querySelector( '.wp-block-gatherpress-dropdown__trigger' )
+			?.cleanupCloseHandlers?.();
+	} );
+
+	/**
+	 * Reports whether the pointer is over the dropdown.
+	 *
+	 * @since TBD
+	 *
+	 * @param {HTMLElement} wrapper The dropdown block.
+	 * @param {boolean}     hovered Whether the pointer is over it.
+	 *
+	 * @return {void}
+	 */
+	function hover( wrapper, hovered ) {
+		jest.spyOn( wrapper, 'matches' ).mockImplementation(
+			( selector ) => ':hover' === selector && hovered,
+		);
+	}
+
+	it( 'hides a hovered panel after a second click until the pointer leaves', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		hover( wrapper, true );
+		actions.toggleDropdown();
+		actions.toggleDropdown();
+
+		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( true );
+
+		wrapper.dispatchEvent( new MouseEvent( 'mouseleave' ) );
+
+		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( false );
+	} );
+
+	it( 'leaves hover alone when the panel closes without the pointer over it', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		hover( wrapper, false );
+		actions.toggleDropdown();
+		actions.toggleDropdown();
+
+		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( false );
+	} );
+
+	it( 'hides a panel shown only by hover on Escape', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		hover( wrapper, true );
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Enter' } ) );
+
+		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( false );
+
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+
+		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( true );
+	} );
+
+	it( 'marks a hovered panel expanded, and collapsed again when the pointer leaves', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		getElement.mockReturnValue( { ref: wrapper } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseenter' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+
+		actions.syncHoverExpanded( new MouseEvent( 'mouseleave' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+
+	it( 'keeps a panel opened by click expanded after the pointer leaves', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		hover( wrapper, true );
+		actions.toggleDropdown();
+		getElement.mockReturnValue( { ref: wrapper } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseleave' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'keeps a dismissed panel collapsed while the pointer stays over it', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+
+		hover( wrapper, true );
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+
+		getElement.mockReturnValue( { ref: wrapper } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseenter' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+
+	it( 'leaves the expanded state alone on Escape when the pointer is elsewhere', () => {
+		const { trigger } = setupDom();
+
+		hover( trigger.parentElement, false );
+		trigger.setAttribute( 'aria-expanded', 'true' );
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'does nothing on hover without a panel', () => {
+		const { trigger, menu } = setupDom();
+
+		menu.remove();
+		getElement.mockReturnValue( { ref: trigger.parentElement } );
+		actions.syncHoverExpanded( new MouseEvent( 'mouseenter' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+
+	it( 'hides a hovered select-mode panel after an item is chosen', () => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-dropdown" data-dropdown-mode="select">
+				<a href="#" class="wp-block-gatherpress-dropdown__trigger" aria-expanded="true">Attending</a>
+				<div class="wp-block-gatherpress-dropdown__menu gatherpress--is-visible">
+					<div class="wp-block-gatherpress-dropdown-item"><a href="#" class="gatherpress--is-disabled">Attending</a></div>
+					<div class="wp-block-gatherpress-dropdown-item"><a href="#">Waiting List</a></div>
+				</div>
+			</div>
+		`;
+
+		const wrapper = document.querySelector( '.wp-block-gatherpress-dropdown' );
+		const trigger = wrapper.querySelector( '.wp-block-gatherpress-dropdown__trigger' );
+		const item = wrapper.querySelectorAll( '.wp-block-gatherpress-dropdown-item a' )[ 1 ];
+
+		hover( wrapper, true );
+		getElement.mockReturnValue( { ref: item } );
+		actions.linkHandler( new MouseEvent( 'click' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( true );
+	} );
+
+	it( 'waits for one pointer leave however often the panel is dismissed', () => {
+		const { trigger } = setupDom();
+		const wrapper = trigger.parentElement;
+		const added = jest.spyOn( wrapper, 'addEventListener' );
+
+		hover( wrapper, true );
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+		actions.dismissHoverOnEscape( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+
+		expect( added.mock.calls.filter( ( [ type ] ) => 'mouseleave' === type ) ).toHaveLength( 1 );
+	} );
+} );

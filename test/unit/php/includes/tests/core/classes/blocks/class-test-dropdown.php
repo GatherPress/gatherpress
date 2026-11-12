@@ -124,14 +124,14 @@ class Test_Dropdown extends Base {
 		$result        = $instance->generate_block_styles( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'.wp-block-gatherpress-dropdown:hover #hover-dropdown',
+			'.wp-block-gatherpress-dropdown:not(.gatherpress--hover-dismissed):hover #hover-dropdown',
 			$result,
-			'Hover styles are not being applied correctly.'
+			'Hover styles are not being applied correctly, or a dismissed menu would still show.'
 		);
-		$this->assertStringContainsString(
-			'.wp-block-gatherpress-dropdown:focus-within #hover-dropdown',
+		$this->assertStringNotContainsString(
+			':focus-within',
 			$result,
-			'Focus styles are not being applied correctly.'
+			'Focus should not open a hover dropdown, so its expanded state stays accurate.'
 		);
 		$this->assertStringContainsString(
 			'display: block',
@@ -438,6 +438,16 @@ class Test_Dropdown extends Base {
 			$result,
 			'Click trigger should have initial expanded state'
 		);
+		$this->assertStringNotContainsString(
+			'data-wp-on-document--keydown',
+			$result,
+			'Only a hover trigger needs Escape to hide a menu shown by hover'
+		);
+		$this->assertStringNotContainsString(
+			'syncHoverExpanded',
+			$result,
+			'A click dropdown has no hover state to follow'
+		);
 	}
 
 	/**
@@ -453,26 +463,43 @@ class Test_Dropdown extends Base {
 		$block         = array(
 			'blockName' => 'gatherpress/dropdown',
 			'attrs'     => array(
-				'openOn' => 'hover',
+				'openOn'     => 'hover',
+				'dropdownId' => 'hover-dropdown',
 			),
 		);
 		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Hover</a></div>';
 		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'data-wp-on--click="actions.preventDefault"',
+			'aria-controls="hover-dropdown"',
 			$result,
-			'Hover trigger should prevent default click'
+			'Hover trigger should control dropdown by ID'
 		);
-		$this->assertStringNotContainsString(
+		$this->assertStringContainsString(
+			'aria-expanded="false"',
+			$result,
+			'Hover trigger should have initial expanded state'
+		);
+		$this->assertStringContainsString(
 			'data-wp-on--click="actions.toggleDropdown"',
 			$result,
-			'Hover trigger should not have toggle action'
+			'Hover trigger should toggle on Enter and click'
 		);
-		$this->assertStringNotContainsString(
-			'data-wp-on--keydown',
+		$this->assertStringContainsString(
+			'data-wp-on--keydown="actions.activateOnSpace"',
 			$result,
-			'Hover trigger should not have the Space handler (it has no click toggle to mirror)'
+			'Hover trigger should toggle on Space'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on-document--keydown="actions.dismissHoverOnEscape"',
+			$result,
+			'Escape should hide a menu shown by hover'
+		);
+		$this->assertStringContainsString(
+			'<div data-wp-interactive="gatherpress" data-wp-on--mouseenter="actions.syncHoverExpanded"'
+				. ' data-wp-on--mouseleave="actions.syncHoverExpanded">',
+			$result,
+			'The block should keep the trigger expanded state in step with hover'
 		);
 	}
 

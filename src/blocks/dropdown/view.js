@@ -11,6 +11,33 @@ import {
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
 
+/**
+ * Hides a panel shown by hover until the pointer leaves the dropdown.
+ *
+ * Content shown on hover must be dismissible without moving the pointer.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement} wrapper The dropdown block.
+ *
+ * @return {void}
+ */
+function dismissHover( wrapper ) {
+	if (
+		wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ||
+		! wrapper.matches( ':hover' )
+	) {
+		return;
+	}
+
+	wrapper.classList.add( 'gatherpress--hover-dismissed' );
+	wrapper.addEventListener(
+		'mouseleave',
+		() => wrapper.classList.remove( 'gatherpress--hover-dismissed' ),
+		{ once: true },
+	);
+}
+
 const { actions } = store( 'gatherpress', {
 	actions: {
 		preventDefault( event ) {
@@ -20,6 +47,37 @@ const { actions } = store( 'gatherpress', {
 		},
 		activateOnSpace( event ) {
 			activateOnSpaceHelper( event, getElement().ref );
+		},
+		dismissHoverOnEscape( event ) {
+			if ( 'Escape' !== event.key ) {
+				return;
+			}
+
+			const trigger = getElement().ref;
+
+			dismissHover( trigger.parentElement );
+
+			if ( trigger.parentElement.classList.contains( 'gatherpress--hover-dismissed' ) ) {
+				trigger.setAttribute( 'aria-expanded', 'false' );
+			}
+		},
+		syncHoverExpanded( event ) {
+			const wrapper = getElement().ref;
+			const menu = wrapper.querySelector( '.wp-block-gatherpress-dropdown__menu' );
+			const trigger = wrapper.querySelector( '.wp-block-gatherpress-dropdown__trigger' );
+
+			if ( ! menu || ! trigger ) {
+				return;
+			}
+
+			// The menu shows while hovered, unless it was just dismissed, and
+			// stays open after the pointer leaves only when it was opened.
+			const hovered =
+				'mouseenter' === event.type &&
+				! wrapper.classList.contains( 'gatherpress--hover-dismissed' );
+			const open = hovered || menu.classList.contains( 'gatherpress--is-visible' );
+
+			trigger.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
 		},
 		linkHandler( event ) {
 			actions.preventDefault( event );
@@ -89,6 +147,7 @@ const { actions } = store( 'gatherpress', {
 			if ( dropdownMenu ) {
 				dropdownMenu.classList.remove( 'gatherpress--is-visible' );
 				dropdownTrigger.setAttribute( 'aria-expanded', 'false' );
+				dismissHover( dropdownParent );
 				dropdownTrigger.focus();
 			}
 		},
@@ -139,6 +198,10 @@ const { actions } = store( 'gatherpress', {
 			}
 
 			trigger.setAttribute( 'aria-expanded', isVisible ? 'true' : 'false' );
+
+			if ( ! isVisible ) {
+				dismissHover( wrapper );
+			}
 
 			// Remove the handlers of an earlier opening before adding new
 			// ones, and remove them all when the panel closes.
