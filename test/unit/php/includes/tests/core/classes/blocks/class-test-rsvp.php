@@ -272,6 +272,7 @@ class Test_Rsvp extends Base {
 	 *
 	 * @covers ::transform_block_content
 	 * @covers ::get_default_canceled_template
+	 * @covers ::mark_disabled_buttons
 	 *
 	 * @return void
 	 */
@@ -302,10 +303,20 @@ class Test_Rsvp extends Base {
 		$result        = $instance->transform_block_content( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'<button type="button" class="wp-block-button__link wp-element-button">Canceled</button>',
+			'wp-element-button">Canceled</button>',
 			$result,
 			'A block saved without a canceled template shows the default disabled button.'
 		);
+
+		$tag = new WP_HTML_Tag_Processor( $result );
+
+		$this->assertTrue( $tag->next_tag( 'button' ) );
+		$this->assertSame(
+			'true',
+			$tag->get_attribute( 'aria-disabled' ),
+			'The default Canceled button is announced as unavailable.'
+		);
+		$this->assertSame( '-1', $tag->get_attribute( 'tabindex' ), 'Tab skips the default Canceled button.' );
 		$this->assertStringContainsString( 'gatherpress--is-disabled', $result );
 		$this->assertStringNotContainsString(
 			'data-wp-interactive',
@@ -333,6 +344,170 @@ class Test_Rsvp extends Base {
 
 		$this->assertStringContainsString( 'Canceled content', $result, 'The saved canceled template renders.' );
 		$this->assertStringNotContainsString( 'Attending content', $result );
+	}
+
+	/**
+	 * Tests that a past event's saved "Past Event" button is not offered as a control.
+	 *
+	 * The past template is saved in the event's block markup, so the button
+	 * gets marked when the block renders, including for events saved before
+	 * this change.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::transform_block_content
+	 * @covers ::mark_disabled_buttons
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_past_event_disables_button(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_datetime' => wp_json_encode(
+						array(
+							'dateTimeStart' => '2024-01-22 18:00:00',
+							'dateTimeEnd'   => '2024-01-22 20:00:00',
+							'timezone'      => 'America/New_York',
+						)
+					),
+				),
+			)
+		)->get();
+
+		Setup::get_instance()->set_datetimes( $post->ID );
+
+		$past_template = '<!-- wp:buttons {"align":"center","layout":{"type":"flex","justifyContent":"center"}} -->'
+			. '<div class="wp-block-buttons aligncenter">'
+			. '<!-- wp:button {"tagName":"button","className":"gatherpress--is-disabled"} -->'
+			. '<div class="wp-block-button gatherpress--is-disabled">'
+			. '<button type="button" class="wp-block-button__link wp-element-button">Past Event</button>'
+			. '</div><!-- /wp:button --></div><!-- /wp:buttons -->';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-v2',
+			'attrs'     => array(
+				'postId'                => $post->ID,
+				'serializedInnerBlocks' => wp_json_encode( array( 'past' => $past_template ) ),
+			),
+		);
+		$block_content = sprintf( '<div class="wp-block-gatherpress-rsvp" data-post-id="%d"></div>', $post->ID );
+		$tag           = new WP_HTML_Tag_Processor( $instance->transform_block_content( $block_content, $block ) );
+
+		$this->assertTrue( $tag->next_tag( 'button' ), 'The Past Event button renders.' );
+		$this->assertSame(
+			'true',
+			$tag->get_attribute( 'aria-disabled' ),
+			'The Past Event button is announced as unavailable.'
+		);
+		$this->assertSame( '-1', $tag->get_attribute( 'tabindex' ), 'Tab skips the Past Event button.' );
+	}
+
+	/**
+	 * A disabled button that also carries the trigger-update class stays unavailable.
+	 *
+	 * The render filters run in order, so this goes through all of them: the
+	 * interactivity filter must not put the button back in the Tab order.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::apply_rsvp_button_interactivity
+	 * @covers ::mark_disabled_buttons
+	 *
+	 * @return void
+	 */
+	public function test_render_filters_keep_a_disabled_trigger_button_unavailable(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_datetime' => wp_json_encode(
+						array(
+							'dateTimeStart' => '2024-01-22 18:00:00',
+							'dateTimeEnd'   => '2024-01-22 20:00:00',
+							'timezone'      => 'America/New_York',
+						)
+					),
+				),
+			)
+		)->get();
+
+		Setup::get_instance()->set_datetimes( $post->ID );
+
+		$classes       = 'gatherpress--is-disabled gatherpress-rsvp--trigger-update';
+		$past_template = '<!-- wp:button {"tagName":"button","className":"' . $classes . '"} -->'
+			. '<div class="wp-block-button ' . $classes . '">'
+			. '<button type="button" class="wp-block-button__link wp-element-button">Past Event</button>'
+			. '</div><!-- /wp:button -->';
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array(
+				'postId'                => $post->ID,
+				'serializedInnerBlocks' => wp_json_encode( array( 'past' => $past_template ) ),
+			),
+		);
+		$block_content = sprintf( '<div class="wp-block-gatherpress-rsvp" data-post-id="%d"></div>', $post->ID );
+		$tag           = new WP_HTML_Tag_Processor(
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core hook, not a GatherPress one.
+			apply_filters( 'render_block_' . Rsvp::BLOCK_NAME, $block_content, $block )
+		);
+
+		$this->assertTrue( $tag->next_tag( 'button' ), 'The Past Event button renders.' );
+		$this->assertSame( '-1', $tag->get_attribute( 'tabindex' ), 'Tab still skips the Past Event button.' );
+		$this->assertSame( 'true', $tag->get_attribute( 'aria-disabled' ), 'The button stays unavailable.' );
+		$this->assertNull(
+			$tag->get_attribute( 'data-wp-on--click' ),
+			'The unavailable button gets no click handler.'
+		);
+	}
+
+	/**
+	 * Tests that only the controls carrying, or wrapped by, the disabled class get marked.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::mark_disabled_buttons
+	 *
+	 * @return void
+	 */
+	public function test_mark_disabled_buttons(): void {
+		$instance = Rsvp::get_instance();
+		$markup   = '<div class="wp-block-button gatherpress--is-disabled"><button id="wrapped">Past</button></div>'
+			. '<a id="link" href="#" class="gatherpress--is-disabled">Link</a>'
+			. '<p id="text" class="gatherpress--is-disabled"><span id="span">Note</span></p>'
+			. '<button id="other">Other</button>'
+			. '<div class="gatherpress--is-disabled"></div>'
+			. '<a id="after" href="/details">Details</a>'
+			. '<div class="gatherpress--is-disabled"><span><button id="nested">Past</button></span></div>'
+			. '<button id="last">Last</button>';
+		$tag      = new WP_HTML_Tag_Processor(
+			Utility::invoke_hidden_method( $instance, 'mark_disabled_buttons', array( $markup ) )
+		);
+		$marked   = array();
+
+		while ( $tag->next_tag() ) {
+			$id = $tag->get_attribute( 'id' );
+
+			if ( is_string( $id ) ) {
+				$marked[ $id ] = array( $tag->get_attribute( 'aria-disabled' ), $tag->get_attribute( 'tabindex' ) );
+			}
+		}
+
+		$this->assertSame(
+			array(
+				'wrapped' => array( 'true', '-1' ),
+				'link'    => array( 'true', '-1' ),
+				'text'    => array( null, null ),
+				'span'    => array( null, null ),
+				'other'   => array( null, null ),
+				'after'   => array( null, null ),
+				'nested'  => array( 'true', '-1' ),
+				'last'    => array( null, null ),
+			),
+			$marked,
+			'A control anywhere inside a disabled element, and a disabled link, are marked; a control after one is not.'
+		);
 	}
 
 	/**
