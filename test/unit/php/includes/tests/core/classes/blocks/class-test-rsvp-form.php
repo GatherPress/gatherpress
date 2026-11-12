@@ -304,6 +304,11 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		$this->assertNull( $name( $labelledby, 'aria-label' ), 'Failed to assert aria-labelledby is not overridden.' );
+		$this->assertSame(
+			'rsvp-heading',
+			$name( $labelledby, 'aria-labelledby' ),
+			'Failed to assert aria-labelledby is kept.'
+		);
 	}
 
 	/**
