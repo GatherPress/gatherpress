@@ -15,6 +15,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Calendar\External\Feed_Placeholder;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -72,7 +73,11 @@ final class Dropdown_Item {
 	 * them to the block content. Styles include padding, colors, and hover effects
 	 * for dropdown items. Additionally, it handles `hover`-based dropdown behavior.
 	 *
+	 * A link that lost its `href` because its calendar feed placeholder had no
+	 * feed is left alone, so it does not become a button that does nothing.
+	 *
 	 * @since 0.33.0
+	 * @since TBD Skips an unresolved calendar feed placeholder.
 	 *
 	 * @param string $block_content The original block content.
 	 *
@@ -82,9 +87,10 @@ final class Dropdown_Item {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
-			$href = $tag->get_attribute( 'href' );
+			$href       = $tag->get_attribute( 'href' );
+			$unresolved = null !== $tag->get_attribute( Feed_Placeholder::UNRESOLVED_ATTRIBUTE );
 
-			if ( empty( $href ) || '#' === $href ) {
+			if ( ! $unresolved && ( empty( $href ) || '#' === $href ) ) {
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-on--click', 'actions.linkHandler' );
 				$tag->set_attribute( 'tabindex', '0' );

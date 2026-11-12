@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+An Add to Calendar menu item that links to a calendar feed with no feed is no longer a button that does nothing. The keyboard skips it, and screen readers do not announce it as a button.

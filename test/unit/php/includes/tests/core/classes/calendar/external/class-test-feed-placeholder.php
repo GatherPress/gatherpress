@@ -802,6 +802,50 @@ class Test_Feed_Placeholder extends Base {
 	}
 
 	/**
+	 * An unresolved placeholder in a dropdown item is not a button.
+	 *
+	 * The dropdown item turns a link with no `href` into a button. A placeholder
+	 * with no feed loses its `href`, and must stay plain text.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::replace_placeholders
+	 *
+	 * @return void
+	 */
+	public function test_unresolved_dropdown_item_is_not_a_button(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$markup   = sprintf(
+			'<!-- wp:gatherpress/add-to-calendar {"postId":%d} -->'
+			. '<div class="wp-block-gatherpress-add-to-calendar">'
+			. '<!-- wp:gatherpress/dropdown {"label":"Add to calendar"} --><div class="wp-block-gatherpress-dropdown">'
+			. '<a href="#" class="wp-block-gatherpress-dropdown__trigger">Add to calendar</a>'
+			. '<div class="wp-block-gatherpress-dropdown__menu">'
+			. '<!-- wp:gatherpress/dropdown-item --><div class="wp-block-gatherpress-dropdown-item">'
+			. '<a href="#gatherpress-calendar-subscribe-venue-url">Subscribe</a>'
+			. '</div><!-- /wp:gatherpress/dropdown-item -->'
+			. '</div></div><!-- /wp:gatherpress/dropdown -->'
+			. '</div><!-- /wp:gatherpress/add-to-calendar -->',
+			$event_id
+		);
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$tag   = new WP_HTML_Tag_Processor( do_blocks( $markup ) );
+		$found = false;
+
+		// The first link is the dropdown trigger, so find the item's link by its marker.
+		while ( ! $found && $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			$found = null !== $tag->get_attribute( Feed_Placeholder::UNRESOLVED_ATTRIBUTE );
+		}
+
+		$this->assertTrue( $found, 'Failed to assert the unresolved dropdown item link is rendered.' );
+		$this->assertNull( $tag->get_attribute( 'href' ), 'Failed to assert the unresolved link has no href.' );
+		$this->assertNull( $tag->get_attribute( 'role' ), 'Failed to assert the unresolved link has no role.' );
+		$this->assertNull( $tag->get_attribute( 'tabindex' ), 'Failed to assert the unresolved link takes no focus.' );
+	}
+
+	/**
 	 * Outside the loop on a listing page, the first listed post is not used.
 	 *
 	 * @since TBD
