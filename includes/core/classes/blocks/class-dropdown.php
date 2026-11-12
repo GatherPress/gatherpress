@@ -309,7 +309,10 @@ final class Dropdown {
 				)
 			)
 		) {
-			$tag->set_attribute( 'role', 'region' );
+			// No landmark role: the panel is a disclosure panel the trigger
+			// points to with `aria-controls`. An unnamed `region` is no
+			// landmark at all, and a named one would add a landmark for each
+			// short list of links.
 			$tag->set_attribute( 'id', $dropdown_id );
 
 			$existing_styles = $tag->get_attribute( 'style' );

@@ -1,0 +1,333 @@
+/**
+ * External dependencies
+ */
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
+/**
+ * Mock the Interactivity API with a namespace-merging store so every
+ * module contributing to the `gatherpress` namespace shares one registry,
+ * mirroring the real runtime.
+ */
+jest.mock(
+	'@wordpress/interactivity',
+	() => {
+		const registries = {};
+
+		return {
+			store: ( name, config = {} ) => {
+				if ( ! registries[ name ] ) {
+					registries[ name ] = {
+						state: {},
+						actions: {},
+						callbacks: {},
+					};
+				}
+
+				const registry = registries[ name ];
+
+				Object.assign( registry.state, config.state );
+				Object.assign( registry.actions, config.actions );
+				Object.assign( registry.callbacks, config.callbacks );
+
+				return registry;
+			},
+			getElement: jest.fn(),
+			getContext: jest.fn(),
+		};
+	},
+	{ virtual: true },
+);
+
+/**
+ * WordPress dependencies
+ */
+import { store, getElement } from '@wordpress/interactivity';
+
+/**
+ * Internal dependencies
+ */
+import '@src/blocks/dropdown/view';
+
+/**
+ * Builds a click-mode dropdown between two outside links.
+ *
+ * @return {Object} The trigger, the panel, the item links and the outside links.
+ */
+function setupDom() {
+	document.body.innerHTML = `
+		<a href="#before" id="before">Before</a>
+		<div class="wp-block-gatherpress-dropdown">
+			<a href="#" class="wp-block-gatherpress-dropdown__trigger" role="button" aria-controls="dd" aria-expanded="false" tabindex="0">Add to calendar</a>
+			<div class="wp-block-gatherpress-dropdown__menu" id="dd">
+				<div class="wp-block-gatherpress-dropdown-item"><a href="#google">Google Calendar</a></div>
+				<div class="wp-block-gatherpress-dropdown-item"><a href="#ical">iCal</a></div>
+			</div>
+		</div>
+		<a href="#after" id="after">After</a>
+	`;
+
+	const trigger = document.querySelector( '.wp-block-gatherpress-dropdown__trigger' );
+
+	getElement.mockReturnValue( { ref: trigger } );
+
+	return {
+		trigger,
+		menu: document.querySelector( '.wp-block-gatherpress-dropdown__menu' ),
+		items: [ ...document.querySelectorAll( '.wp-block-gatherpress-dropdown-item a' ) ],
+		before: document.getElementById( 'before' ),
+		after: document.getElementById( 'after' ),
+	};
+}
+
+/**
+ * Moves focus the way the browser does, firing focusout with a related target.
+ *
+ * @param {HTMLElement} from The element losing focus.
+ * @param {HTMLElement} to   The element gaining focus.
+ *
+ * @return {void}
+ */
+function moveFocus( from, to ) {
+	from.dispatchEvent(
+		new FocusEvent( 'focusout', { bubbles: true, relatedTarget: to } ),
+	);
+	to.focus();
+}
+
+describe( 'dropdown toggleDropdown as a disclosure', () => {
+	let actions;
+	let offsetParent;
+
+	beforeEach( () => {
+		( { actions } = store( 'gatherpress' ) );
+
+		// jsdom has no layout, so every element reports a null offsetParent
+		// and looks hidden. Report a parent so visibility checks treat the
+		// open panel's links as visible, like a browser.
+		offsetParent = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			'offsetParent',
+		);
+		Object.defineProperty( HTMLElement.prototype, 'offsetParent', {
+			configurable: true,
+			get() {
+				return this.parentNode;
+			},
+		} );
+	} );
+
+	afterEach( () => {
+		// Close any open panel so its document listeners go away.
+		const trigger = document.querySelector(
+			'.wp-block-gatherpress-dropdown__trigger',
+		);
+
+		if ( trigger?.cleanupCloseHandlers ) {
+			trigger.cleanupCloseHandlers();
+		}
+
+		if ( trigger?.cleanupFocusTrap ) {
+			trigger.cleanupFocusTrap();
+		}
+
+		Object.defineProperty( HTMLElement.prototype, 'offsetParent', offsetParent );
+	} );
+
+	it( 'opens the panel and keeps focus on the trigger', () => {
+		const { trigger, menu } = setupDom();
+
+		actions.toggleDropdown( new Event( 'click' ) );
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( true );
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+		expect( trigger.ownerDocument.activeElement ).toBe( trigger );
+	} );
+
+	it( 'lets Tab move on from the last item instead of wrapping to the trigger', () => {
+		const { items } = setupDom();
+
+		actions.toggleDropdown();
+		items[ 1 ].focus();
+
+		const tab = new KeyboardEvent( 'keydown', {
+			key: 'Tab',
+			bubbles: true,
+			cancelable: true,
+		} );
+
+		document.dispatchEvent( tab );
+
+		expect( tab.defaultPrevented ).toBe( false );
+		expect( document.activeElement ).toBe( items[ 1 ] );
+	} );
+
+	it( 'lets Shift+Tab move back from the trigger', () => {
+		const { trigger } = setupDom();
+
+		actions.toggleDropdown();
+
+		const shiftTab = new KeyboardEvent( 'keydown', {
+			key: 'Tab',
+			shiftKey: true,
+			bubbles: true,
+			cancelable: true,
+		} );
+
+		document.dispatchEvent( shiftTab );
+
+		expect( shiftTab.defaultPrevented ).toBe( false );
+		expect( document.activeElement ).toBe( trigger );
+	} );
+
+	it( 'closes the panel when focus leaves the dropdown, and leaves focus where it went', () => {
+		const { trigger, menu, items, after } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, items[ 0 ] );
+		moveFocus( items[ 0 ], items[ 1 ] );
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( true );
+
+		moveFocus( items[ 1 ], after );
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( document.activeElement ).toBe( after );
+	} );
+
+	it( 'closes the panel when Shift+Tab leaves from the trigger', () => {
+		const { trigger, menu, before } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, before );
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( document.activeElement ).toBe( before );
+	} );
+
+	it( 'closes without moving focus when Tab leaves the page', () => {
+		jest.useFakeTimers();
+
+		const { trigger, menu, items } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, items[ 0 ] );
+
+		// Tab past the last element of the page: no related target, and
+		// focus goes to the browser, so nothing in the page has it.
+		items[ 0 ].dispatchEvent(
+			new FocusEvent( 'focusout', { bubbles: true, relatedTarget: null } ),
+		);
+		items[ 0 ].blur();
+		jest.runOnlyPendingTimers();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( document.activeElement ).not.toBe( trigger );
+
+		jest.useRealTimers();
+	} );
+
+	it( 'leaves a pointer press on a non-focusable spot to the outside-click handler', () => {
+		jest.useFakeTimers();
+
+		const { trigger, menu, items } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, items[ 0 ] );
+
+		document.body.dispatchEvent( new Event( 'pointerdown', { bubbles: true } ) );
+		items[ 0 ].dispatchEvent(
+			new FocusEvent( 'focusout', { bubbles: true, relatedTarget: null } ),
+		);
+		items[ 0 ].blur();
+		jest.runOnlyPendingTimers();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( true );
+
+		document.body.click();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( document.activeElement ).toBe( trigger );
+
+		jest.useRealTimers();
+	} );
+
+	it( 'keeps focus on a focusable element clicked outside the dropdown', () => {
+		const { trigger, menu, items, after } = setupDom();
+
+		actions.toggleDropdown();
+		moveFocus( trigger, items[ 0 ] );
+
+		// A mouse press moves focus before the click event.
+		document.body.dispatchEvent( new Event( 'pointerdown', { bubbles: true } ) );
+		moveFocus( items[ 0 ], after );
+		after.click();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( document.activeElement ).toBe( after );
+	} );
+
+	it( 'stays open when focus goes nowhere, such as the window losing focus', () => {
+		const { trigger, menu } = setupDom();
+
+		actions.toggleDropdown();
+		trigger.dispatchEvent(
+			new FocusEvent( 'focusout', { bubbles: true, relatedTarget: null } ),
+		);
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( true );
+	} );
+
+	it( 'closes on Escape from an item and returns focus to the trigger', () => {
+		const { trigger, menu, items } = setupDom();
+
+		actions.toggleDropdown();
+		items[ 1 ].focus();
+		items[ 1 ].dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true, cancelable: true } ),
+		);
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( document.activeElement ).toBe( trigger );
+	} );
+
+	it( 'closes on a second click and returns focus to the trigger', () => {
+		const { trigger, menu, items } = setupDom();
+
+		actions.toggleDropdown();
+		items[ 0 ].focus();
+		actions.toggleDropdown();
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( document.activeElement ).toBe( trigger );
+	} );
+
+	it( 'drops the focus-out handler of an earlier opening', () => {
+		const { trigger, menu, after } = setupDom();
+
+		actions.toggleDropdown();
+		actions.toggleDropdown();
+		actions.toggleDropdown();
+
+		const removed = jest.spyOn( trigger.parentElement, 'removeEventListener' );
+
+		moveFocus( trigger, after );
+
+		expect( menu.classList.contains( 'gatherpress--is-visible' ) ).toBe( false );
+		expect( removed ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'does nothing without a panel', () => {
+		const { trigger } = setupDom();
+
+		trigger.parentElement
+			.querySelector( '.wp-block-gatherpress-dropdown__menu' )
+			.remove();
+
+		actions.toggleDropdown();
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+} );

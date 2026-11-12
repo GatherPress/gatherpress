@@ -574,6 +574,48 @@ class Test_Dropdown extends Base {
 	}
 
 	/**
+	 * Tests that the panel is a plain disclosure panel, not a landmark.
+	 *
+	 * The trigger names the panel through `aria-controls`. An unnamed
+	 * `role="region"` is no landmark, so the panel gets no role, and the
+	 * trigger gets no menu semantics.
+	 *
+	 * @since TBD
+	 * @covers ::apply_dropdown_attributes
+	 *
+	 * @return void
+	 */
+	public function test_apply_dropdown_attributes_panel_is_disclosure(): void {
+		$instance      = Dropdown::get_instance();
+		$block         = array(
+			'blockName' => 'gatherpress/dropdown',
+			'attrs'     => array(
+				'openOn'     => 'click',
+				'dropdownId' => 'test-dropdown',
+			),
+		);
+		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Add to calendar</a>'
+			. '<div class="wp-block-gatherpress-dropdown__menu"></div></div>';
+		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'id="test-dropdown"',
+			$result,
+			'The panel should keep the ID the trigger points to.'
+		);
+		$this->assertStringNotContainsString(
+			'role="region"',
+			$result,
+			'The panel should not be an unnamed region.'
+		);
+		$this->assertStringNotContainsString(
+			'aria-haspopup',
+			$result,
+			'The trigger should not announce a menu.'
+		);
+	}
+
+	/**
 	 * Tests apply_select_mode_attributes with invalid HTML.
 	 *
 	 * @since 0.33.0
