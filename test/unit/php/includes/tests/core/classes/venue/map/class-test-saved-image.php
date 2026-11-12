@@ -50,6 +50,68 @@ class Test_Saved_Image extends Base {
 	private const KEY = '15x800x400xroadmap';
 
 	/**
+	 * Delete unused files at once, so a test can check which files go.
+	 *
+	 * The delay itself is covered by `test_delete_unused_files_waits()`.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+
+		add_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+	}
+
+	/**
+	 * Remove the delay filter and any queued delete.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+		wp_unschedule_hook( Saved_Image::DELETE_CRON_ACTION );
+
+		parent::tearDown();
+	}
+
+	/**
+	 * The queued delete events, in run order.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<int, array{0: int, 1: array<int, mixed>}> Each event's time and args.
+	 */
+	private static function delete_events(): array {
+		$events = array();
+
+		foreach ( (array) _get_cron_array() as $timestamp => $hooks ) {
+			foreach ( (array) ( $hooks[ Saved_Image::DELETE_CRON_ACTION ] ?? array() ) as $event ) {
+				$events[] = array( (int) $timestamp, $event['args'] );
+			}
+		}
+
+		return $events;
+	}
+
+	/**
+	 * Run a queued delete event the way WP-Cron does: remove it, then fire it.
+	 *
+	 * @since TBD
+	 *
+	 * @param array{0: int, 1: array<int, mixed>} $event The event's time and args.
+	 *
+	 * @return void
+	 */
+	private static function run_delete_event( array $event ): void {
+		wp_unschedule_event( $event[0], Saved_Image::DELETE_CRON_ACTION, $event[1] );
+		do_action( 'gatherpress_static_map_delete_unused_run', $event[1][0] );
+	}
+
+	/**
 	 * Write an empty PNG file at a static map URL.
 	 *
 	 * @since 0.36.2
@@ -345,6 +407,224 @@ class Test_Saved_Image extends Base {
 		wp_delete_file( $path );
 
 		$this->assertNull( $usable( $legacy, self::INFO ), 'Failed to assert a missing PNG is not usable.' );
+	}
+
+	/**
+	 * A replaced PNG stays on disk until the delete event runs.
+	 *
+	 * A page cache can still serve HTML with the old URL, so the file is
+	 * deleted later, and only when no venue points at it again by then.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused
+	 * @covers ::delete_unused_files
+	 * @covers ::delete_unused_now
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_waits(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$old      = Saved_Image::url( 'qa-replaced-map.png' );
+		$again    = Saved_Image::url( 'qa-used-again-map.png' );
+		$paths    = array( $this->touch_image( $old ), $this->touch_image( $again ) );
+		$venue_id = $this->factory->post->create();
+		$before   = time();
+
+		( new Saved_Image( self::files( $old, $again ), 'osm', self::KEY ) )->delete_unused();
+
+		$this->assertFileExists( $paths[0], 'Failed to assert a replaced PNG stays until the event runs.' );
+		$this->assertFileExists( $paths[1], 'Failed to assert a replaced 2x PNG stays until the event runs.' );
+
+		$events = self::delete_events();
+
+		$this->assertCount( 1, $events, 'Failed to assert the delete is scheduled.' );
+		$this->assertSame( array( $old, $again ), $events[0][1][0], 'Failed to assert the event holds both files.' );
+		$this->assertGreaterThanOrEqual( $before + Saved_Image::DEFAULT_DELETE_DELAY, $events[0][0] );
+
+		// A venue points at one of the files again before the event runs.
+		update_post_meta(
+			$venue_id,
+			Map::META_KEY,
+			array( 'osm' => array( self::KEY => self::files( $again ) ) )
+		);
+
+		self::run_delete_event( $events[0] );
+
+		$this->assertFileDoesNotExist( $paths[0], 'Failed to assert an unused PNG is deleted when the event runs.' );
+		$this->assertFileExists( $paths[1], 'Failed to assert a PNG a venue uses again is kept.' );
+
+		Saved_Image::delete_unused_now( 'not a list' );
+		Saved_Image::delete_unused_now( array( 'https://cdn.example.test/map.png' ) );
+
+		$this->assertFileExists( $paths[1], 'Failed to assert other input deletes nothing.' );
+
+		wp_delete_file( $paths[1] );
+	}
+
+	/**
+	 * An earlier delete event leaves a file that a later event also holds.
+	 *
+	 * Two venues can share a PNG. When one queues it and the other queues it
+	 * again days later, the first event must not delete it before the
+	 * second event's delay ends.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused_now
+	 * @covers ::queued_urls
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_now_leaves_a_file_a_later_event_holds(): void {
+		$shared = Saved_Image::url( 'qa-shared-map.png' );
+		$path   = $this->touch_image( $shared );
+		$first  = time() + DAY_IN_SECONDS;
+		$later  = time() + WEEK_IN_SECONDS;
+
+		wp_schedule_single_event( $first, Saved_Image::DELETE_CRON_ACTION, array( array( $shared ) ) );
+		wp_schedule_single_event( $later, Saved_Image::DELETE_CRON_ACTION, array( array( $shared, 'x' ) ) );
+
+		// The first event runs: WP-Cron removes it first, and the later one still holds the file.
+		wp_unschedule_event( $first, Saved_Image::DELETE_CRON_ACTION, array( array( $shared ) ) );
+		do_action( 'gatherpress_static_map_delete_unused_run', array( $shared ) );
+
+		$this->assertFileExists( $path, 'Failed to assert the file waits for the later event.' );
+
+		// The later event runs: no event holds the file any more.
+		wp_unschedule_event( $later, Saved_Image::DELETE_CRON_ACTION, array( array( $shared, 'x' ) ) );
+		do_action( 'gatherpress_static_map_delete_unused_run', array( $shared, 'x' ) );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the later event deletes the unused file.' );
+	}
+
+	/**
+	 * The same files queued twice within ten minutes keep both deadlines.
+	 *
+	 * WP-Cron drops a single event that matches another of the same hook and
+	 * args within ten minutes. The second queue must still be scheduled, so
+	 * the first event does not delete the files before the later deadline.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused_files
+	 * @covers ::delete_unused_now
+	 * @covers ::queued_urls
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_keeps_a_requeue_within_ten_minutes(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$url   = Saved_Image::url( 'qa-requeued-map.png' );
+		$path  = $this->touch_image( $url );
+		$image = new Saved_Image( self::files( $url ), 'osm', self::KEY );
+		$delay = static fn(): int => WEEK_IN_SECONDS + 5 * MINUTE_IN_SECONDS;
+
+		$image->delete_unused();
+
+		// Queued again five minutes later.
+		add_filter( 'gatherpress_static_map_delete_unused_delay', $delay );
+		$image->delete_unused();
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', $delay );
+
+		$events = self::delete_events();
+
+		$this->assertCount( 2, $events, 'Failed to assert the second queue is scheduled.' );
+
+		self::run_delete_event( $events[0] );
+
+		$this->assertFileExists( $path, 'Failed to assert the first event leaves the file to the later one.' );
+
+		self::run_delete_event( $events[1] );
+
+		$this->assertFileDoesNotExist( $path, 'Failed to assert the later event deletes the file.' );
+	}
+
+	/**
+	 * The delay filter sets when the files go; zero or less deletes at once.
+	 *
+	 * @since TBD
+	 *
+	 * @dataProvider data_delete_unused_delay
+	 * @covers ::delete_unused_files
+	 *
+	 * @param int  $delay     Filtered delay in seconds.
+	 * @param bool $scheduled Whether a delete event is expected.
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_honors_the_delay( int $delay, bool $scheduled ): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$url    = Saved_Image::url( 'qa-delay-map.png' );
+		$path   = $this->touch_image( $url );
+		$filter = static fn(): int => $delay;
+		$before = time();
+
+		add_filter( 'gatherpress_static_map_delete_unused_delay', $filter );
+		( new Saved_Image( self::files( $url ), 'osm', self::KEY ) )->delete_unused();
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', $filter );
+
+		$events = self::delete_events();
+		$next   = $events[0][0] ?? false;
+
+		if ( $scheduled ) {
+			$this->assertFileExists( $path, 'Failed to assert the file waits for the event.' );
+			$this->assertGreaterThanOrEqual( $before + $delay, $next, 'Failed to assert the delay sets the time.' );
+			$this->assertLessThanOrEqual( time() + $delay, $next );
+			wp_delete_file( $path );
+		} else {
+			$this->assertFileDoesNotExist( $path, 'Failed to assert the file is deleted at once.' );
+			$this->assertFalse( $next, 'Failed to assert no event is scheduled.' );
+		}
+	}
+
+	/**
+	 * Delays for test_delete_unused_files_honors_the_delay().
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array{0: int, 1: bool}>
+	 */
+	public function data_delete_unused_delay(): array {
+		return array(
+			'custom delay'   => array( HOUR_IN_SECONDS, true ),
+			'zero'           => array( 0, false ),
+			'negative delay' => array( -60, false ),
+		);
+	}
+
+	/**
+	 * Nothing is scheduled when no file needs to go.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::delete_unused_files
+	 *
+	 * @return void
+	 */
+	public function test_delete_unused_files_schedules_nothing_to_delete(): void {
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
+
+		$kept = Saved_Image::url( 'qa-kept-map.png' );
+		$path = $this->touch_image( $kept );
+
+		$missing = Saved_Image::url( 'qa-not-on-disk.png' );
+
+		( new Saved_Image( self::files( $kept ), 'osm', self::KEY ) )->delete_unused( array( $kept ) );
+		( new Saved_Image( self::files( $missing ), 'osm', self::KEY ) )->delete_unused();
+
+		$scheduled = 0;
+
+		foreach ( (array) _get_cron_array() as $hooks ) {
+			$scheduled += count( $hooks[ Saved_Image::DELETE_CRON_ACTION ] ?? array() );
+		}
+
+		$this->assertSame( 0, $scheduled, 'Failed to assert nothing is scheduled.' );
+
+		wp_delete_file( $path );
 	}
 
 	/**
