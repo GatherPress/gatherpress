@@ -21,6 +21,7 @@ use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
 use GatherPress\Tests\Core\Rsvp\Flag\Test_Checked_In_Online;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 use WP_Screen;
 
 /**
@@ -3248,6 +3249,45 @@ class Test_List_Table extends Base {
 			),
 			$this->run_action( 'check_in-checked-in', array( $gone[2] ) ),
 			'Failed to assert a missing RSVP is not counted as skipped.'
+		);
+	}
+
+	/**
+	 * An approved RSVP whose check-in cannot be saved counts as failed.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_counts_a_failed_check_in_write(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$approved = $this->create_rsvps( 1, '1' );
+		$refuse   = static function (): WP_Error {
+			return new WP_Error( 'gatherpress_test_refused', 'Refused.' );
+		};
+
+		add_filter( 'pre_insert_term', $refuse );
+
+		$result = $this->run_action( 'check_in-checked-in', array( $approved[0] ) );
+
+		remove_filter( 'pre_insert_term', $refuse );
+
+		$this->assertSame(
+			array(
+				'check_in_updated' => 0,
+				'skipped'          => 0,
+				'failed'           => 1,
+			),
+			$result,
+			'Failed to assert a check-in that could not be saved counts as failed.'
+		);
+		$this->assertNull(
+			Check_In_Registry::get_instance()->get_state( $approved[0] ),
+			'Failed to assert the RSVP has no check-in state.'
 		);
 	}
 
