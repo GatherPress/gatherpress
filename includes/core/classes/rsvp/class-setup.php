@@ -410,6 +410,22 @@ final class Setup {
 	}
 
 	/**
+	 * Adds the action result args to the query args core removes.
+	 *
+	 * Core then takes them out of the address bar and out of the table's
+	 * paging and sorting links.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $args Query args core removes.
+	 *
+	 * @return string[] The query args, with the result args.
+	 */
+	public function add_removable_result_args( array $args ): array {
+		return array_values( array_unique( array_merge( $args, List_Table::RESULT_ARGS ) ) );
+	}
+
+	/**
 	 * Processes a row or bulk action, then redirects to the list without it.
 	 *
 	 * Runs before the screen sends output, as edit-comments.php does. The
@@ -427,12 +443,7 @@ final class Setup {
 	 * @return void
 	 */
 	protected function redirect_after_action( List_Table $list_table ): void {
-		add_filter(
-			'removable_query_args',
-			static fn( array $args ): array => array_values(
-				array_unique( array_merge( $args, List_Table::RESULT_ARGS ) )
-			)
-		);
+		add_filter( 'removable_query_args', array( $this, 'add_removable_result_args' ) );
 
 		$result = $list_table->process_bulk_action();
 

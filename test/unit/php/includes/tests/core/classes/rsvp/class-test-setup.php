@@ -1753,6 +1753,7 @@ class Test_Setup extends Base {
 	 *
 	 * @covers ::prepare_rsvp_admin_page
 	 * @covers ::redirect_after_action
+	 * @covers ::add_removable_result_args
 	 *
 	 * @return void
 	 */
@@ -1782,6 +1783,30 @@ class Test_Setup extends Base {
 				sprintf( 'Failed to assert %s is removed from the address bar.', $result_arg )
 			);
 		}
+	}
+
+	/**
+	 * The action result args are added to the query args core removes, once each.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::add_removable_result_args
+	 *
+	 * @return void
+	 */
+	public function test_add_removable_result_args(): void {
+		$args = Setup::get_instance()->add_removable_result_args( array( 'message', 'approved' ) );
+
+		$this->assertSame(
+			array_values( array_unique( array_merge( array( 'message', 'approved' ), List_Table::RESULT_ARGS ) ) ),
+			$args,
+			'Failed to assert the result args are added after core\'s args.'
+		);
+		$this->assertSame(
+			1,
+			array_count_values( $args )['approved'],
+			'Failed to assert an arg core already removes is not added twice.'
+		);
 	}
 
 	/**
