@@ -623,6 +623,10 @@ final class Rsvp {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
+					// The nonce is fetched on focus. The count is saved a moment after its last change,
+					// or at once when the field loses focus.
+					$tag->set_attribute( 'data-wp-on--focus', 'actions.prepareGuestCount' );
+					$tag->set_attribute( 'data-wp-on--blur', 'actions.saveGuestCount' );
 					$tag->set_attribute( 'max', (string) $guest_limit );
 				}
 			}

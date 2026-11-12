@@ -288,6 +288,8 @@ export async function sendRsvpApiRequest(
 			gatherPressState.eventApiUrl + '/rsvp',
 			{
 				method: 'POST',
+				// Lets a save started as the page is left finish (see the RSVP block's guest count).
+				keepalive: true,
 				headers: {
 					'Content-Type': 'application/json',
 					'X-WP-Nonce': nonce,

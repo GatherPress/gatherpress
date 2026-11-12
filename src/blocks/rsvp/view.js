@@ -12,9 +12,107 @@ import {
  * Internal dependencies
  */
 import {
+	getNonce,
 	initPostContext,
 	sendRsvpApiRequest,
 } from '../../helpers/interactivity';
+
+/**
+ * How long the guest count waits after its last change before it is saved, in milliseconds.
+ *
+ * @since TBD
+ */
+const GUEST_COUNT_SAVE_DELAY = 500;
+
+/**
+ * Guest count saves that wait for the delay to end, by post ID.
+ *
+ * Each value holds the delay's `timer` and a `save( restoreFocus )` function.
+ *
+ * @since TBD
+ */
+const pendingGuestCounts = {};
+
+/**
+ * Post IDs whose guest count save is on its way to the server.
+ *
+ * @since TBD
+ */
+const guestCountsInFlight = new Set();
+
+/**
+ * Stops a guest count save that waits for the delay, without saving.
+ *
+ * @since TBD
+ *
+ * @param {number|string} postId The event's post ID.
+ *
+ * @return {Object|undefined} The stopped save, if there was one.
+ */
+function cancelGuestCount( postId ) {
+	const pending = pendingGuestCounts[ postId ];
+
+	if ( pending ) {
+		clearTimeout( pending.timer );
+		delete pendingGuestCounts[ postId ];
+	}
+
+	return pending;
+}
+
+/**
+ * Saves a guest count that waits for the delay, if there is one.
+ *
+ * Runs when the delay ends and when the field loses focus, so a change
+ * made just before is not lost. Only the save at the end of the delay puts
+ * focus back on the field; after a blur, focus has moved on.
+ *
+ * One save goes to the server at a time. While one is on its way, the
+ * newer count waits for it and goes next, so a slow earlier request cannot
+ * reach the server last and overwrite the newer count.
+ *
+ * @since TBD
+ *
+ * @param {number|string} postId               The event's post ID.
+ * @param {boolean}       [restoreFocus=false] Whether to focus the field again after the save.
+ *
+ * @return {void}
+ */
+function flushGuestCount( postId, restoreFocus = false ) {
+	const pending = pendingGuestCounts[ postId ];
+
+	if ( ! pending ) {
+		return;
+	}
+
+	if ( guestCountsInFlight.has( String( postId ) ) ) {
+		clearTimeout( pending.timer );
+		pending.next = { restoreFocus };
+		return;
+	}
+
+	cancelGuestCount( postId );
+	guestCountsInFlight.add( String( postId ) );
+
+	pending.save( restoreFocus ).finally( () => {
+		guestCountsInFlight.delete( String( postId ) );
+
+		const next = pendingGuestCounts[ postId ]?.next;
+
+		if ( next ) {
+			flushGuestCount( postId, next.restoreFocus );
+		}
+	} );
+}
+
+// The page is going away, so a waiting count goes at once, even while an
+// earlier save is on its way. It outlives the page, because the RSVP
+// request is sent with `keepalive`.
+window.addEventListener( 'pagehide', () => {
+	Object.keys( pendingGuestCounts ).forEach( ( postId ) =>
+		cancelGuestCount( postId ).save( false ),
+	);
+} );
 
 /**
  * Runs a callback once an RSVP status container is shown.
@@ -61,19 +159,54 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
-			const currentUser = state.posts[ postId ].currentUser;
+			const guests = parseInt( element.ref.value, 10 );
 
-			currentUser.guests = parseInt( element.ref.value, 10 );
+			state.posts[ postId ].currentUser.guests = guests;
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
 
-			sendRsvpApiRequest( postId, currentUser, state, () => {
-				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
-				setTimeout( () => {
-					element.ref.focus();
-				}, 10 );
-			}, triggerElement );
+			// Each arrow key step is a change. Only the last value is saved and
+			// announced, once the changes stop for the delay.
+			cancelGuestCount( postId );
+			pendingGuestCounts[ postId ] = {
+				// Kept here because a response to an older save replaces the count in state.
+				guests,
+				timer: setTimeout(
+					() => flushGuestCount( postId, true ),
+					GUEST_COUNT_SAVE_DELAY,
+				),
+				save: ( restoreFocus ) =>
+					sendRsvpApiRequest(
+						postId,
+						{ ...state.posts[ postId ].currentUser, guests },
+						state,
+						restoreFocus
+							? () => {
+								// Use a short timeout to restore focus after data-wp-watch updates the DOM.
+								// Only when focus was dropped: the person may have moved on while the save was on its way.
+								setTimeout( () => {
+									const { activeElement, body } = element.ref.ownerDocument;
+
+									if ( body === activeElement ) {
+										element.ref.focus();
+									}
+								}, 10 );
+							}
+							: null,
+						triggerElement,
+					),
+			};
+		},
+		prepareGuestCount() {
+			// Fetch the nonce when the field gets focus, so a save when the
+			// page is left soon after a change need not wait for it.
+			getNonce();
+		},
+		saveGuestCount() {
+			const context = getContext();
+
+			flushGuestCount( context.postId || 0 );
 		},
 		updateAnonymous() {
 			const element = getElement();
@@ -107,6 +240,15 @@ const { state, actions } = store( 'gatherpress', {
 			const postId = context?.postId || 0;
 
 			initPostContext( state, postId );
+
+			// This request sends the latest guest count too, so a waiting save is
+			// not needed. A response to an older save may have put an older count
+			// in state, so the count the person entered last goes back first.
+			const pendingGuestCount = cancelGuestCount( postId );
+
+			if ( pendingGuestCount ) {
+				state.posts[ postId ].currentUser.guests = pendingGuestCount.guests;
+			}
 
 			const setStatus = element.ref.dataset.setStatus ?? '';
 			const currentUserStatus = state.posts[ postId ].currentUser.status;
@@ -239,7 +381,17 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
-			element.ref.value = state.posts[ postId ].currentUser.guests;
+			const guests = state.posts[ postId ].currentUser.guests;
+
+			// While a newer count waits to be saved or is on its way, the
+			// response to an older save must not put the older count back
+			// in the field.
+			if (
+				! pendingGuestCounts[ postId ] &&
+				! guestCountsInFlight.has( String( postId ) )
+			) {
+				element.ref.value = guests;
+			}
 			// Saved as it changes, so Enter must not submit the no-JavaScript form (#2039).
 			element.ref.removeAttribute( 'form' );
 		},
