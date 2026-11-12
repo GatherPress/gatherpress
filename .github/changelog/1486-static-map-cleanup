@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add static-map garbage collection sweeper tool and WP-CLI command. Adds an admin action in Settings → Tools to clean up unreferenced static map images, a `wp gatherpress venue-map gc` CLI command with `--execute` and `--verbose` flags, and a dedicated `GatherPress\Core\Venue\Map\Cleanup` class with paginated venue inspection, memory-safe directory streaming, mtime race guard, per-run deletion bounds, and transient concurrency locking.

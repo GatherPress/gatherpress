@@ -31,9 +31,14 @@ let latestPreview = 0;
  * @return {void}
  */
 function showStatus( status, text, busy ) {
-	status.querySelector( '.spinner' ).classList.toggle( 'is-active', busy );
-	status.querySelector( '.gatherpress-settings-tools__status-text' ).textContent =
-		text;
+	status.querySelector( '.spinner' )?.classList.toggle( 'is-active', busy );
+	const textElement = status.querySelector(
+		'.gatherpress-settings-tools__status-text, .gatherpress-settings-tools__cleanup-status-text',
+	);
+
+	if ( textElement ) {
+		textElement.textContent = text;
+	}
 }
 
 /**
@@ -271,6 +276,41 @@ export async function previewImport( elements ) {
 }
 
 /**
+ * Check if a button is currently busy (marked with aria-disabled="true").
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement|null} button The button element to check.
+ *
+ * @return {boolean} True if button is busy, false otherwise.
+ */
+export function isButtonBusy( button ) {
+	return 'true' === button?.getAttribute( 'aria-disabled' );
+}
+
+/**
+ * Toggle the busy state of a button using aria-disabled to preserve keyboard focus.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement|null} button The button element.
+ * @param {boolean}          busy   Whether the button is busy.
+ *
+ * @return {void}
+ */
+export function setButtonBusy( button, busy ) {
+	if ( ! button ) {
+		return;
+	}
+
+	if ( busy ) {
+		button.setAttribute( 'aria-disabled', 'true' );
+	} else {
+		button.removeAttribute( 'aria-disabled' );
+	}
+}
+
+/**
  * Import the previewed file.
  *
  * @since TBD
@@ -287,11 +327,11 @@ export async function previewImport( elements ) {
 export async function importSettings( elements ) {
 	const { scope, importData, root, importButton, status } = elements;
 
-	if ( ! importData ) {
+	if ( ! importData || isButtonBusy( importButton ) ) {
 		return;
 	}
 
-	importButton.disabled = true;
+	setButtonBusy( importButton, true );
 	showStatus( status, __( 'Importing settings…', 'gatherpress' ), true );
 
 	try {
@@ -314,7 +354,93 @@ export async function importSettings( elements ) {
 			false,
 		);
 	} finally {
-		importButton.disabled = false;
+		setButtonBusy( importButton, false );
+	}
+}
+
+/**
+ * Format bytes into a human-readable string.
+ *
+ * @since TBD
+ *
+ * @param {number} bytes Number of bytes.
+ *
+ * @return {string} Formatted size string.
+ */
+export function formatBytes( bytes ) {
+	if ( 0 >= bytes ) {
+		return '0 B';
+	}
+
+	const units = [ 'B', 'KB', 'MB', 'GB' ];
+	const i = Math.min(
+		Math.floor( Math.log( bytes ) / Math.log( 1024 ) ),
+		units.length - 1,
+	);
+	const val = ( bytes / Math.pow( 1024, i ) ).toFixed( 0 === i ? 0 : 1 );
+
+	return `${ val } ${ units[ i ] }`;
+}
+
+/**
+ * Clean up unused venue static-map images.
+ *
+ * @since TBD
+ *
+ * @param {Object}      elements               Tools element references.
+ * @param {HTMLElement} elements.cleanupButton The cleanup trigger button.
+ * @param {HTMLElement} elements.cleanupStatus The status output element.
+ *
+ * @return {Promise<void>}
+ */
+export async function cleanupMaps( { cleanupButton, cleanupStatus } ) {
+	if ( ! cleanupButton || ! cleanupStatus || isButtonBusy( cleanupButton ) ) {
+		return;
+	}
+
+	setButtonBusy( cleanupButton, true );
+	showStatus(
+		cleanupStatus,
+		__( 'Cleaning up unused static maps…', 'gatherpress' ),
+		true,
+	);
+
+	try {
+		const result = await apiFetch( {
+			path: `/${ REST_NAMESPACE }/venue-map/gc`,
+			method: 'POST',
+			data: {
+				execute: true,
+			},
+		} );
+
+		const deleted = result?.deleted ?? 0;
+		const bytesReclaimed = result?.bytes_reclaimed ?? 0;
+
+		const message =
+			0 < deleted
+				? sprintf(
+					/* translators: 1: Number of files deleted, 2: Formatted byte size reclaimed. */
+					_n(
+						'Cleanup complete: removed %1$d file (%2$s reclaimed).',
+						'Cleanup complete: removed %1$d files (%2$s reclaimed).',
+						deleted,
+						'gatherpress',
+					),
+					deleted,
+					formatBytes( bytesReclaimed ),
+				)
+				: __( 'No unused static-map images found.', 'gatherpress' );
+
+		showStatus( cleanupStatus, message, false );
+	} catch ( apiError ) {
+		showStatus(
+			cleanupStatus,
+			apiError?.message || __( 'Cleanup failed.', 'gatherpress' ),
+			false,
+		);
+	} finally {
+		setButtonBusy( cleanupButton, false );
 	}
 }
 
@@ -357,4 +483,17 @@ export function initSettingsTools() {
 	elements.importButton.addEventListener( 'click', () =>
 		importSettings( elements ),
 	);
+
+	const cleanupButton = root.querySelector(
+		'.gatherpress-settings-tools__cleanup-maps',
+	);
+	const cleanupStatus = root.querySelector(
+		'.gatherpress-settings-tools__cleanup-status',
+	);
+
+	if ( cleanupButton && cleanupStatus ) {
+		cleanupButton.addEventListener( 'click', () =>
+			cleanupMaps( { cleanupButton, cleanupStatus } ),
+		);
+	}
 }
