@@ -147,6 +147,7 @@ const { actions } = store( 'gatherpress', {
 			if ( dropdownMenu ) {
 				dropdownMenu.classList.remove( 'gatherpress--is-visible' );
 				dropdownTrigger.setAttribute( 'aria-expanded', 'false' );
+				dismissHover( dropdownParent );
 				dropdownTrigger.focus();
 			}
 		},

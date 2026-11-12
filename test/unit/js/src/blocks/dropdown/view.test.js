@@ -462,6 +462,29 @@ describe( 'dropdown hover dismissal', () => {
 		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
 	} );
 
+	it( 'hides a hovered select-mode panel after an item is chosen', () => {
+		document.body.innerHTML = `
+			<div class="wp-block-gatherpress-dropdown" data-dropdown-mode="select">
+				<a href="#" class="wp-block-gatherpress-dropdown__trigger" aria-expanded="true">Attending</a>
+				<div class="wp-block-gatherpress-dropdown__menu gatherpress--is-visible">
+					<div class="wp-block-gatherpress-dropdown-item"><a href="#" class="gatherpress--is-disabled">Attending</a></div>
+					<div class="wp-block-gatherpress-dropdown-item"><a href="#">Waiting List</a></div>
+				</div>
+			</div>
+		`;
+
+		const wrapper = document.querySelector( '.wp-block-gatherpress-dropdown' );
+		const trigger = wrapper.querySelector( '.wp-block-gatherpress-dropdown__trigger' );
+		const item = wrapper.querySelectorAll( '.wp-block-gatherpress-dropdown-item a' )[ 1 ];
+
+		hover( wrapper, true );
+		getElement.mockReturnValue( { ref: item } );
+		actions.linkHandler( new MouseEvent( 'click' ) );
+
+		expect( trigger.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ).toBe( true );
+	} );
+
 	it( 'waits for one pointer leave however often the panel is dismissed', () => {
 		const { trigger } = setupDom();
 		const wrapper = trigger.parentElement;
