@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.37.0-alpha.1',
+  'version' => '0.37.0-alpha.2',
   'leads' => 
   array (
     0 => 
@@ -378,6 +378,19 @@ return array (
       ),
     ),
     18 => 
+    array (
+      'id' => 15693083,
+      'name' => 'hifarrer',
+      'link' => 'https://profiles.wordpress.org/virtuapi/',
+      'slug' => 'virtuapi',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/f01dd6c6e21a574e47f5dd628a8e5c8d?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/f01dd6c6e21a574e47f5dd628a8e5c8d?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/f01dd6c6e21a574e47f5dd628a8e5c8d?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    19 => 
     array (
       'id' => 23532709,
       'name' => 'w3lld1',
