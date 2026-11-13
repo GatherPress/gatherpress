@@ -155,6 +155,19 @@ class Event {
 	}
 
 	/**
+	 * The event date table of the current site.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The table name.
+	 */
+	public static function table(): string {
+		global $wpdb;
+
+		return sprintf( self::TABLE_FORMAT, $wpdb->prefix );
+	}
+
+	/**
 	 * Whether an event's blocks should render for the current viewer.
 	 *
 	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
@@ -1126,6 +1139,7 @@ class Event {
 	 * and ensures consistency in the format of datetime values.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Stores the normalized timezone and fires `gatherpress_event_datetimes_saved`.
 	 *
 	 * @param array{post_id?: int, datetime_start?: string, datetime_end?: string, timezone?: string} $params {
 	 *     An array of arguments used to save event data to the custom event table.
@@ -1179,7 +1193,8 @@ class Event {
 		}
 
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
-		$timezone           = new DateTimeZone( Utility::normalize_timezone_string( (string) $fields['timezone'] ) );
+		$fields['timezone'] = Utility::normalize_timezone_string( (string) $fields['timezone'] );
+		$timezone           = new DateTimeZone( $fields['timezone'] );
 
 		// Everything downstream reads a datetime in one format: the day
 		// boundaries slice the date off the front, and `get_datetime()` drops
@@ -1196,21 +1211,23 @@ class Event {
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );
 		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( (string) $fields['datetime_end'], $timezone );
 
-		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
+		$table = self::table();
 
 		// @todo Add caching to this and create new method to check existence.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
-		$exists = $wpdb->get_var(
+		$previous = $wpdb->get_row(
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-				'SELECT post_id FROM %i WHERE post_id = %d',
+				'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone
+				FROM %i WHERE post_id = %d',
 				$table,
 				$fields['post_id']
-			)
+			),
+			ARRAY_A
 		);
 
-		if ( ! empty( $exists ) ) {
+		if ( ! empty( $previous ) ) {
 			$value = $wpdb->update(
 				$table,
 				$fields,
@@ -1237,6 +1254,24 @@ class Event {
 				$meta_key,
 				// Only the string-valued fields reach here; post_id is skipped above.
 				sanitize_text_field( (string) $field )
+			);
+		}
+
+		if ( false !== $value ) {
+			/**
+			 * Fires after an event's datetimes are saved.
+			 *
+			 * @since TBD
+			 *
+			 * @param int                        $post_id  Event post ID.
+			 * @param array<string, string>      $saved    The saved datetimes, both local and GMT, and the timezone.
+			 * @param array<string, string>|null $previous The datetimes before this save, or null for the first save.
+			 */
+			do_action(
+				'gatherpress_event_datetimes_saved',
+				(int) $fields['post_id'],
+				array_map( 'strval', array_diff_key( $fields, array( 'post_id' => 0 ) ) ),
+				$previous
 			);
 		}
 

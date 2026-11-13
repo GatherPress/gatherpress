@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added a `gatherpress_event_datetimes_saved` action that fires after an event's dates are saved, with the saved start, end and timezone and the values they replaced. Event timezones written as a UTC offset, such as `UTC+5.5`, are now stored in the form PHP accepts, such as `+05:30`.

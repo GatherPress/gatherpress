@@ -78,7 +78,7 @@ final class Events extends Post_Type {
 	protected function drop_table(): void {
 		global $wpdb;
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- Dropping a plugin-owned table on uninstall.
 		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table ) );

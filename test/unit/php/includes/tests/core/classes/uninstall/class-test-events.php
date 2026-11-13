@@ -108,9 +108,7 @@ class Test_Events extends Base {
 	 * @return string[] The matching drop statements.
 	 */
 	protected function drop_statements( array $queries ): array {
-		global $wpdb;
-
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 
 		return array_values(
 			array_filter(
@@ -314,8 +312,6 @@ class Test_Events extends Base {
 	 * @return void
 	 */
 	public function test_drops_the_event_date_table(): void {
-		global $wpdb;
-
 		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
 		$drops = $this->drop_statements( $this->capture_run() );
@@ -327,7 +323,7 @@ class Test_Events extends Base {
 			'The drop tolerates a table that was already removed.'
 		);
 		$this->assertStringContainsString(
-			sprintf( Event::TABLE_FORMAT, $wpdb->prefix ),
+			Event::table(),
 			$drops[0],
 			'The drop names the event table for this site, not another one.'
 		);
