@@ -65,6 +65,48 @@ final class Post_Type_Feed extends Endpoint {
 	}
 
 	/**
+	 * Builds the feed's regex pattern from the post type's archive slug.
+	 *
+	 * Works out the archive slug the way WordPress core does for archive
+	 * rewrite rules, so the rule matches the link that
+	 * `get_post_type_archive_feed_link()` returns: a string `has_archive`
+	 * replaces the rewrite slug, and `with_front` adds the permalink front.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The compiled regex pattern.
+	 */
+	protected function get_regex_pattern(): string {
+		global $wp_rewrite;
+
+		/**
+		 * The registered post type object.
+		 *
+		 * @var WP_Post_Type $type_object Registration resolved the object before the
+		 *                                endpoint could initialize.
+		 */
+		$type_object = $this->type_object;
+
+		/**
+		 * Rewrite settings of the post type.
+		 *
+		 * @var array<string, mixed> $rewrite Registration bails on post types with rewrites disabled.
+		 */
+		$rewrite = $type_object->rewrite;
+
+		$archive_slug = is_string( $type_object->has_archive ) && '' !== $type_object->has_archive
+			? $type_object->has_archive
+			: $rewrite['slug'];
+		$prefix       = $rewrite['with_front'] ? substr( $wp_rewrite->front, 1 ) : $wp_rewrite->root;
+
+		return sprintf(
+			$this->reg_ex,
+			$prefix . $archive_slug,
+			join( '|', $this->get_slugs() )
+		);
+	}
+
+	/**
 	 * Validates if the current request is for a post type archive feed.
 	 *
 	 * This method checks if the current request is for an archive page of the specified

@@ -9,8 +9,11 @@
 namespace GatherPress\Tests\Core\Calendar\External;
 
 use GatherPress\Core\Calendar\External\Post_Type_Feed;
+use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Calendar\External\Template;
+use GatherPress\Core\Event\Event;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Post_Type_Feed.
@@ -19,6 +22,24 @@ use GatherPress\Tests\Base;
  * @group              endpoints
  */
 class Test_Post_Type_Feed extends Base {
+
+	/**
+	 * Permalink structure before the test.
+	 *
+	 * @var string
+	 */
+	private string $permalink_structure = '';
+
+	/**
+	 * Saves the permalink structure.
+	 *
+	 * @return void
+	 */
+	public function set_up(): void {
+		parent::set_up();
+
+		$this->permalink_structure = (string) get_option( 'permalink_structure' );
+	}
 
 	/**
 	 * Coverage for __construct method.
@@ -139,5 +160,201 @@ class Test_Post_Type_Feed extends Base {
 			$instance->get_rewrite_atts(),
 			'Failed to assert that rewrite attributes match the post-type feed shape.'
 		);
+	}
+
+	/**
+	 * Coverage for get_regex_pattern with the event post type's defaults.
+	 *
+	 * @covers ::get_regex_pattern
+	 *
+	 * @return void
+	 */
+	public function test_get_regex_pattern_uses_rewrite_slug(): void {
+		$instance = $this->get_ical_feed( 'gatherpress_event' );
+
+		$this->assertSame(
+			'event/feed/(ical)/?$',
+			Utility::invoke_hidden_method( $instance, 'get_regex_pattern' ),
+			'Failed to assert that the pattern uses the rewrite slug when has_archive is true.'
+		);
+	}
+
+	/**
+	 * Coverage for get_regex_pattern when has_archive is a string.
+	 *
+	 * @covers ::get_regex_pattern
+	 *
+	 * @return void
+	 */
+	public function test_get_regex_pattern_uses_archive_slug(): void {
+		$this->set_permalinks( '/%postname%/' );
+		$this->register_feed_post_type( 'things', false );
+
+		$instance = $this->get_ical_feed( 'gatherpress_feed_pt' );
+		$pattern  = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
+
+		$this->assertSame(
+			'things/feed/(ical)/?$',
+			$pattern,
+			'Failed to assert that a string has_archive replaces the rewrite slug.'
+		);
+		$this->assert_pattern_matches_feed_link( $pattern );
+	}
+
+	/**
+	 * Coverage for get_regex_pattern when has_archive is an empty string.
+	 *
+	 * @covers ::get_regex_pattern
+	 *
+	 * @return void
+	 */
+	public function test_get_regex_pattern_ignores_empty_archive_slug(): void {
+		$this->register_feed_post_type( '', false );
+
+		$instance = $this->get_ical_feed( 'gatherpress_feed_pt' );
+
+		$this->assertSame(
+			'thing/feed/(ical)/?$',
+			Utility::invoke_hidden_method( $instance, 'get_regex_pattern' ),
+			'Failed to assert that an empty has_archive falls back to the rewrite slug.'
+		);
+	}
+
+	/**
+	 * Coverage for get_regex_pattern when the post type uses the permalink front.
+	 *
+	 * @covers ::get_regex_pattern
+	 *
+	 * @return void
+	 */
+	public function test_get_regex_pattern_adds_permalink_front(): void {
+		$this->set_permalinks( '/blog/%postname%/' );
+		$this->register_feed_post_type( true, true );
+
+		$instance = $this->get_ical_feed( 'gatherpress_feed_pt' );
+		$pattern  = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
+
+		$this->assertSame(
+			'blog/thing/feed/(ical)/?$',
+			$pattern,
+			'Failed to assert that with_front adds the permalink front.'
+		);
+		$this->assert_pattern_matches_feed_link( $pattern );
+	}
+
+	/**
+	 * Coverage for the archive feed rule of a custom event post type.
+	 *
+	 * @covers ::get_regex_pattern
+	 *
+	 * @return void
+	 */
+	public function test_custom_event_post_type_feed_rule_uses_archive_slug(): void {
+		global $wp_rewrite;
+
+		$this->set_permalinks( '/%postname%/' );
+		$this->register_feed_post_type( 'things', false, array( 'title', Event::SUPPORT ) );
+
+		Setup::get_instance()->init_events( 'gatherpress_feed_pt' );
+
+		$this->assertArrayHasKey(
+			'things/feed/(ical)/?$',
+			$wp_rewrite->extra_rules_top,
+			'Failed to assert that a custom event post type gets its archive feed rule under the archive slug.'
+		);
+		$this->assert_pattern_matches_feed_link( 'things/feed/(ical)/?$' );
+	}
+
+	/**
+	 * Builds an iCal feed endpoint for a post type.
+	 *
+	 * @param string $post_type The post type name.
+	 *
+	 * @return Post_Type_Feed The feed endpoint.
+	 */
+	private function get_ical_feed( string $post_type ): Post_Type_Feed {
+		return new Post_Type_Feed(
+			array(
+				new Template(
+					'ical',
+					static function () {
+						return array( 'file_name' => 'foo.php' );
+					}
+				),
+			),
+			'gatherpress_ext_calendar',
+			$post_type
+		);
+	}
+
+	/**
+	 * Registers a post type with the given archive and front settings.
+	 *
+	 * @param bool|string $has_archive The has_archive argument.
+	 * @param bool        $with_front  The rewrite with_front argument.
+	 * @param string[]    $supports    The post type supports.
+	 *
+	 * @return void
+	 */
+	private function register_feed_post_type(
+		$has_archive,
+		bool $with_front,
+		array $supports = array( 'title' )
+	): void {
+		register_post_type(
+			'gatherpress_feed_pt',
+			array(
+				'public'      => true,
+				'supports'    => $supports,
+				'has_archive' => $has_archive,
+				'rewrite'     => array(
+					'slug'       => 'thing',
+					'with_front' => $with_front,
+				),
+			)
+		);
+	}
+
+	/**
+	 * Sets the permalink structure.
+	 *
+	 * @param string $structure The permalink structure.
+	 *
+	 * @return void
+	 */
+	private function set_permalinks( string $structure ): void {
+		global $wp_rewrite;
+
+		$wp_rewrite->set_permalink_structure( $structure );
+	}
+
+	/**
+	 * Asserts the pattern matches the path of the advertised archive feed link.
+	 *
+	 * @param string $pattern The rewrite rule pattern.
+	 *
+	 * @return void
+	 */
+	private function assert_pattern_matches_feed_link( string $pattern ): void {
+		$link = (string) get_post_type_archive_feed_link( 'gatherpress_feed_pt', 'ical' );
+		$path = ltrim( (string) wp_parse_url( $link, PHP_URL_PATH ), '/' );
+
+		$this->assertMatchesRegularExpression(
+			'#^' . $pattern . '#',
+			$path,
+			'Failed to assert that the rule matches the advertised feed link.'
+		);
+	}
+
+	/**
+	 * Unregisters the test post type and restores the permalink structure.
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		unregister_post_type( 'gatherpress_feed_pt' );
+		$this->set_permalinks( $this->permalink_structure );
+
+		parent::tear_down();
 	}
 }
