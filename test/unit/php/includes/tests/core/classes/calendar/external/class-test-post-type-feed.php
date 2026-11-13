@@ -36,9 +36,11 @@ class Test_Post_Type_Feed extends Base {
 	 * @return void
 	 */
 	public function set_up(): void {
+		global $wp_rewrite;
+
 		parent::set_up();
 
-		$this->permalink_structure = (string) get_option( 'permalink_structure' );
+		$this->permalink_structure = (string) $wp_rewrite->permalink_structure;
 	}
 
 	/**
@@ -352,8 +354,13 @@ class Test_Post_Type_Feed extends Base {
 	 * @return void
 	 */
 	public function tear_down(): void {
+		global $wp_rewrite;
+
 		unregister_post_type( 'gatherpress_feed_pt' );
-		$this->set_permalinks( $this->permalink_structure );
+
+		if ( $wp_rewrite->permalink_structure !== $this->permalink_structure ) {
+			$this->set_permalinks( $this->permalink_structure );
+		}
 
 		parent::tear_down();
 	}
