@@ -26,12 +26,16 @@ class Test_Post_Type_Feed extends Base {
 	/**
 	 * Permalink structure before the test.
 	 *
+	 * @since TBD
+	 *
 	 * @var string
 	 */
 	private string $permalink_structure = '';
 
 	/**
 	 * Saves the permalink structure.
+	 *
+	 * @since TBD
 	 *
 	 * @return void
 	 */
@@ -167,6 +171,8 @@ class Test_Post_Type_Feed extends Base {
 	/**
 	 * Coverage for get_regex_pattern with the event post type's defaults.
 	 *
+	 * @since TBD
+	 *
 	 * @covers ::get_regex_pattern
 	 *
 	 * @return void
@@ -183,6 +189,8 @@ class Test_Post_Type_Feed extends Base {
 
 	/**
 	 * Coverage for get_regex_pattern when has_archive is a string.
+	 *
+	 * @since TBD
 	 *
 	 * @covers ::get_regex_pattern
 	 *
@@ -206,6 +214,8 @@ class Test_Post_Type_Feed extends Base {
 	/**
 	 * Coverage for get_regex_pattern when has_archive is an empty string.
 	 *
+	 * @since TBD
+	 *
 	 * @covers ::get_regex_pattern
 	 *
 	 * @return void
@@ -224,6 +234,8 @@ class Test_Post_Type_Feed extends Base {
 
 	/**
 	 * Coverage for get_regex_pattern when the post type uses the permalink front.
+	 *
+	 * @since TBD
 	 *
 	 * @covers ::get_regex_pattern
 	 *
@@ -246,6 +258,8 @@ class Test_Post_Type_Feed extends Base {
 
 	/**
 	 * Coverage for the archive feed rule of a custom event post type.
+	 *
+	 * @since TBD
 	 *
 	 * @covers ::get_regex_pattern
 	 *
@@ -270,6 +284,8 @@ class Test_Post_Type_Feed extends Base {
 	/**
 	 * Builds an iCal feed endpoint for a post type.
 	 *
+	 * @since TBD
+	 *
 	 * @param string $post_type The post type name.
 	 *
 	 * @return Post_Type_Feed The feed endpoint.
@@ -291,6 +307,8 @@ class Test_Post_Type_Feed extends Base {
 
 	/**
 	 * Registers a post type with the given archive and front settings.
+	 *
+	 * @since TBD
 	 *
 	 * @param bool|string $has_archive The has_archive argument.
 	 * @param bool        $with_front  The rewrite with_front argument.
@@ -320,6 +338,8 @@ class Test_Post_Type_Feed extends Base {
 	/**
 	 * Sets the permalink structure.
 	 *
+	 * @since TBD
+	 *
 	 * @param string $structure The permalink structure.
 	 *
 	 * @return void
@@ -332,6 +352,8 @@ class Test_Post_Type_Feed extends Base {
 
 	/**
 	 * Asserts the pattern matches the path of the advertised archive feed link.
+	 *
+	 * @since TBD
 	 *
 	 * @param string $pattern The rewrite rule pattern.
 	 *
@@ -350,6 +372,8 @@ class Test_Post_Type_Feed extends Base {
 
 	/**
 	 * Unregisters the test post type and restores the permalink structure.
+	 *
+	 * @since TBD
 	 *
 	 * @return void
 	 */
