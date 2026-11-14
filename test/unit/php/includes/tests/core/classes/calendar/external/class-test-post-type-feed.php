@@ -173,7 +173,7 @@ class Test_Post_Type_Feed extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_regex_pattern
+	 * @covers ::get_rewrite_slug
 	 *
 	 * @return void
 	 */
@@ -192,7 +192,7 @@ class Test_Post_Type_Feed extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_regex_pattern
+	 * @covers ::get_rewrite_slug
 	 *
 	 * @return void
 	 */
@@ -216,7 +216,7 @@ class Test_Post_Type_Feed extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_regex_pattern
+	 * @covers ::get_rewrite_slug
 	 *
 	 * @return void
 	 */
@@ -237,7 +237,7 @@ class Test_Post_Type_Feed extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_regex_pattern
+	 * @covers ::get_rewrite_slug
 	 *
 	 * @return void
 	 */
@@ -261,7 +261,7 @@ class Test_Post_Type_Feed extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_regex_pattern
+	 * @covers ::get_rewrite_slug
 	 *
 	 * @return void
 	 */

@@ -23,6 +23,50 @@ use PMC\Unit_Test\Utility;
 class Test_Endpoint extends Base {
 
 	/**
+	 * Permalink structure before the test.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	private string $permalink_structure = '';
+
+	/**
+	 * Saves the permalink structure.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function set_up(): void {
+		global $wp_rewrite;
+
+		parent::set_up();
+
+		$this->permalink_structure = (string) $wp_rewrite->permalink_structure;
+	}
+
+	/**
+	 * Unregisters the test objects and restores the permalink structure.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		global $wp_rewrite;
+
+		unregister_post_type( 'gatherpress_front_pt' );
+		unregister_taxonomy( 'gatherpress_front_tax' );
+
+		if ( $wp_rewrite->permalink_structure !== $this->permalink_structure ) {
+			$wp_rewrite->set_permalink_structure( $this->permalink_structure );
+		}
+
+		parent::tear_down();
+	}
+
+	/**
 	 * Coverage for __construct method.
 	 *
 	 * @covers ::__construct
@@ -823,5 +867,149 @@ class Test_Endpoint extends Base {
 
 		// No assertions beyond the never() expectation above — PHPUnit reports it.
 		$this->assertTrue( true, 'Reached end of test without calling activate().' );
+	}
+
+	/**
+	 * Coverage for get_rewrite_base when a post type uses the permalink front.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rewrite_base
+	 * @covers ::get_rewrite_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_rewrite_base_adds_permalink_front_for_posts(): void {
+		global $wp_rewrite;
+
+		$wp_rewrite->set_permalink_structure( '/blog/%postname%/' );
+		register_post_type(
+			'gatherpress_front_pt',
+			array(
+				'public'  => true,
+				'rewrite' => array( 'slug' => 'meetup' ),
+			)
+		);
+
+		$instance = new Endpoint(
+			'query_var',
+			'gatherpress_front_pt',
+			'__return_true',
+			array( new Template( 'ical', '__return_empty_array' ) ),
+			'%s/([^/]+)/(%s)/?$',
+		);
+		$pattern  = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_front_pt',
+				'post_name'   => 'my-event',
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->assertSame(
+			'blog/meetup/([^/]+)/(ical)/?$',
+			$pattern,
+			'Failed to assert that with_front adds the permalink front.'
+		);
+		$this->assert_pattern_matches_link( $pattern, trailingslashit( (string) get_permalink( $post_id ) ) . 'ical/' );
+	}
+
+	/**
+	 * Coverage for get_rewrite_base when a taxonomy uses the permalink front.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rewrite_base
+	 *
+	 * @return void
+	 */
+	public function test_get_rewrite_base_adds_permalink_front_for_terms(): void {
+		global $wp_rewrite;
+
+		$wp_rewrite->set_permalink_structure( '/blog/%postname%/' );
+		register_taxonomy(
+			'gatherpress_front_tax',
+			'post',
+			array(
+				'public'  => true,
+				'rewrite' => array( 'slug' => 'group' ),
+			)
+		);
+
+		$instance = new Endpoint(
+			'query_var',
+			'gatherpress_front_tax',
+			'__return_true',
+			array( new Template( 'ical', '__return_empty_array' ) ),
+			'%s/([^/]+)/feed/(%s)/?$',
+			'taxonomy',
+		);
+		$pattern  = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
+		$term_id  = $this->factory->term->create(
+			array(
+				'taxonomy' => 'gatherpress_front_tax',
+				'slug'     => 'book-club',
+			)
+		);
+
+		$this->assertSame(
+			'blog/group/([^/]+)/feed/(ical)/?$',
+			$pattern,
+			'Failed to assert that with_front adds the permalink front for a taxonomy.'
+		);
+		$this->assert_pattern_matches_link(
+			$pattern,
+			(string) get_term_feed_link( $term_id, 'gatherpress_front_tax', 'ical' )
+		);
+	}
+
+	/**
+	 * Coverage for get_rewrite_base without the permalink front.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rewrite_base
+	 *
+	 * @return void
+	 */
+	public function test_get_rewrite_base_uses_root_without_front(): void {
+		global $wp_rewrite;
+
+		$wp_rewrite->set_permalink_structure( '/index.php/blog/%postname%/' );
+
+		$instance = new Endpoint(
+			'query_var',
+			'gatherpress_event',
+			'__return_true',
+			array( new Template( 'ical', '__return_empty_array' ) ),
+			'%s/([^/]+)/(%s)/?$',
+		);
+
+		$this->assertSame(
+			'index.php/event/([^/]+)/(ical)/?$',
+			Utility::invoke_hidden_method( $instance, 'get_regex_pattern' ),
+			'Failed to assert that a post type without with_front starts at the permalink root.'
+		);
+	}
+
+	/**
+	 * Asserts the pattern matches the path of a link.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $pattern The rewrite rule pattern.
+	 * @param string $link    The link WordPress generates.
+	 *
+	 * @return void
+	 */
+	private function assert_pattern_matches_link( string $pattern, string $link ): void {
+		$path = ltrim( (string) wp_parse_url( $link, PHP_URL_PATH ), '/' );
+
+		$this->assertMatchesRegularExpression(
+			'#^' . $pattern . '#',
+			$path,
+			'Failed to assert that the rule matches the link WordPress generates.'
+		);
 	}
 }
