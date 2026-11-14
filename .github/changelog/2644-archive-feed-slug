@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The calendar feed for an event archive now works at the address GatherPress links to when a site gives the archive its own slug through `has_archive`, or when a custom event post type keeps the permalink front. Before, the linked feed returned a 404 and the working feed was at an address nothing linked to.
