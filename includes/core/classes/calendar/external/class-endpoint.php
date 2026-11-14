@@ -232,7 +232,8 @@ class Endpoint {
 		 */
 		$rewrite = $type_object->rewrite;
 
-		$prefix = $rewrite['with_front'] ? substr( $wp_rewrite->front, 1 ) : $wp_rewrite->root;
+		// Core only fills in rewrite defaults in the admin or with pretty permalinks.
+		$prefix = ( $rewrite['with_front'] ?? true ) ? substr( $wp_rewrite->front, 1 ) : $wp_rewrite->root;
 
 		return $prefix . $this->get_rewrite_slug();
 	}

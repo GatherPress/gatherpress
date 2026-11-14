@@ -994,6 +994,45 @@ class Test_Endpoint extends Base {
 	}
 
 	/**
+	 * Coverage for get_rewrite_base when the rewrite settings lack with_front.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_rewrite_base
+	 *
+	 * @return void
+	 */
+	public function test_get_rewrite_base_defaults_to_permalink_front(): void {
+		global $wp_rewrite;
+
+		$wp_rewrite->set_permalink_structure( '/blog/%postname%/' );
+		register_post_type(
+			'gatherpress_front_pt',
+			array(
+				'public'  => true,
+				'rewrite' => array( 'slug' => 'meetup' ),
+			)
+		);
+
+		$instance = new Endpoint(
+			'query_var',
+			'gatherpress_front_pt',
+			'__return_true',
+			array( new Template( 'ical', '__return_empty_array' ) ),
+			'%s/([^/]+)/(%s)/?$',
+		);
+
+		// Core leaves out the defaults on a front-end request with plain permalinks.
+		$instance->type_object->rewrite = array( 'slug' => 'meetup' );
+
+		$this->assertSame(
+			'blog/meetup/([^/]+)/(ical)/?$',
+			Utility::invoke_hidden_method( $instance, 'get_regex_pattern' ),
+			'Failed to assert that a missing with_front defaults to the permalink front.'
+		);
+	}
+
+	/**
 	 * Asserts the pattern matches the path of a link.
 	 *
 	 * @since TBD
