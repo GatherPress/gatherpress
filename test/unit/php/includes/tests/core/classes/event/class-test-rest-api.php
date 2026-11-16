@@ -835,6 +835,101 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for the rsvp route refusing bad save_page and save_order values.
+	 *
+	 * The route schema only runs on dispatch, so this sends requests through the
+	 * registered route rather than calling the callback directly.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rsvp_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_validates_save_order_params_on_dispatch(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 5 );
+
+		Rest_Api::get_instance()->register_endpoints();
+
+		$dispatch = static function ( array $order ) use ( $event_id ): int {
+			$request = new WP_REST_Request(
+				'POST',
+				sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE )
+			);
+
+			$request->set_body_params(
+				array_merge(
+					array(
+						'post_id' => $event_id,
+						'status'  => 'attending',
+						'guests'  => 1,
+					),
+					$order
+				)
+			);
+
+			return rest_get_server()->dispatch( $request )->get_status();
+		};
+
+		$invalid = array(
+			'an array save_page'       => array(
+				'save_page'  => array( 'page-a' ),
+				'save_order' => 1,
+			),
+			'a too long save_page'     => array(
+				'save_page'  => str_repeat( 'a', 65 ),
+				'save_order' => 1,
+			),
+			'a zero save_order'        => array(
+				'save_page'  => 'page-a',
+				'save_order' => 0,
+			),
+			'a non-integer save_order' => array(
+				'save_page'  => 'page-a',
+				'save_order' => 'first',
+			),
+		);
+
+		foreach ( $invalid as $label => $order ) {
+			$this->assertSame(
+				400,
+				$dispatch( $order ),
+				sprintf( 'Failed to assert that %s is refused.', $label )
+			);
+		}
+
+		$this->assertSame(
+			200,
+			$dispatch(
+				array(
+					'save_page'  => str_repeat( 'a', 64 ),
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that valid save_page and save_order values are accepted.'
+		);
+		$this->assertSame(
+			200,
+			$dispatch( array() ),
+			'Failed to assert that a request without save_page and save_order is accepted.'
+		);
+	}
+
+	/**
 	 * Tests the rsvp_form_route method.
 	 *
 	 * Verifies that the RSVP form route is properly configured

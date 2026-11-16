@@ -374,13 +374,22 @@ final class Rest_Api {
 					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
-					'post_id' => array(
+					'post_id'    => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'status'  => array(
+					'status'     => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
+					// Only the RSVP block sends these, and its page ID has at most 35 characters.
+					'save_page'  => array(
+						'type'      => 'string',
+						'maxLength' => 64,
+					),
+					'save_order' => array(
+						'type'    => 'integer',
+						'minimum' => 1,
 					),
 				),
 			),
