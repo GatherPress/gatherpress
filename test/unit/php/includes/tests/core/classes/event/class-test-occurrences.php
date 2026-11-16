@@ -13,6 +13,7 @@ use DateTimeZone;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Occurrence;
 use GatherPress\Core\Event\Occurrences;
+use GatherPress\Core\Event\Status;
 use GatherPress\Tests\Base;
 
 /**
@@ -31,6 +32,7 @@ class Test_Occurrences extends Base {
 	public function tear_down(): void {
 		remove_all_filters( 'gatherpress_event_occurrences' );
 		remove_all_filters( 'gatherpress_event_occurrence' );
+		remove_all_filters( 'gatherpress_event_primary_occurrence' );
 
 		parent::tear_down();
 	}
@@ -341,5 +343,149 @@ class Test_Occurrences extends Base {
 
 		$this->assertSame( $other, $this->occurrences( $post_id )->find( '20261218T200000' ) );
 		$this->assertNull( $this->occurrences( $post_id )->find( '20261225T200000' ) );
+	}
+
+	/**
+	 * The one date carries the event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::single
+	 * @covers \GatherPress\Core\Event\Occurrence::is_canceled
+	 *
+	 * @return void
+	 */
+	public function test_the_one_date_carries_the_event_status(): void {
+		$post_id    = $this->event();
+		$occurrence = $this->occurrences( $post_id )->find( '20261211T200000' );
+
+		$this->assertSame( 'scheduled', $occurrence->status );
+		$this->assertFalse( $occurrence->is_canceled(), 'A scheduled event is not canceled.' );
+
+		( new Status( $post_id ) )->set( Status::STATUS_CANCELED );
+
+		$canceled = $this->occurrences( $post_id )->find( '20261211T200000' );
+
+		$this->assertSame( Status::STATUS_CANCELED, $canceled->status );
+		$this->assertTrue( $canceled->is_canceled(), 'A canceled event has a canceled date.' );
+	}
+
+	/**
+	 * Without repeat rules, the primary occurrence is the event's one date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::primary
+	 *
+	 * @return void
+	 */
+	public function test_primary_is_the_one_date(): void {
+		$post_id = $this->event();
+		$no_date = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		$this->assertSame( '20261211T200000', $this->occurrences( $post_id )->primary()->recurrence_id );
+		$this->assertNull( $this->occurrences( $no_date )->primary(), 'An event without a start has none.' );
+	}
+
+	/**
+	 * The filter can pick another primary occurrence, and anything that is
+	 * not an occurrence gives none.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::primary
+	 *
+	 * @return void
+	 */
+	public function test_primary_filter(): void {
+		$post_id = $this->event();
+		$zone    = new DateTimeZone( 'America/New_York' );
+		$next    = new Occurrence(
+			$post_id,
+			'20261218T200000',
+			new DateTimeImmutable( '2026-12-18 20:00:00', $zone ),
+			new DateTimeImmutable( '2026-12-18 22:00:00', $zone )
+		);
+
+		add_filter(
+			'gatherpress_event_primary_occurrence',
+			static function () use ( $next ): Occurrence {
+				return $next;
+			}
+		);
+
+		$this->assertSame( $next, $this->occurrences( $post_id )->primary() );
+
+		remove_all_filters( 'gatherpress_event_primary_occurrence' );
+		add_filter( 'gatherpress_event_primary_occurrence', '__return_false' );
+
+		$this->assertNull( $this->occurrences( $post_id )->primary() );
+	}
+
+	/**
+	 * The date an occurrence starts on finds it, in the event's timezone.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::on_day
+	 *
+	 * @return void
+	 */
+	public function test_on_day(): void {
+		$post_id = $this->event();
+
+		// 8:00 PM in New York is already December 12 in UTC.
+		$this->assertSame(
+			'20261211T200000',
+			$this->occurrences( $post_id )->on_day( $this->utc( '2026-12-11' ) )->recurrence_id,
+			'The local start date finds the occurrence.'
+		);
+		$this->assertNull(
+			$this->occurrences( $post_id )->on_day( $this->utc( '2026-12-12' ) ),
+			'The UTC start date does not.'
+		);
+		$this->assertSame(
+			'20261211',
+			$this->occurrences( $this->event( true ) )->on_day( $this->utc( '2026-12-11' ) )->recurrence_id,
+			'An all-day occurrence is found by its date.'
+		);
+	}
+
+	/**
+	 * With several dates, the first that starts on the date is found.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::on_day
+	 *
+	 * @return void
+	 */
+	public function test_on_day_finds_the_first_of_several(): void {
+		$post_id = $this->event();
+		$zone    = new DateTimeZone( 'America/New_York' );
+		$morning = new Occurrence(
+			$post_id,
+			'20261211T090000',
+			new DateTimeImmutable( '2026-12-11 09:00:00', $zone ),
+			new DateTimeImmutable( '2026-12-11 10:00:00', $zone )
+		);
+		$evening = new Occurrence(
+			$post_id,
+			'20261210T230000',
+			new DateTimeImmutable( '2026-12-10 23:00:00', $zone ),
+			new DateTimeImmutable( '2026-12-11 01:00:00', $zone )
+		);
+
+		add_filter(
+			'gatherpress_event_occurrences',
+			static function ( array $occurrences ) use ( $morning, $evening ): array {
+				$occurrences[] = $morning;
+				$occurrences[] = $evening;
+
+				return $occurrences;
+			}
+		);
+
+		$this->assertSame( $morning, $this->occurrences( $post_id )->on_day( $this->utc( '2026-12-11' ) ) );
 	}
 }

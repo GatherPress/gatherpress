@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added `Event::occurrences()`, which returns an event's dates as `Event\Occurrence` objects within a range, by key, by date, or the one a series shows by default. Each occurrence carries a status. Every event is a series of one for now. The `gatherpress_event_occurrences`, `gatherpress_event_occurrence` and `gatherpress_event_primary_occurrence` filters let code supply more dates.

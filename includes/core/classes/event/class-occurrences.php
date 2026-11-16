@@ -47,6 +47,14 @@ final class Occurrences {
 	const ALL_DAY_KEY_FORMAT = 'Ymd';
 
 	/**
+	 * The widest UTC offset a timezone can have, in hours.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const MAX_UTC_OFFSET_HOURS = 14;
+
+	/**
 	 * The event's one occurrence without repeat rules, once worked out.
 	 *
 	 * False until it is, and null if the event has no start.
@@ -145,6 +153,59 @@ final class Occurrences {
 	}
 
 	/**
+	 * The occurrence a series shows by default.
+	 *
+	 * That is the first occurrence that has not ended, preferring one that is
+	 * not canceled, or the last occurrence when all have ended.
+	 *
+	 * @since TBD
+	 *
+	 * @return Occurrence|null The occurrence, or null if the event has none.
+	 */
+	public function primary(): ?Occurrence {
+		$occurrence = $this->single();
+
+		/**
+		 * Filters the occurrence a series shows by default.
+		 *
+		 * @since TBD
+		 *
+		 * @param Occurrence|null $occurrence The occurrence. Without repeat rules, the event's one date.
+		 * @param int             $post_id    The event post ID.
+		 */
+		$occurrence = apply_filters( 'gatherpress_event_primary_occurrence', $occurrence, $this->post_id() );
+
+		return $occurrence instanceof Occurrence ? $occurrence : null;
+	}
+
+	/**
+	 * The first of the event's occurrences that starts on a date.
+	 *
+	 * @since TBD
+	 *
+	 * @param DateTimeInterface $day The date, as a local date in the event's timezone.
+	 *
+	 * @return Occurrence|null The occurrence, or null if none starts on that date.
+	 */
+	public function on_day( DateTimeInterface $day ): ?Occurrence {
+		$date   = $day->format( self::ALL_DAY_KEY_FORMAT );
+		$utc    = new DateTimeZone( 'UTC' );
+		$offset = sprintf( '%d hours', self::MAX_UTC_OFFSET_HOURS );
+
+		// Widen the range by the largest UTC offset so the date is covered in any timezone.
+		$from = ( new DateTimeImmutable( $day->format( 'Y-m-d' ), $utc ) )->modify( '-' . $offset );
+		$to   = ( new DateTimeImmutable( $day->format( 'Y-m-d' ), $utc ) )->modify( '+1 day +' . $offset );
+
+		foreach ( $this->in_range( $from, $to ) as $occurrence ) {
+			if ( str_starts_with( $occurrence->recurrence_id, $date ) ) {
+				return $occurrence;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * The event's post ID.
 	 *
 	 * @since TBD
@@ -185,7 +246,8 @@ final class Occurrences {
 		$all_day  = $this->event->is_all_day();
 
 		$key          = self::recurrence_id( $start, $all_day );
-		$this->single = new Occurrence( $this->post_id(), $key, $start, $end, $all_day );
+		$status       = ( new Status( $this->post_id() ) )->get();
+		$this->single = new Occurrence( $this->post_id(), $key, $start, $end, $all_day, $status );
 
 		return $this->single;
 	}
