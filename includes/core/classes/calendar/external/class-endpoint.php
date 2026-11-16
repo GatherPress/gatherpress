@@ -196,12 +196,32 @@ class Endpoint {
 	 * @return string The compiled regex pattern.
 	 */
 	protected function get_regex_pattern(): string {
+		return sprintf(
+			$this->reg_ex,
+			$this->get_rewrite_base(),
+			join( '|', $this->get_slugs() )
+		);
+	}
+
+	/**
+	 * Gets the rewrite base the way WordPress core builds its own rules.
+	 *
+	 * With `with_front`, the slug follows the permalink front, so the rule
+	 * matches the links WordPress generates for the post type or taxonomy.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The rewrite base.
+	 */
+	protected function get_rewrite_base(): string {
+		global $wp_rewrite;
+
 		/**
 		 * The registered post type or taxonomy object.
 		 *
 		 * @var WP_Post_Type|WP_Taxonomy $type_object Registration resolved the object before the
 		 *                                           endpoint could initialize, and the object-less
-		 *                                           sitewide endpoint overrides this method.
+		 *                                           sitewide endpoint overrides the regex pattern.
 		 */
 		$type_object = $this->type_object;
 
@@ -212,13 +232,37 @@ class Endpoint {
 		 */
 		$rewrite = $type_object->rewrite;
 
-		$rewrite_base = $rewrite['slug'];
-		$slugs        = join( '|', $this->get_slugs() );
-		return sprintf(
-			$this->reg_ex,
-			$rewrite_base,
-			$slugs
-		);
+		// Core only fills in rewrite defaults in the admin or with pretty permalinks.
+		$prefix = ( $rewrite['with_front'] ?? true ) ? substr( $wp_rewrite->front, 1 ) : $wp_rewrite->root;
+
+		return $prefix . $this->get_rewrite_slug();
+	}
+
+	/**
+	 * Gets the rewrite slug of the post type or taxonomy.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The rewrite slug.
+	 */
+	protected function get_rewrite_slug(): string {
+		/**
+		 * The registered post type or taxonomy object.
+		 *
+		 * @var WP_Post_Type|WP_Taxonomy $type_object Registration resolved the object before the
+		 *                                           endpoint could initialize, and the object-less
+		 *                                           sitewide endpoint overrides the regex pattern.
+		 */
+		$type_object = $this->type_object;
+
+		/**
+		 * Rewrite settings of the registered object.
+		 *
+		 * @var array<string, mixed> $rewrite Registration bails on objects with rewrites disabled.
+		 */
+		$rewrite = $type_object->rewrite;
+
+		return $rewrite['slug'];
 	}
 
 	/**
