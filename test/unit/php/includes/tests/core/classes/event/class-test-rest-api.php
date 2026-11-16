@@ -637,7 +637,7 @@ class Test_Rest_Api extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::update_rsvp
-	 * @covers ::find_newer_save
+	 * @covers ::save_in_order
 	 *
 	 * @return void
 	 */
