@@ -88,6 +88,22 @@ final class OSM extends Base {
 	const TILES_FAILED_PAUSE = 5 * MINUTE_IN_SECONDS;
 
 	/**
+	 * Default colors of the static map marker, as hex colors.
+	 *
+	 * `border` is the outer ring, `fill` the body, `outline` the thin line
+	 * around the body, and `center` the dot in the middle.
+	 *
+	 * @since TBD
+	 * @var array<string, string>
+	 */
+	const DEFAULT_MARKER_COLORS = array(
+		'border'  => '#ffffff',
+		'fill'    => '#dc3545',
+		'outline' => '#1e1e1e',
+		'center'  => '#ffffff',
+	);
+
+	/**
 	 * Provider slug used in post meta keys, filenames, and the
 	 * `map_platform` setting.
 	 *
@@ -394,6 +410,7 @@ final class OSM extends Base {
 	 * a pinprick.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Colors come from `get_marker_colors()`.
 	 *
 	 * @param GdImage $canvas Destination canvas.
 	 * @param int     $x      Pixel X position (marker center).
@@ -403,18 +420,85 @@ final class OSM extends Base {
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
-		$white = (int) imagecolorallocate( $canvas, 255, 255, 255 );
-		$red   = (int) imagecolorallocate( $canvas, 220, 53, 69 );
-		$dark  = (int) imagecolorallocate( $canvas, 30, 30, 30 );
+		$colors = array_map(
+			fn( string $hex ): int => $this->allocate_hex_color( $canvas, $hex ),
+			$this->get_marker_colors()
+		);
 
 		$outer = max( 1, (int) round( 20 * $scale ) );
 		$inner = max( 1, (int) round( 16 * $scale ) );
 		$dot   = max( 1, (int) round( 6 * $scale ) );
 
-		imagefilledellipse( $canvas, $x, $y, $outer, $outer, $white );
-		imagefilledellipse( $canvas, $x, $y, $inner, $inner, $red );
-		imageellipse( $canvas, $x, $y, $inner, $inner, $dark );
-		imagefilledellipse( $canvas, $x, $y, $dot, $dot, $white );
+		imagefilledellipse( $canvas, $x, $y, $outer, $outer, $colors['border'] );
+		imagefilledellipse( $canvas, $x, $y, $inner, $inner, $colors['fill'] );
+		imageellipse( $canvas, $x, $y, $inner, $inner, $colors['outline'] );
+		imagefilledellipse( $canvas, $x, $y, $dot, $dot, $colors['center'] );
+	}
+
+	/**
+	 * Colors of the static map marker, filterable.
+	 *
+	 * A color that is missing or is not a valid hex color keeps its
+	 * default, so a filter can change one color and leave the rest.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, string> Lowercase hex colors keyed like `DEFAULT_MARKER_COLORS`.
+	 */
+	public function get_marker_colors(): array {
+		/**
+		 * Filter the colors of the marker drawn on static OpenStreetMap images.
+		 *
+		 * Static maps are rendered on the server, so CSS cannot change their
+		 * marker. Saved maps render again when these colors change.
+		 *
+		 * @since TBD
+		 *
+		 * @param array<string, string> $colors {
+		 *     Hex colors of the marker.
+		 *
+		 *     @type string $border  Outer ring. Default `#ffffff`.
+		 *     @type string $fill    Body of the marker. Default `#dc3545`.
+		 *     @type string $outline Thin line around the body. Default `#1e1e1e`.
+		 *     @type string $center  Dot in the middle. Default `#ffffff`.
+		 * }
+		 */
+		$filtered = (array) apply_filters( 'gatherpress_static_map_marker_colors', self::DEFAULT_MARKER_COLORS );
+		$colors   = array();
+
+		foreach ( self::DEFAULT_MARKER_COLORS as $key => $default ) {
+			$color          = is_string( $filtered[ $key ] ?? null ) ? sanitize_hex_color( $filtered[ $key ] ) : '';
+			$colors[ $key ] = $color ? strtolower( $color ) : $default;
+		}
+
+		return $colors;
+	}
+
+	/**
+	 * Allocate a hex color such as `#dc3545` or `#fff` on a canvas.
+	 *
+	 * @since TBD
+	 *
+	 * @param GdImage $canvas Destination canvas.
+	 * @param string  $hex    Valid hex color, from `get_marker_colors()`.
+	 *
+	 * @return int GD color identifier.
+	 */
+	private function allocate_hex_color( $canvas, string $hex ): int {
+		$hex = ltrim( $hex, '#' );
+
+		if ( 3 === strlen( $hex ) ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+
+		/**
+		 * Red, green, and blue channels. Two hex digits each, so 0 to 255.
+		 *
+		 * @var array{int<0, 255>, int<0, 255>, int<0, 255>} $rgb
+		 */
+		$rgb = sscanf( $hex, '%02x%02x%02x' );
+
+		return (int) imagecolorallocate( $canvas, $rgb[0], $rgb[1], $rgb[2] );
 	}
 
 	/**
@@ -454,21 +538,31 @@ final class OSM extends Base {
 	/**
 	 * Where the tiles come from, for the static map cache.
 	 *
-	 * Saved maps render again when the tile URL or the CARTO key changes.
-	 * The key is replaced with a hash of it, so its value stays out of the
-	 * cache hash.
+	 * Saved maps render again when the tile URL, the CARTO key, or the
+	 * marker colors change. The key is replaced with a hash of it, so its
+	 * value stays out of the cache hash.
 	 *
 	 * @since 0.36.2
+	 * @since TBD Includes the marker colors when they are not the default.
 	 *
 	 * @return string The tile URL template, with the key hashed.
 	 */
 	public function get_cache_source(): string {
-		return (string) preg_replace_callback(
+		$source = (string) preg_replace_callback(
 			'/([?&]key=)([^&]*)/',
 			// md5() here only keeps the key out of the cache hash.
 			static fn( array $matches ): string => $matches[1] . md5( $matches[2] ), // NOSONAR.
 			$this->get_tile_url_template()
 		);
+
+		// Left out for the default marker, so existing saved maps keep their hash.
+		$colors = $this->get_marker_colors();
+
+		if ( self::DEFAULT_MARKER_COLORS !== $colors ) {
+			$source .= '|marker=' . implode( ',', $colors );
+		}
+
+		return $source;
 	}
 
 	/**
