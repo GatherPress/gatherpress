@@ -427,6 +427,51 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Test pre_render_block keeps the main query's values a block leaves out.
+	 *
+	 * An inherited event query saved without `perPage`, `order` or `orderBy`
+	 * (hand-written template markup, say) used to warn on the missing keys
+	 * and pass null for them.
+	 *
+	 * @since TBD
+	 * @covers ::pre_render_block
+	 *
+	 * @return void
+	 */
+	public function test_pre_render_block_with_inherit_query_keeps_omitted_vars(): void {
+		global $wp_query;
+
+		$instance       = Event_Query::get_instance();
+		$original_query = $wp_query;
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$wp_query = new \WP_Query(
+			array(
+				'posts_per_page' => 7,
+				'order'          => 'ASC',
+				'orderby'        => 'title',
+			)
+		);
+
+		$parsed_block = array(
+			'attrs' => array(
+				'namespace' => Event_Query::BLOCK_NAME,
+				'query'     => array(
+					'inherit' => true,
+				),
+			),
+		);
+
+		$this->assertNull( $instance->pre_render_block( null, $parsed_block ) );
+		$this->assertSame( 7, $wp_query->query_vars['posts_per_page'] );
+		$this->assertSame( 'ASC', $wp_query->query_vars['order'] );
+		$this->assertSame( 'title', $wp_query->query_vars['orderby'] );
+
+		// Restore original wp_query.
+		$wp_query = $original_query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+	}
+
+	/**
 	 * Test pre_render_block without inherit query adds filter.
 	 *
 	 * @since 0.33.0
