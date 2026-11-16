@@ -1,0 +1,23 @@
+// Event and venue details inside a post embed. The embed iframe loads no
+// theme styles, so these sit on top of core's wp-embed-template styles.
+.gatherpress-embed {
+	list-style: none;
+	margin: 1rem 0 0;
+	padding: 0;
+
+	li + li {
+		margin-top: 0.25rem;
+	}
+}
+
+.gatherpress-embed__venue-address {
+	display: block;
+}
+
+.gatherpress-embed__status {
+	font-style: italic;
+}
+
+.gatherpress-embed__rsvp {
+	margin: 1rem 0 0;
+}

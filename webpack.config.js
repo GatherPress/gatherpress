@@ -78,6 +78,7 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			embed_style: path.resolve( process.cwd(), 'src', 'embed.scss' ),
 			timezone_shim: path.resolve(
 				process.cwd(),
 				'src/timezone-shim',

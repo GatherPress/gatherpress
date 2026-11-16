@@ -72,6 +72,7 @@ final class Setup {
 		Coexistence_Guard::get_instance();
 		Dashboard::get_instance();
 		Email::get_instance();
+		Embed::get_instance();
 		Event\Setup::get_instance();
 		Export::get_instance();
 		Feed::get_instance();
