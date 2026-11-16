@@ -386,6 +386,39 @@ per-event `gatherpress_enable_open_rsvp` post meta (unset means enabled).
 `Rsvp::allows_open_rsvp()` resolves both; when it returns false the RSVP Form
 block renders nothing and form or REST submissions are rejected with a 403.
 
+## Visibility and anonymous RSVPs
+
+Who can see what about a responder comes down to one capability,
+`Rsvp::CAPABILITY` (`moderate_comments`). Being able to edit the event does
+not grant it, and there is no separate rule for site admins: anyone with the
+capability sees everything, anyone without it sees the masked version.
+
+Without the capability, a viewer gets:
+
+- **Anonymous response**: name "Anonymous", no email, no profile URL, no user
+  ID, and the default avatar. This applies to `get_comment()` readers
+  (`Rsvp\Query::prepare_rsvp_comment()`), the comments REST `author` field
+  (`Rsvp\Query::mask_anonymous_rsvp_rest_author()`), the RSVP response record
+  (`Rsvp\Response\Serializer::to_array()`), and avatars
+  (`Blocks\Rsvp_Response::modify_avatar_for_gatherpress_rsvp()`).
+- **Response identified only by email**: name "Attendee" and no identifier, so
+  the address is not published.
+
+Avatars for RSVPs are resolved by core, because GatherPress adds
+`gatherpress_rsvp` to the `get_avatar_comment_types` filter. An avatar another
+plugin supplies through `pre_get_avatar_data` is kept. The only override is
+for an anonymous response shown to a viewer without the capability, which
+always gets the default avatar.
+
+Anonymity also needs the event to allow it. `Rsvp::process()` runs every
+intent through `constrain_rsvp_intent()`, and when the event's
+`gatherpress_enable_anonymous_rsvp` meta is off, a request to stay anonymous
+is saved as a **public** response rather than rejected. The save happens
+before `process()` returns, so the returned state can only tell you it
+already happened. A companion plugin that should not publish a name the
+responder wanted hidden must check that meta and reject the request before
+calling `process()`.
+
 ## Custom fields and the form schema
 
 An RSVP Form can carry fields beyond name and email: dietary needs, a t-shirt size, an accessibility request. Those are defined with Form Field blocks inside the form, and what a submission is validated against is not the blocks themselves but a **schema stored in post meta**.

@@ -18,7 +18,6 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
 use WP_HTML_Tag_Processor;
-use WP_User;
 
 /**
  * Class Rsvp_Response.
@@ -71,6 +70,7 @@ final class Rsvp_Response {
 		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'attach_dropdown_interactivity' ), 11 );
+		add_filter( 'get_avatar_comment_types', array( $this, 'add_rsvp_avatar_comment_type' ) );
 		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
 	}
@@ -271,11 +271,31 @@ final class Rsvp_Response {
 	}
 
 	/**
-	 * Modifies avatar URLs for the `gatherpress_rsvp` custom comment type.
+	 * Allows avatars for the `gatherpress_rsvp` comment type.
 	 *
-	 * This method ensures that the `gatherpress_rsvp` custom comment type includes a valid avatar URL.
-	 * It checks if the provided comment is of type `gatherpress_rsvp` and modifies the avatar data `$args`
-	 * to include the user's avatar URL based on their user ID.
+	 * Core only resolves avatars for the comment types in this list, so without
+	 * it every RSVP gets an empty URL. Letting core resolve them also keeps any
+	 * avatar another plugin provides through `pre_get_avatar_data`.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $types Comment types that allow avatars.
+	 *
+	 * @return string[] The comment types, including `gatherpress_rsvp`.
+	 */
+	public function add_rsvp_avatar_comment_type( array $types ): array {
+		$types[] = Rsvp::COMMENT_TYPE;
+
+		return array_unique( $types );
+	}
+
+	/**
+	 * Adjusts avatar data for the `gatherpress_rsvp` custom comment type.
+	 *
+	 * Core resolves the avatar itself (see `add_rsvp_avatar_comment_type()`).
+	 * This method only replaces it with the default avatar when the responder
+	 * asked to stay anonymous and the viewer cannot manage RSVPs, and cleans up
+	 * `extra_attr`.
 	 *
 	 * @since 0.33.0
 	 *
@@ -297,26 +317,23 @@ final class Rsvp_Response {
 			return $args;
 		}
 
-		$email = $comment->comment_author_email;
-
-		if ( intval( $comment->user_id ) && empty( $email ) ) {
-			$user = new WP_User( $comment->user_id );
-
-			if ( $user->exists() ) {
-				$email = $user->user_email;
-			}
-		}
-
-		// An empty email leaves no identifying hash in the URL, so the avatar
-		// falls back to the generic placeholder for an anonymous responder.
+		// Runs after any plugin has resolved an avatar, so an anonymous
+		// responder's real avatar never reaches a viewer who cannot manage
+		// RSVPs. The masked comment keeps its user ID, so core alone would
+		// still find the account's avatar.
 		if (
 			get_comment_meta( (int) $comment->comment_ID, Rsvp::ANONYMOUS_META_KEY, true )
 			&& ! current_user_can( Rsvp::CAPABILITY )
 		) {
-			$email = '';
+			$args['url']          = get_avatar_url(
+				'',
+				array(
+					'force_default' => true,
+					'size'          => $args['size'] ?? 96,
+				)
+			);
+			$args['found_avatar'] = false;
 		}
-
-		$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
 
 		// Preserve only style attributes from extra_attr to maintain WordPress core's
 		// border styles (e.g., border-radius on avatars). Strip all other attributes
