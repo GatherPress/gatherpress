@@ -23,6 +23,8 @@ use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Response\Serializer;
+use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
@@ -53,6 +55,15 @@ final class Rest_Api {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Comment meta key that keeps the order of the last save of an RSVP, by page.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	public const SAVE_ORDER_META_KEY = 'gatherpress_rsvp_save_order';
 
 	/**
 	 * Class constructor.
@@ -664,9 +675,13 @@ final class Rest_Api {
 				$guests = 0;
 			}
 
-			$user_record = $rsvp->save( $user_identifier, $status, $anonymous, $guests );
+			$newer_save  = $this->find_newer_save( $rsvp, $user_identifier, $params );
+			$user_record = $newer_save
+				? Serializer::to_array( $newer_save )
+				: $rsvp->save( $user_identifier, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
+			$anonymous   = (int) $user_record['anonymous'];
 
 			if ( in_array( $status, Status::values(), true ) ) {
 				$success = true;
@@ -994,6 +1009,50 @@ final class Rest_Api {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Finds the stored RSVP when a newer save from the same page is already stored.
+	 *
+	 * Guest count saves send the page they come from and their order on that page.
+	 * A save started as the page is left can reach the server before an earlier
+	 * one, so the earlier one must not overwrite it (#2641). Saves from another
+	 * page or device are never ignored, and a save without an order always goes
+	 * through. The order is stored before the save, so a newer save that comes in
+	 * meanwhile sees it.
+	 *
+	 * @since TBD
+	 *
+	 * @param Rsvp                 $rsvp       The event's RSVP object.
+	 * @param string|int           $identifier The user ID or email address.
+	 * @param array<string, mixed> $params     The request parameters.
+	 *
+	 * @return State|null The stored RSVP when this save is older, null when it should be saved.
+	 */
+	private function find_newer_save( Rsvp $rsvp, string|int $identifier, array $params ): ?State {
+		$page  = sanitize_text_field( (string) ( $params['save_page'] ?? '' ) );
+		$order = absint( $params['save_order'] ?? 0 );
+		$state = ( '' !== $page && $order ) ? $rsvp->find( $identifier ) : null;
+
+		if ( null === $state ) {
+			return null;
+		}
+
+		$comment_id = (int) $state->comment->comment_ID;
+		$stored     = get_comment_meta( $comment_id, self::SAVE_ORDER_META_KEY, true );
+		$orders     = is_array( $stored ) ? $stored : array();
+
+		if ( $order <= (int) ( $orders[ $page ] ?? 0 ) ) {
+			return $state;
+		}
+
+		// Keeps the pages that saved last, so a save from one tab does not drop another tab's order.
+		unset( $orders[ $page ] );
+		$orders[ $page ] = $order;
+
+		update_comment_meta( $comment_id, self::SAVE_ORDER_META_KEY, array_slice( $orders, -5, null, true ) );
+
+		return null;
 	}
 
 	/**

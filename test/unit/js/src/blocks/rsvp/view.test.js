@@ -988,6 +988,17 @@ describe( 'rsvp guest count saves once after the last change', () => {
 		await jest.advanceTimersByTimeAsync( 1000 );
 
 		expect( sentGuests() ).toEqual( [ 1, 2 ] );
+
+		// Both saves name the same page, and the newer one has the higher order,
+		// so the server can ignore the older one if it arrives last (#2641).
+		const [ first, second ] = rsvpPosts().map( ( [ , options ] ) =>
+			JSON.parse( options.body ),
+		);
+
+		expect( typeof first.save_page ).toBe( 'string' );
+		expect( first.save_page ).not.toBe( '' );
+		expect( second.save_page ).toBe( first.save_page );
+		expect( second.save_order ).toBeGreaterThan( first.save_order );
 	} );
 
 	it( 'fetches the nonce when the field gets focus', async () => {

@@ -244,6 +244,9 @@ export const getNonce = ( () => {
  * @param {string}      args.status            - The RSVP status (`attending`, `not_attending`, etc.).
  * @param {number}      [args.guests=0]        - The number of additional guests.
  * @param {boolean}     [args.anonymous=false] - Whether the RSVP is anonymous.
+ * @param {string}      [args.savePage]        - The page the save comes from. With `saveOrder`, lets the
+ *                                             server ignore a save older than one already stored.
+ * @param {number}      [args.saveOrder]       - The order of the save on that page.
  * @param {Object}      [state=null]           - A state object to update with the API response data.
  * @param {Function}    [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                             Receives the API response as its argument.
@@ -299,6 +302,8 @@ export async function sendRsvpApiRequest(
 					status: args.status,
 					guests: args.guests,
 					anonymous: args.anonymous,
+					save_page: args.savePage,
+					save_order: args.saveOrder,
 				} ),
 			},
 		);
