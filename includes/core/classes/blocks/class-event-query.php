@@ -177,14 +177,23 @@ final class Event_Query {
 		) {
 			global $wp_query;
 
-			$query_args = array_merge(
-				$wp_query->query_vars,
-				array(
-					'posts_per_page' => $parsed_block['attrs']['query']['perPage'],
-					'order'          => $parsed_block['attrs']['query']['order'],
-					'orderby'        => $parsed_block['attrs']['query']['orderBy'],
-				)
+			$block_query = $parsed_block['attrs']['query'];
+			$query_args  = $wp_query->query_vars;
+
+			// Override only what the block sets. A block saved without these
+			// keys (hand-written template markup, say) keeps the main query's
+			// value instead of warning and resetting it to null.
+			$block_query_vars = array(
+				'perPage' => 'posts_per_page',
+				'order'   => 'order',
+				'orderBy' => 'orderby',
 			);
+
+			foreach ( $block_query_vars as $block_key => $query_var ) {
+				if ( isset( $block_query[ $block_key ] ) ) {
+					$query_args[ $query_var ] = $block_query[ $block_key ];
+				}
+			}
 
 			/**
 			 * Filters the WP_Query arguments GatherPress builds for a Query Loop.
