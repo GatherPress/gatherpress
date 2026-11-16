@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar\External;
+use GatherPress\Core\Event\Occurrences;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
@@ -165,6 +166,17 @@ class Event {
 		global $wpdb;
 
 		return sprintf( self::TABLE_FORMAT, $wpdb->prefix );
+	}
+
+	/**
+	 * The event's dates.
+	 *
+	 * @since TBD
+	 *
+	 * @return Occurrences The event's occurrences.
+	 */
+	public function occurrences(): Occurrences {
+		return new Occurrences( $this );
 	}
 
 	/**
