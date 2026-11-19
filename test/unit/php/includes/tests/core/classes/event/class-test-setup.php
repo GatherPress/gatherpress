@@ -621,6 +621,10 @@ class Test_Setup extends Base {
 		$instance->register_post_type();
 
 		$this->assertTrue( post_type_exists( Event::POST_TYPE ), 'Failed to assert that post type exists.' );
+		$this->assertFalse(
+			get_post_type_object( Event::POST_TYPE )->randomable,
+			'Failed to assert events are kept out of the random redirect.'
+		);
 	}
 
 	/**

@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Events and venues are left out of the random post address that WordPress 7.2 adds, such as `/random/event/`.

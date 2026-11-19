@@ -334,6 +334,8 @@ final class Setup {
 				// The archive page itself is handled by handle_event_archive_redirect() which
 				// returns a 404 or redirects to a page with the same slug.
 				'has_archive'   => true,
+				// Keep events out of WordPress's /random/ redirect.
+				'randomable'    => false,
 				'rewrite'       => array(
 					'slug'       => $rewrite_slug,
 					'with_front' => false,
