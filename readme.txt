@@ -2,7 +2,7 @@
 Contributors: mauteri, patricia70, hrmervin, jmarx75, carstenbach, supernovia, matthewneilcowan, motylanogha, faisalahammad, bor0
 Tags: events, rsvp, meetup, community, calendar
 Requires at least: 7.0
-Tested up to: 7.1
+Tested up to: 7.2
 Requires PHP: 8.1
 Stable tag: 0.37.0-beta.1
 License: GPL v2 or later
