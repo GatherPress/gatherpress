@@ -135,7 +135,8 @@ class Test_Calendar extends Base {
 		$output = do_blocks( $markup );
 
 		$this->assertStringContainsString( 'aria-modal="true"', $output, 'Failed to assert aria-modal is kept.' );
-		$this->assertStringContainsString( '<input type="text" name="field">', $output );
+		// WordPress 7.2 sorts the attributes that kses keeps.
+		$this->assertMatchesRegularExpression( '#<input (?=[^>]*type="text")(?=[^>]*name="field")[^>]*>#', $output );
 		$this->assertStringNotContainsString( '<script>', $output, 'Failed to assert a script is removed.' );
 		$this->assertStringNotContainsString( 'onfocus', $output, 'Failed to assert an event handler is removed.' );
 		$this->assertArrayNotHasKey(

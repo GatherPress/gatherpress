@@ -1332,7 +1332,7 @@ class Test_Utility extends Base {
 				'title_field'    => 'Test Title 123',
 				'user_field'     => 'testuser',
 				'file_field'     => '/path/to/file.txt',
-				'html_field'     => '<script>alert("XSS")</script>Hello',
+				'html_field'     => '<strong onclick="alert(1)">Hello</strong>',
 			),
 			INPUT_GET  => array(
 				'page'    => '5',
@@ -1386,9 +1386,9 @@ class Test_Utility extends Base {
 		// Test HTML sanitization with wp_kses_post.
 		$result = Utility::get_http_input( INPUT_POST, 'html_field', 'wp_kses_post' );
 		$this->assertEquals(
-			'alert("XSS")Hello',
+			'<strong>Hello</strong>',
 			$result,
-			'Script tags should be removed by wp_kses_post, content preserved.'
+			'Event handlers should be removed by wp_kses_post, content preserved.'
 		);
 
 		// Test custom sanitization function.
