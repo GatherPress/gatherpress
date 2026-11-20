@@ -1828,8 +1828,9 @@ class Test_Setup extends Base {
 		$output = ob_get_clean();
 
 		$this->assertMatchesRegularExpression(
-			'#<hr class="wp-header-end">\s*<div id="moderated" class="notice notice-success is-dismissible">'
-				. '<p>1 RSVP approved\.</p></div>#',
+			// WordPress 7.2 prints the notice's class before its id.
+			'#<hr class="wp-header-end">\s*<div (?=[^>]*id="moderated")'
+				. '(?=[^>]*class="notice notice-success is-dismissible")[^>]*><p>1 RSVP approved\.</p></div>#',
 			$output,
 			'Failed to assert the notice follows the header.'
 		);

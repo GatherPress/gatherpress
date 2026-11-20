@@ -286,6 +286,8 @@ final class Setup {
 				),
 				'menu_icon'    => 'dashicons-location',
 				'has_archive'  => true,
+				// Keep venues out of WordPress's /random/ redirect.
+				'randomable'   => false,
 				'rewrite'      => array(
 					'slug'       => $rewrite_slug,
 					'with_front' => false,
