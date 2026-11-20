@@ -1528,11 +1528,9 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_adjust_event_sql(): void {
-		global $wpdb;
-
 		$instance = Query::get_instance();
 
-		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table  = Event::table();
 		$retval = $instance->adjust_event_sql( array(), 'all', 'DESC' );
 
 		$this->assertStringContainsString( '.datetime_start_gmt DESC', $retval['orderby'] );
@@ -2786,8 +2784,6 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_appends_event_table_join_when_post_type_supported(): void {
-		global $wpdb;
-
 		$post_id = $this->factory->post->create(
 			array(
 				'post_type' => 'gatherpress_event',
@@ -2798,7 +2794,7 @@ class Test_Query extends Base {
 		// The filters only switch to the events table once a start exists.
 		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
 
-		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$expected_table = Event::table();
 		$initial_join   = '';
 		$expected_join  = " INNER JOIN `{$expected_table}` AS gpe ON p.ID = gpe.post_id";
 
@@ -2822,8 +2818,6 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_appends_to_existing_join_string(): void {
-		global $wpdb;
-
 		$post_id = $this->factory->post->create(
 			array(
 				'post_type' => 'gatherpress_event',
@@ -2834,7 +2828,7 @@ class Test_Query extends Base {
 		// The filters only switch to the events table once a start exists.
 		update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-06-15 10:00:00' );
 
-		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$expected_table = Event::table();
 		$initial_join   = ' INNER JOIN other_table AS otta ON p.ID = otta.post_id';
 		$expected_join  = $initial_join . " INNER JOIN `{$expected_table}` AS gpe ON p.ID = gpe.post_id";
 
@@ -3421,10 +3415,8 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_adjust_event_month_sql(): void {
-		global $wpdb;
-
 		$instance = Query::get_instance();
-		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table    = Event::table();
 
 		$pieces = Utility::invoke_hidden_method(
 			$instance,
@@ -3492,11 +3484,9 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_adjust_admin_event_sorting_filters_by_event_month(): void {
-		global $wpdb;
-
 		$instance = Query::get_instance();
 		$wp_query = new WP_Query();
-		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table    = Event::table();
 
 		$this->mock->user( true, 'admin' );
 		set_current_screen( 'edit-gatherpress_event' );

@@ -733,7 +733,7 @@ final class Setup {
 			return;
 		}
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->delete(
