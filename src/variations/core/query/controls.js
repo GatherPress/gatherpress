@@ -69,6 +69,13 @@ const isEventQueryLoop = ( props ) => {
  * only after routing through `gatherpress_event` first (#1608). Skips blocks
  * that already carry a namespace so other variations (e.g. AQL) aren't hijacked.
  *
+ * Also skips loops that inherit the main query, such as the grid in an events
+ * archive template. Core hides the post type picker while inherit is on, so
+ * the post type on such a loop comes from its markup, not from a choice the
+ * user made. Converting it would switch the template to a custom upcoming
+ * events query and mark it unsaved the moment it opens. Turning inherit off
+ * makes the observer run again, so the loop converts then.
+ *
  * @param {Object}   props
  * @param {Object}   props.attributes    - Block attributes.
  * @param {Function} props.setAttributes - Function to update block attributes.
@@ -76,7 +83,7 @@ const isEventQueryLoop = ( props ) => {
  * @return {void}
  */
 const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
-	const { postType } = attributes.query;
+	const { postType, inherit } = attributes.query;
 	const { namespace } = attributes;
 	const supportsEventDate = usePostTypeSupports(
 		'gatherpress-event-date',
@@ -90,7 +97,8 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 	useEffect( () => {
 		// Only auto-transform blocks without a namespace set.
 		// Blocks with an existing namespace (e.g., 'advanced-query-loop') should not be overwritten.
-		if ( supportsGatherPressQuery && ! namespace ) {
+		// Loops that inherit the main query are left alone (see above).
+		if ( supportsGatherPressQuery && ! namespace && true !== inherit ) {
 			const newAttributes = {
 				...attributes,
 				namespace: NAME,
@@ -113,6 +121,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 		supportsGatherPressQuery,
 		supportsEventDate,
 		namespace,
+		inherit,
 		attributes,
 		setAttributes,
 	] );
