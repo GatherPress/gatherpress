@@ -741,4 +741,56 @@ describe( 'QueryPosttypeObserver auto-transform', () => {
 			inherit: false,
 		} );
 	} );
+
+	it( 'does not transform a Query Loop that inherits the main query', () => {
+		// An events archive template ships a plain core/query with
+		// `inherit: true` and an event post type. Converting it would turn
+		// off inherit and mark the template unsaved as soon as it opens.
+		usePostTypeSupports.mockReturnValue( true );
+
+		const setAttributes = renderQuery( {
+			postType: 'gatherpress_event',
+			inherit: true,
+		} );
+
+		expect( setAttributes ).not.toHaveBeenCalled();
+	} );
+
+	it( 'transforms the Query Loop once the user turns inherit off', () => {
+		usePostTypeSupports.mockReturnValue( true );
+
+		const setAttributes = jest.fn();
+		const MockBlockEdit = () => <div data-testid="block-edit" />;
+		const Enhanced = withEventQueryControls( MockBlockEdit );
+		const { rerender } = render(
+			<Enhanced
+				name="core/query"
+				attributes={ {
+					query: { postType: 'gatherpress_event', inherit: true },
+				} }
+				setAttributes={ setAttributes }
+			/>,
+		);
+
+		expect( setAttributes ).not.toHaveBeenCalled();
+
+		rerender(
+			<Enhanced
+				name="core/query"
+				attributes={ {
+					query: { postType: 'gatherpress_event', inherit: false },
+				} }
+				setAttributes={ setAttributes }
+			/>,
+		);
+
+		expect( setAttributes ).toHaveBeenCalledTimes( 1 );
+		const next = setAttributes.mock.calls[ 0 ][ 0 ];
+		expect( next.namespace ).toBe( 'gatherpress-event-query' );
+		expect( next.query ).toMatchObject( {
+			postType: 'gatherpress_event',
+			gatherpress_event_query: 'upcoming',
+			inherit: false,
+		} );
+	} );
 } );
