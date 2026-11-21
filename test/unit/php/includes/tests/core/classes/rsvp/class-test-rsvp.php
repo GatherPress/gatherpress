@@ -1791,7 +1791,10 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_process_locked_without_saved_state(): void {
-		$rsvp = new Rsvp( $this->create_event_with_attendee( 2 ) );
+		$rsvp    = new Rsvp( $this->create_event_with_attendee( 2 ) );
+		$user_id = $this->factory->user->create();
+
+		$rsvp->save( $user_id, Status::ATTENDING->value );
 
 		$this->assertNull(
 			Utility::invoke_hidden_method(
@@ -1799,15 +1802,12 @@ class Test_Rsvp extends Base {
 				'process_locked',
 				array(
 					new Intent(
-						new Data(
-							new Identity( Identity_Type::WP_USER_ID, $this->factory->user->create() ),
-							Status::NO_STATUS
-						),
+						new Data( new Identity( Identity_Type::WP_USER_ID, $user_id ), Status::NO_STATUS ),
 						Provider_Registry::get_instance()->get( 'user' )
 					),
 				)
 			),
-			'Failed to assert no state is returned when nothing is saved.'
+			'Failed to assert no state is returned when the RSVP is removed.'
 		);
 	}
 
