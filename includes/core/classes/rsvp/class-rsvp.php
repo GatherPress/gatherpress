@@ -338,6 +338,16 @@ final class Rsvp {
 	/**
 	 * Process an RSVP request.
 	 *
+	 * The intent passes through the event's business rules before it is
+	 * saved, so the stored response can differ from the one requested. The
+	 * guest count is capped at the event's guest limit, an attending request
+	 * moves to the waiting list once the event is full, and a request to stay
+	 * anonymous is saved as a public response when the event does not allow
+	 * anonymous RSVPs. The response is saved before this returns, so callers
+	 * that must not publish a name the responder wanted hidden have to check
+	 * the `gatherpress_enable_anonymous_rsvp` meta and reject the request
+	 * before calling this.
+	 *
 	 * @since 0.35.0
 	 *
 	 * @param Intent $intent The RSVP response/intent to save.
@@ -706,6 +716,10 @@ final class Rsvp {
 
 	/**
 	 * Applies business rules to a request.
+	 *
+	 * Caps guests at the guest limit, moves a new attending request to the
+	 * waiting list when the event is full, and drops the anonymous flag when
+	 * the event does not allow anonymous RSVPs.
 	 *
 	 * @param Intent $intent            The new RSVP intent.
 	 * @param State  $current_response  The prior/current RSVP state.

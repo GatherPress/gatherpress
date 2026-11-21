@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+RSVP avatars from other plugins, such as local avatars, now show instead of being replaced, while anonymous responders still get the default avatar.
