@@ -464,6 +464,14 @@ class Test_Rsvp extends Base {
 			)
 		);
 
+		// The free spot promotes the waiting list RSVP, so read it again.
+		$current_response = $rsvp->find( $user_id );
+
+		$this->assertSame(
+			Status::ATTENDING,
+			$current_response->data->status,
+			'Failed to assert the RSVP was promoted.'
+		);
 		$this->assertFalse(
 			$rsvp->attending_limit_reached( $current_response ),
 			'Failed to assert that limit has not been reached.'
