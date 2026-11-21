@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Keep the newest guest count when an older save reaches the server after it, such as when the page is left during a save.

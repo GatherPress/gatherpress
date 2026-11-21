@@ -604,6 +604,332 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Sends one RSVP update for the current user and returns the guest count in the response.
+	 *
+	 * @since TBD
+	 *
+	 * @param int                  $event_id The event post ID.
+	 * @param int                  $guests   The guest count to send.
+	 * @param array<string, mixed> $order    Optional save_page and save_order params.
+	 *
+	 * @return int The guest count in the response.
+	 */
+	private function send_guest_count( int $event_id, int $guests, array $order = array() ): int {
+		$request = new WP_REST_Request( 'POST' );
+
+		$request->set_query_params(
+			array_merge(
+				array(
+					'post_id' => $event_id,
+					'status'  => 'attending',
+					'guests'  => $guests,
+				),
+				$order
+			)
+		);
+
+		return Rest_Api::get_instance()->update_rsvp( $request )->data['guests'];
+	}
+
+	/**
+	 * Coverage for update_rsvp ignoring an older guest count save from the same page.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::update_rsvp
+	 * @covers ::save_in_order
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_ignores_an_older_save_from_the_same_page(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 5 );
+
+		$this->assertSame(
+			1,
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that an ordered save with no RSVP yet is saved.'
+		);
+
+		$comment_id = (int) ( new Rsvp( $event_id ) )->find( $user_id )->comment->comment_ID;
+
+		$this->assertSame(
+			2,
+			$this->send_guest_count(
+				$event_id,
+				2,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 2,
+				)
+			),
+			'Failed to assert that a save is applied when no order is stored.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				4,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 4,
+				)
+			),
+			'Failed to assert that a newer save from the same page is applied.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				3,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 3,
+				)
+			),
+			'Failed to assert that an older save from the same page is ignored.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 4,
+				)
+			),
+			'Failed to assert that a repeated order from the same page is ignored.'
+		);
+		$this->assertSame(
+			4,
+			(int) get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ),
+			'Failed to assert that the ignored saves left the stored count alone.'
+		);
+		$this->assertSame(
+			1,
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => 'page-b',
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that a save from another page is applied.'
+		);
+		$this->assertSame(
+			1,
+			$this->send_guest_count(
+				$event_id,
+				2,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 3,
+				)
+			),
+			'Failed to assert that a save from another page keeps the first page from saving an older count.'
+		);
+
+		foreach ( array( 'page-c', 'page-d', 'page-e', 'page-f' ) as $page ) {
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => $page,
+					'save_order' => 1,
+				)
+			);
+		}
+
+		$this->assertSame(
+			array( 'page-b', 'page-c', 'page-d', 'page-e', 'page-f' ),
+			array_keys( get_comment_meta( $comment_id, Rest_Api::SAVE_ORDER_META_KEY, true ) ),
+			'Failed to assert that only the five pages that saved last are kept.'
+		);
+
+		update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', 1 );
+
+		$request = new WP_REST_Request( 'POST' );
+
+		$request->set_query_params(
+			array(
+				'post_id'    => $event_id,
+				'status'     => 'attending',
+				'guests'     => 4,
+				'anonymous'  => 0,
+				'save_page'  => 'page-f',
+				'save_order' => 1,
+			)
+		);
+
+		$response = Rest_Api::get_instance()->update_rsvp( $request );
+
+		$this->assertSame(
+			1,
+			$response->data['guests'],
+			'Failed to assert that the ignored save returns the stored count.'
+		);
+		$this->assertSame(
+			1,
+			$response->data['anonymous'],
+			'Failed to assert that the ignored save returns the stored anonymity.'
+		);
+
+		update_comment_meta( $comment_id, Rest_Api::SAVE_ORDER_META_KEY, 'not an array' );
+
+		$this->assertSame(
+			2,
+			$this->send_guest_count(
+				$event_id,
+				2,
+				array(
+					'save_page'  => 'page-f',
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that a save goes through when the stored orders are not an array.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				4,
+				array(
+					'save_page'  => 'page-f',
+					'save_order' => 0,
+				)
+			),
+			'Failed to assert that a save with a page but no order is applied.'
+		);
+		$this->assertSame(
+			4,
+			(int) get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ),
+			'Failed to assert that the save with a page but no order is stored.'
+		);
+		$this->assertSame(
+			3,
+			$this->send_guest_count( $event_id, 3 ),
+			'Failed to assert that a save without an order is applied.'
+		);
+	}
+
+	/**
+	 * Coverage for the rsvp route refusing bad save_page and save_order values.
+	 *
+	 * The route schema only runs on dispatch, so this sends requests through the
+	 * registered route rather than calling the callback directly.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rsvp_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_validates_save_order_params_on_dispatch(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 5 );
+
+		Rest_Api::get_instance()->register_endpoints();
+
+		$dispatch = static function ( array $order ) use ( $event_id ): int {
+			$request = new WP_REST_Request(
+				'POST',
+				sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE )
+			);
+
+			$request->set_body_params(
+				array_merge(
+					array(
+						'post_id' => $event_id,
+						'status'  => 'attending',
+						'guests'  => 1,
+					),
+					$order
+				)
+			);
+
+			return rest_get_server()->dispatch( $request )->get_status();
+		};
+
+		$invalid = array(
+			'an array save_page'       => array(
+				'save_page'  => array( 'page-a' ),
+				'save_order' => 1,
+			),
+			'a too long save_page'     => array(
+				'save_page'  => str_repeat( 'a', 65 ),
+				'save_order' => 1,
+			),
+			'a zero save_order'        => array(
+				'save_page'  => 'page-a',
+				'save_order' => 0,
+			),
+			'a non-integer save_order' => array(
+				'save_page'  => 'page-a',
+				'save_order' => 'first',
+			),
+		);
+
+		foreach ( $invalid as $label => $order ) {
+			$this->assertSame(
+				400,
+				$dispatch( $order ),
+				sprintf( 'Failed to assert that %s is refused.', $label )
+			);
+		}
+
+		$this->assertSame(
+			200,
+			$dispatch(
+				array(
+					'save_page'  => str_repeat( 'a', 64 ),
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that valid save_page and save_order values are accepted.'
+		);
+		$this->assertSame(
+			200,
+			$dispatch( array() ),
+			'Failed to assert that a request without save_page and save_order is accepted.'
+		);
+	}
+
+	/**
 	 * Tests the rsvp_form_route method.
 	 *
 	 * Verifies that the RSVP form route is properly configured
