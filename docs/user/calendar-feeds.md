@@ -78,3 +78,5 @@ The feeds are also advertised in the site's HTML (as `<link rel="alternate">` ta
 ## For developers
 
 The feeds are built on GatherPress' custom URL endpoint API, which companion plugins can use to register their own endpoints for any post type or taxonomy. See [Custom URL Endpoints](../developer/custom-url-endpoints/README.md) for the technical details.
+
+A public taxonomy that a companion plugin adds to events also gets a feed for each term, like a topic. So does each post of a post type that declares `gatherpress-shadow-source` support and is connected to events, like a venue. These feeds list only the events with that term or that post.
