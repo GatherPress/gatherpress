@@ -2475,6 +2475,38 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * The events archive, and a post that is not a shadow source, give no
+	 * clause, so their feeds list all events.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_queried_tax_query
+	 *
+	 * @return void
+	 */
+	public function test_get_queried_tax_query_without_filter(): void {
+		$instance = Setup::get_instance();
+
+		$this->go_to( get_post_type_archive_feed_link( Event::POST_TYPE, Setup::ICAL_SLUG ) );
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( $instance, 'get_queried_tax_query' ),
+			'Failed to assert the events archive gives no clause.'
+		);
+
+		$page_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+
+		$this->go_to( get_permalink( $page_id ) );
+
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( $instance, 'get_queried_tax_query' ),
+			'Failed to assert a page gives no clause.'
+		);
+	}
+
+	/**
 	 * A feed of a post of a shadow-source post type that a companion plugin
 	 * registers lists only the events with the post's shadow term (#1642).
 	 *

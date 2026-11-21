@@ -798,6 +798,10 @@ final class Setup {
 	 * which get a feed endpoint from the same checks. Anything else gives no
 	 * clause, so the feed lists all events.
 	 *
+	 * The queried object is a term only on a term archive, so its type is the
+	 * check. A post that is not a shadow source, such as the page for posts,
+	 * gives no clause.
+	 *
 	 * @since TBD
 	 *
 	 * @return array<int, array<string, mixed>> The tax_query clauses.
@@ -806,7 +810,6 @@ final class Setup {
 		$queried_object = get_queried_object();
 
 		if (
-			is_singular() &&
 			$queried_object instanceof WP_Post &&
 			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
 		) {
@@ -814,7 +817,6 @@ final class Setup {
 		}
 
 		if (
-			( is_tax() || is_category() || is_tag() ) &&
 			$queried_object instanceof WP_Term &&
 			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
 		) {
