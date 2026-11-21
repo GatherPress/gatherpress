@@ -73,6 +73,10 @@ export function useGeocoding(
 	// that finishes after either one is ignored.
 	const requestRef = useRef( 0 );
 
+	// A delayed call reads this when it runs, after geocoding may have turned off.
+	const enabledRef = useRef( enabled );
+	enabledRef.current = enabled;
+
 	// Geocode address field changes.
 	const handleGeocode = useCallback( async () => {
 		const address = addressRef.current;
@@ -80,7 +84,11 @@ export function useGeocoding(
 
 		// A debounced call reads the address when it runs, so check here: the
 		// coordinates may already belong to it.
-		if ( 'address' !== fieldType || address === geocodedAddressRef.current ) {
+		if (
+			! enabledRef.current ||
+			'address' !== fieldType ||
+			address === geocodedAddressRef.current
+		) {
 			return;
 		}
 

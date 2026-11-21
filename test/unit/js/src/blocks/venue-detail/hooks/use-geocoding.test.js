@@ -27,6 +27,7 @@ jest.mock( '@src/helpers/geocoding', () => ( {
 } ) );
 
 import { useDispatch } from '@wordpress/data';
+import { useDebounce } from '@wordpress/compose';
 import { geocodeAddress } from '@src/helpers/geocoding';
 import { useGeocoding } from '@src/blocks/venue-detail/hooks/use-geocoding';
 
@@ -43,6 +44,8 @@ const updateVenueField = jest.fn();
 
 beforeEach( () => {
 	jest.clearAllMocks();
+
+	useDebounce.mockImplementation( ( callback ) => callback );
 
 	useDispatch.mockImplementation( ( store ) =>
 		'core/notices' === store ? notices : venueStore,
@@ -225,4 +228,31 @@ test( 'ignores a lookup that finishes after geocoding is turned off and on again
 	expect( geocodeAddress ).toHaveBeenCalledTimes( 2 );
 	expect( venueStore.updateVenueLatitude ).toHaveBeenCalledWith( '1' );
 	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalledWith( '3' );
+} );
+
+test( 'skips a delayed lookup once geocoding is turned off', async () => {
+	let pendingGeocode = null;
+
+	useDebounce.mockImplementation( ( callback ) => {
+		pendingGeocode = callback;
+
+		return () => {};
+	} );
+
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true } );
+	} );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true, enabled: false } );
+	} );
+
+	await act( async () => {
+		await pendingGeocode();
+	} );
+
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+	expect( updateVenueField ).not.toHaveBeenCalled();
 } );
