@@ -96,6 +96,11 @@ export function useGeocoding(
 
 		const { latitude, longitude, error } = await geocodeAddress( address );
 
+		// Skip a stale lookup if the address changed while it ran.
+		if ( addressRef.current !== address ) {
+			return;
+		}
+
 		// A failed lookup keeps the stored coordinates, like the server-side geocode.
 		if ( error ) {
 			createErrorNotice( geocodeFailedMessage(), {

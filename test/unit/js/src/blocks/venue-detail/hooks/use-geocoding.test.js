@@ -139,3 +139,31 @@ test( 'clears the coordinates when the address is emptied', async () => {
 	} );
 	expect( geocodeAddress ).not.toHaveBeenCalled();
 } );
+
+test( 'ignores a lookup that finishes after the address changes back', async () => {
+	let resolveGeocode;
+
+	geocodeAddress.mockReturnValueOnce(
+		new Promise( ( resolve ) => {
+			resolveGeocode = resolve;
+		} ),
+	);
+
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true } );
+	} );
+
+	await act( async () => {
+		rerender( { value: '1 Main St', coordinates: true } );
+	} );
+
+	await act( async () => {
+		resolveGeocode( { latitude: '3', longitude: '4', error: null } );
+	} );
+
+	expect( geocodeAddress ).toHaveBeenCalledTimes( 1 );
+	expect( updateVenueField ).not.toHaveBeenCalled();
+	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalled();
+} );

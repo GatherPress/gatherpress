@@ -100,8 +100,12 @@ const VenueInformation = () => {
 		const currentAddress = addressRef.current;
 
 		try {
-			// Coordinates set by hand stay as they are.
-			if ( manualCoordinatesRef.current ) {
+			// Coordinates set by hand stay as they are, and a debounced call
+			// that runs after the address changed back needs no lookup.
+			if (
+				manualCoordinatesRef.current ||
+				currentAddress === geocodedAddressRef.current
+			) {
 				return;
 			}
 

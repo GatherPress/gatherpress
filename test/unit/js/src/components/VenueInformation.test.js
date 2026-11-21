@@ -408,3 +408,40 @@ test( 'clears the coordinates once when the address is emptied', async () => {
 	} );
 	expect( geocodeAddress ).not.toHaveBeenCalled();
 } );
+
+test( 'skips a scheduled lookup once the address is back to the geocoded one', async () => {
+	let pendingGeocode = null;
+
+	useDebounce.mockImplementation( ( callback ) => {
+		pendingGeocode = callback;
+
+		return () => {};
+	} );
+	meta = {
+		gatherpress_address: '1 Main St',
+		gatherpress_latitude: '52.37',
+		gatherpress_longitude: '4.89',
+	};
+
+	const { rerender } = await renderVenueInformation();
+
+	meta = { ...meta, gatherpress_address: '2 Main St' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	meta = { ...meta, gatherpress_address: '1 Main St' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	await act( async () => {
+		await pendingGeocode();
+	} );
+
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+	expect( editor.editPost ).not.toHaveBeenCalled();
+	expect( editor.unlockPostSaving ).toHaveBeenCalledWith( 'gatherpress/venue-geocoding' );
+} );
