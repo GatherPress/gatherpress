@@ -29,6 +29,15 @@ class Test_Lock extends Base {
 	const POST_ID = 987654;
 
 	/**
+	 * The query filter that denies the lock.
+	 *
+	 * @since TBD
+	 *
+	 * @var callable|null
+	 */
+	private $deny_filter = null;
+
+	/**
 	 * Coverage for run holding the lock and releasing it.
 	 *
 	 * @since TBD
@@ -91,6 +100,43 @@ class Test_Lock extends Base {
 	}
 
 	/**
+	 * Coverage for run when the lock is not granted.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::run
+	 *
+	 * @return void
+	 */
+	public function test_run_falls_back_when_not_granted(): void {
+		$ran = false;
+
+		foreach ( array( '0', 'NULL' ) as $result ) {
+			$this->deny_lock( $result );
+
+			$this->assertSame(
+				'fallback',
+				Lock::run(
+					self::POST_ID,
+					static function () use ( &$ran ): string {
+						$ran = true;
+
+						return 'ran';
+					},
+					static fn(): string => 'fallback'
+				),
+				'Failed to assert the fallback runs when the lock is not granted.'
+			);
+			$this->assertNull(
+				Lock::run( self::POST_ID, static fn(): string => 'ran' ),
+				'Failed to assert null is returned without a fallback.'
+			);
+		}
+
+		$this->assertFalse( $ran, 'Failed to assert the callback never runs without the lock.' );
+	}
+
+	/**
 	 * Coverage for get_name.
 	 *
 	 * @since TBD
@@ -115,6 +161,27 @@ class Test_Lock extends Base {
 
 		$this->assertSame( 64, strlen( $name ), 'Failed to assert a long name is cut to 64 characters.' );
 		$this->assertStringEndsWith( '_' . self::POST_ID, $name, 'Failed to assert the post ID is kept.' );
+	}
+
+	/**
+	 * Makes GET_LOCK return the given result instead of taking the lock.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $result The SQL result, such as 0 or NULL.
+	 *
+	 * @return void
+	 */
+	private function deny_lock( string $result ): void {
+		if ( $this->deny_filter ) {
+			remove_filter( 'query', $this->deny_filter );
+		}
+
+		$this->deny_filter = static fn( string $query ): string => str_starts_with( $query, 'SELECT GET_LOCK(' )
+			? "SELECT {$result}"
+			: $query;
+
+		add_filter( 'query', $this->deny_filter );
 	}
 
 	/**

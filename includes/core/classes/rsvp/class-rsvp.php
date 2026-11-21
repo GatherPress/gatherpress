@@ -515,7 +515,30 @@ final class Rsvp {
 		}
 
 		// Two approvals at once must not both read a count that includes the other.
-		return (bool) Lock::run( $this->post->ID ?? 0, fn(): bool => $this->enforce_capacity_locked( $comment_id ) );
+		return (bool) Lock::run(
+			$this->post->ID ?? 0,
+			fn(): bool => $this->enforce_capacity_locked( $comment_id ),
+			fn(): bool => $this->move_to_waiting_list( $comment_id )
+		);
+	}
+
+	/**
+	 * Moves an RSVP to the waiting list.
+	 *
+	 * Also used when the attendee count cannot be checked safely: the waiting
+	 * list never overbooks the event, and the next promotion fills any free spot.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool Always true.
+	 */
+	private function move_to_waiting_list( int $comment_id ): bool {
+		wp_set_object_terms( $comment_id, Status::WAITING_LIST->value, Status::TAXONOMY );
+		Cache::delete( $this->post->ID ?? 0 );
+
+		return true;
 	}
 
 	/**
@@ -554,14 +577,7 @@ final class Rsvp {
 			$count += 1 + (int) get_comment_meta( (int) $id, 'gatherpress_rsvp_guests', true );
 		}
 
-		if ( $count <= $this->capacity ) {
-			return false;
-		}
-
-		wp_set_object_terms( $comment_id, Status::WAITING_LIST->value, Status::TAXONOMY );
-		Cache::delete( $this->post->ID ?? 0 );
-
-		return true;
+		return $count > $this->capacity && $this->move_to_waiting_list( $comment_id );
 	}
 
 	/**

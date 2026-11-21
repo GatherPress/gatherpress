@@ -1737,6 +1737,110 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for promote_waiting_list in each case.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::promote_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_promote_waiting_list(): void {
+		$post_id = $this->create_event_with_attendee( 2 );
+		$rsvp    = new Rsvp( $post_id );
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert nobody is promoted from an empty waiting list.'
+		);
+
+		$first  = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1' );
+		$second = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1' );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert one RSVP fills the one free spot.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $first, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the first RSVP on the waiting list is promoted.'
+		);
+
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 0 );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert everyone is promoted without a capacity.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $second, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the rest of the waiting list is promoted.'
+		);
+	}
+
+	/**
+	 * Coverage for process_locked when the save removes the RSVP.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::process_locked
+	 *
+	 * @return void
+	 */
+	public function test_process_locked_without_saved_state(): void {
+		$rsvp = new Rsvp( $this->create_event_with_attendee( 2 ) );
+
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				$rsvp,
+				'process_locked',
+				array(
+					new Intent(
+						new Data(
+							new Identity( Identity_Type::WP_USER_ID, $this->factory->user->create() ),
+							Status::NO_STATUS
+						),
+						Provider_Registry::get_instance()->get( 'user' )
+					),
+				)
+			),
+			'Failed to assert no state is returned when nothing is saved.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity when the lock is not granted.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::enforce_capacity
+	 * @covers ::move_to_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_without_lock(): void {
+		$post_id    = $this->create_event_with_attendee( 5 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		add_filter(
+			'query',
+			static fn( string $query ): string => str_starts_with( $query, 'SELECT GET_LOCK(' ) ? 'SELECT 0' : $query
+		);
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert the RSVP moves when the count cannot be checked.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert the RSVP waits rather than risk overbooking.'
+		);
+	}
+
+	/**
 	 * Creates an event with a capacity and one approved attendee.
 	 *
 	 * @since TBD
