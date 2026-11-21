@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Someone who RSVPs without an account now goes on the waiting list when the event is already full by the time they confirm by email, the same as someone with an account.
