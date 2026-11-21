@@ -1852,6 +1852,44 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for the fallback filling a free spot after it runs.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::fall_back_to_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_waiting_list_fills_free_spot(): void {
+		$post_id    = $this->create_event_with_attendee( 5 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		$denied     = false;
+
+		// Only the capacity check's lock is denied; the waiting list check gets one.
+		add_filter(
+			'query',
+			static function ( string $query ) use ( &$denied ): string {
+				if ( ! $denied && str_starts_with( $query, 'SELECT GET_LOCK(' ) ) {
+					$denied = true;
+
+					return 'SELECT 0';
+				}
+
+				return $query;
+			}
+		);
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert the RSVP moved to the waiting list.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the waiting list check gives the free spot back.'
+		);
+	}
+
+	/**
 	 * Creates an event with a capacity and one approved attendee.
 	 *
 	 * @since TBD

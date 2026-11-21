@@ -518,8 +518,26 @@ final class Rsvp {
 		return (bool) Lock::run(
 			$this->post->ID ?? 0,
 			fn(): bool => $this->enforce_capacity_locked( $comment_id ),
-			fn(): bool => $this->move_to_waiting_list( $comment_id )
+			fn(): bool => $this->fall_back_to_waiting_list( $comment_id )
 		);
+	}
+
+	/**
+	 * Moves an attending RSVP to the waiting list when its capacity check cannot run, then fills any free spot.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool True when the RSVP moved to the waiting list.
+	 */
+	private function fall_back_to_waiting_list( int $comment_id ): bool {
+		$moved = $this->move_to_waiting_list( $comment_id );
+
+		// Another request may have left a spot open at the same time.
+		$this->check_waiting_list();
+
+		return $moved;
 	}
 
 	/**
