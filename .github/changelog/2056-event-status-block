@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Show an event's status on the page with an Event Status variation of the Post Terms block, in Badge or Dot style, each status in its own color.
