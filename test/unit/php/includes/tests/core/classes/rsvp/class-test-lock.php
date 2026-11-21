@@ -123,6 +123,11 @@ class Test_Lock extends Base {
 		$value = Utility::invoke_hidden_static_method( Lock::class, 'acquire', array( self::POST_ID, 2 ) );
 
 		$this->assertIsString( $value, 'Failed to assert an expired lock is taken over.' );
+		$this->assertGreaterThanOrEqual(
+			time() - 1,
+			(int) $value,
+			'Failed to assert the lock is stamped when it is taken.'
+		);
 		$this->assertSame( $value, $this->get_lock_value(), 'Failed to assert the lock holds the new value.' );
 	}
 

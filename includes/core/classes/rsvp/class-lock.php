@@ -123,10 +123,13 @@ final class Lock {
 	private static function acquire( int $post_id, int $attempts ): ?string {
 		global $wpdb;
 
-		$name  = sprintf( self::OPTION_NAME, $post_id );
-		$value = sprintf( '%d:%s', time(), wp_generate_uuid4() );
+		$name = sprintf( self::OPTION_NAME, $post_id );
+		$key  = wp_generate_uuid4();
 
 		for ( $attempt = 1; $attempt <= $attempts; $attempt++ ) {
+			// Stamped on each attempt, so a lock taken after waiting is not already expired.
+			$value = sprintf( '%d:%s', time(), $key );
+
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The insert is the lock, so it cannot go through the options cache.
 			$inserted = $wpdb->query(
 				$wpdb->prepare(
