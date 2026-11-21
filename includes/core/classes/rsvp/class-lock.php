@@ -16,7 +16,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * The lock is a row in the options table, inserted with INSERT IGNORE the
  * way WordPress core's upgrader lock is, so it works on every database
- * WordPress supports. It is re-entrant within a request.
+ * WordPress supports. Its value is the time it was taken and a key only the
+ * request that took it knows, so a request only ever removes its own lock or
+ * the exact expired lock it read. It is re-entrant within a request.
  *
  * @since TBD
  */
@@ -38,7 +40,7 @@ final class Lock {
 	 *
 	 * @var int
 	 */
-	const EXPIRES = 30;
+	const EXPIRES = 10;
 
 	/**
 	 * Microseconds to wait between attempts.
@@ -50,55 +52,61 @@ final class Lock {
 	const WAIT = 100000;
 
 	/**
-	 * Attempts before running without the lock.
+	 * Attempts before giving up, enough to outlast an expired lock.
 	 *
 	 * @since TBD
 	 *
 	 * @var int
 	 */
-	const ATTEMPTS = 50;
+	const ATTEMPTS = 120;
 
 	/**
-	 * Event post IDs whose lock this request holds.
+	 * Lock values this request holds, keyed by event post ID.
 	 *
 	 * @since TBD
 	 *
-	 * @var array<int, true>
+	 * @var array<int, string>
 	 */
 	private static array $held = array();
 
 	/**
 	 * Runs a callback while holding an event's lock.
 	 *
-	 * If the lock stays busy past every attempt, the callback runs anyway, so
-	 * an RSVP is never lost to a lock.
+	 * When the lock cannot be taken, the callback does not run and the
+	 * fallback is returned, so nothing changes without the lock.
 	 *
 	 * @since TBD
 	 *
 	 * @param int      $post_id  The event post ID.
 	 * @param callable $callback The code to run.
+	 * @param mixed    $fallback Optional. What to return when the lock cannot be taken.
 	 * @param int      $attempts Optional. How many times to try for the lock.
 	 *
-	 * @return mixed The callback's return value.
+	 * @return mixed The callback's return value, or the fallback.
 	 */
-	public static function run( int $post_id, callable $callback, int $attempts = self::ATTEMPTS ): mixed {
+	public static function run(
+		int $post_id,
+		callable $callback,
+		mixed $fallback = null,
+		int $attempts = self::ATTEMPTS
+	): mixed {
 		if ( isset( self::$held[ $post_id ] ) ) {
 			return $callback();
 		}
 
-		$acquired = self::acquire( $post_id, $attempts );
+		$value = self::acquire( $post_id, $attempts );
 
-		if ( $acquired ) {
-			self::$held[ $post_id ] = true;
+		if ( null === $value ) {
+			return $fallback;
 		}
+
+		self::$held[ $post_id ] = $value;
 
 		try {
 			return $callback();
 		} finally {
-			if ( $acquired ) {
-				unset( self::$held[ $post_id ] );
-				self::release( $post_id );
-			}
+			unset( self::$held[ $post_id ] );
+			self::delete( $post_id, $value );
 		}
 	}
 
@@ -110,57 +118,67 @@ final class Lock {
 	 * @param int $post_id  The event post ID.
 	 * @param int $attempts How many times to try.
 	 *
-	 * @return bool True when the lock was taken.
+	 * @return string|null The lock value, or null when the lock was not taken.
 	 */
-	private static function acquire( int $post_id, int $attempts ): bool {
+	private static function acquire( int $post_id, int $attempts ): ?string {
 		global $wpdb;
 
-		$name = sprintf( self::OPTION_NAME, $post_id );
+		$name  = sprintf( self::OPTION_NAME, $post_id );
+		$value = sprintf( '%d:%s', time(), wp_generate_uuid4() );
 
 		for ( $attempt = 1; $attempt <= $attempts; $attempt++ ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The insert is the lock, so it cannot go through the options cache.
 			$inserted = $wpdb->query(
 				$wpdb->prepare(
-					"INSERT IGNORE INTO {$wpdb->options} ( option_name, option_value, autoload )
-					VALUES ( %s, %s, 'off' )",
+					"INSERT IGNORE INTO %i ( option_name, option_value, autoload ) VALUES ( %s, %s, 'off' )",
+					$wpdb->options,
 					$name,
-					(string) time()
+					$value
 				)
 			);
 
 			if ( $inserted ) {
-				return true;
+				return $value;
 			}
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reads the lock row another request wrote.
-			$locked_at = (int) $wpdb->get_var(
-				$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
+			$current = (string) $wpdb->get_var(
+				$wpdb->prepare( 'SELECT option_value FROM %i WHERE option_name = %s', $wpdb->options, $name )
 			);
 
-			if ( $locked_at < time() - self::EXPIRES ) {
-				// A request that failed while holding the lock left it behind.
-				self::release( $post_id );
+			// A request that failed while holding the lock left it behind. Only
+			// the expired value just read is removed, never a newer lock.
+			if ( (int) $current < time() - self::EXPIRES ) {
+				self::delete( $post_id, $current );
 			} elseif ( $attempt < $attempts ) {
 				usleep( self::WAIT );
 			}
 		}
 
-		return false;
+		return null;
 	}
 
 	/**
-	 * Releases an event's lock.
+	 * Removes an event's lock if it still holds the given value.
 	 *
 	 * @since TBD
 	 *
-	 * @param int $post_id The event post ID.
+	 * @param int    $post_id The event post ID.
+	 * @param string $value   The lock value to remove.
 	 *
 	 * @return void
 	 */
-	private static function release( int $post_id ): void {
+	private static function delete( int $post_id, string $value ): void {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Removes the lock row; it never enters the options cache.
-		$wpdb->delete( $wpdb->options, array( 'option_name' => sprintf( self::OPTION_NAME, $post_id ) ) );
+		$wpdb->query(
+			$wpdb->prepare(
+				'DELETE FROM %i WHERE option_name = %s AND option_value = %s',
+				$wpdb->options,
+				sprintf( self::OPTION_NAME, $post_id ),
+				$value
+			)
+		);
 	}
 }

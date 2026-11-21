@@ -403,7 +403,7 @@ final class Rsvp {
 		$post_id = $this->post instanceof WP_Post ? $this->post->ID : 0;
 
 		// The free spots must not change while they are filled.
-		return (int) Lock::run( $post_id, fn(): int => $this->promote_waiting_list() );
+		return (int) Lock::run( $post_id, fn(): int => $this->promote_waiting_list(), 0 );
 	}
 
 	/**
@@ -515,7 +515,11 @@ final class Rsvp {
 		}
 
 		// Two approvals at once must not both read a count that includes the other.
-		return (bool) Lock::run( $this->post->ID ?? 0, fn(): bool => $this->enforce_capacity_locked( $comment_id ) );
+		return (bool) Lock::run(
+			$this->post->ID ?? 0,
+			fn(): bool => $this->enforce_capacity_locked( $comment_id ),
+			false
+		);
 	}
 
 	/**
