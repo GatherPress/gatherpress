@@ -918,6 +918,79 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Submissions for the capacity test of handle_rsvp_comment_post.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, array{0: string, 1: int, 2: int, 3: string}> Approval, capacity, guests, expected status.
+	 */
+	public function data_handle_rsvp_comment_post_capacity(): array {
+		return array(
+			'pending on a full event'            => array( '0', 1, 0, Status::ATTENDING->value ),
+			'approved on a full event'           => array( '1', 1, 0, Status::WAITING_LIST->value ),
+			'approved with room'                 => array( '1', 2, 0, Status::ATTENDING->value ),
+			'approved with guests over capacity' => array( '1', 2, 1, Status::WAITING_LIST->value ),
+		);
+	}
+
+	/**
+	 * Coverage for handle_rsvp_comment_post placing a submission against capacity.
+	 *
+	 * @since TBD
+	 *
+	 * @dataProvider data_handle_rsvp_comment_post_capacity
+	 * @covers ::handle_rsvp_comment_post
+	 *
+	 * @param string $approved The submission's approval value.
+	 * @param int    $capacity The event capacity.
+	 * @param int    $guests   The guests submitted.
+	 * @param string $expected The expected RSVP status.
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_comment_post_capacity(
+		string $approved,
+		int $capacity,
+		int $guests,
+		string $expected
+	): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', $capacity );
+		update_post_meta( $post_id, 'gatherpress_guest_limit', 1 );
+
+		$attendee = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $post_id,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => '1',
+				'user_id'          => $this->factory->user->create(),
+			)
+		);
+
+		wp_set_object_terms( $attendee, Status::ATTENDING->value, Status::TAXONOMY );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'form@example.org',
+			)
+		);
+
+		$this->set_post_params( array( 'gatherpress_rsvp_form_guests' => (string) $guests ) );
+
+		Form::get_instance()->handle_rsvp_comment_post( $comment_id );
+
+		$this->assertSame(
+			$expected,
+			wp_get_object_terms( $comment_id, Status::TAXONOMY, array( 'fields' => 'slugs' ) )[0],
+			'Failed to assert the submission is placed against capacity.'
+		);
+	}
+
+	/**
 	 * Coverage for handle_rsvp_comment_redirect method.
 	 *
 	 * @covers ::handle_rsvp_comment_redirect

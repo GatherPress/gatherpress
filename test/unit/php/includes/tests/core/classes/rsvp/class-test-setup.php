@@ -139,6 +139,12 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'transition_comment_status',
+				'priority' => 10,
+				'callback' => array( $instance, 'enforce_capacity_on_approval' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_set_rsvp_meta_default' ),
@@ -1834,5 +1840,107 @@ class Test_Setup extends Base {
 			$output,
 			'Failed to assert the notice follows the header.'
 		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity_on_approval on approval.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::enforce_capacity_on_approval
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_on_approval(): void {
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '0' );
+
+		wp_set_comment_status( $comment_id, 'approve' );
+
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert an RSVP approved on a full event moves to the waiting list.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity_on_approval ignoring other transitions.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::enforce_capacity_on_approval
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_on_approval_skips(): void {
+		$instance   = Setup::get_instance();
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		$comment    = get_comment( $comment_id );
+
+		$instance->enforce_capacity_on_approval( 'unapproved', 'approved', $comment );
+		$instance->enforce_capacity_on_approval( 'approved', 'approved', $comment );
+
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert other transitions leave the RSVP alone.'
+		);
+
+		$other_id = $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) );
+
+		wp_set_object_terms( $other_id, Status::ATTENDING->value, Status::TAXONOMY );
+		$instance->enforce_capacity_on_approval( 'approved', 'unapproved', get_comment( $other_id ) );
+
+		$this->assertTrue(
+			is_object_in_term( $other_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert a regular comment is left alone.'
+		);
+	}
+
+	/**
+	 * Creates an event with a capacity and one approved attendee.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $capacity The event capacity.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_event_with_attendee( int $capacity ): int {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', $capacity );
+
+		$this->create_rsvp( $post_id, Status::ATTENDING, '1', $this->factory->user->create() );
+
+		return $post_id;
+	}
+
+	/**
+	 * Creates an RSVP comment.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id  The event post ID.
+	 * @param Status $status   The RSVP status.
+	 * @param string $approved The comment approval value.
+	 * @param int    $user_id  The user ID, or 0 for someone without an account.
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function create_rsvp( int $post_id, Status $status, string $approved, int $user_id = 0 ): int {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'guest@example.org',
+				'user_id'              => $user_id,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, $status->value, Status::TAXONOMY );
+
+		return $comment_id;
 	}
 }
