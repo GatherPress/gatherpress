@@ -460,7 +460,8 @@ final class Rsvp {
 	 * Moves an approved, attending RSVP to the waiting list when it puts the event over capacity.
 	 *
 	 * An RSVP that waits for approval does not count toward capacity, so the
-	 * event may have filled up by the time it is approved.
+	 * event may have filled up by the time it is approved. A pending RSVP is
+	 * left alone until then.
 	 *
 	 * @since TBD
 	 *
@@ -469,24 +470,20 @@ final class Rsvp {
 	 * @return bool True when the RSVP moved to the waiting list.
 	 */
 	public function enforce_capacity( int $comment_id ): bool {
-		$post_id = $this->post->ID ?? 0;
-
 		if (
 			empty( $this->capacity ) ||
+			'1' !== (string) get_comment( $comment_id )?->comment_approved ||
 			! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value )
 		) {
 			return false;
 		}
 
-		// The cached responses may predate this RSVP's approval.
-		Cache::delete( $post_id );
-
-		if ( $this->responses()[ Status::ATTENDING->value ]['count'] <= $this->capacity ) {
+		if ( ( new Collection( $this->storage->all() ) )->get_attendee_count() <= $this->capacity ) {
 			return false;
 		}
 
 		wp_set_object_terms( $comment_id, Status::WAITING_LIST->value, Status::TAXONOMY );
-		Cache::delete( $post_id );
+		Cache::delete( $this->post->ID ?? 0 );
 
 		return true;
 	}

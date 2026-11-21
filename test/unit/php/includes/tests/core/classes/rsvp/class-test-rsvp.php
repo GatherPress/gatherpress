@@ -1600,6 +1600,58 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for enforce_capacity counting an anonymous RSVP for a visitor.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_counts_anonymous_rsvps(): void {
+		wp_set_current_user( 0 );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', 1 );
+
+		$anonymous = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		update_comment_meta( $anonymous, Rsvp::ANONYMOUS_META_KEY, 1 );
+
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert an anonymous RSVP counts toward capacity.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity leaving a pending RSVP alone.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_skips_pending_rsvp(): void {
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '0' );
+
+		$this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert a pending RSVP is left alone.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert a pending RSVP stays attending.'
+		);
+	}
+
+	/**
 	 * Coverage for enforce_capacity leaving RSVPs alone when there is nothing to check.
 	 *
 	 * @since TBD
