@@ -82,4 +82,22 @@ $gatherpress_scope = isset( $scope ) && 'network' === $scope ? 'network' : 'blog
 		<span class="spinner"></span>
 		<span class="gatherpress-settings-tools__status-text"></span>
 	</output>
+
+	<?php if ( 'network' !== $gatherpress_scope ) : ?>
+		<hr />
+
+		<h2><?php esc_html_e( 'Venue Maps', 'gatherpress' ); ?></h2>
+		<p class="description">
+			<?php esc_html_e( 'Remove cached static-map images that are no longer referenced by any venue.', 'gatherpress' ); ?>
+		</p>
+		<p>
+			<button type="button" class="button button-primary gatherpress-settings-tools__cleanup-maps">
+				<?php esc_html_e( 'Clean up unused venue-map images', 'gatherpress' ); ?>
+			</button>
+		</p>
+		<output class="gatherpress-settings-tools__status gatherpress-settings-tools__cleanup-status">
+			<span class="spinner"></span>
+			<span class="gatherpress-settings-tools__status-text"></span>
+		</output>
+	<?php endif; ?>
 </div>
