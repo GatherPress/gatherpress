@@ -478,7 +478,29 @@ final class Rsvp {
 			return false;
 		}
 
-		if ( ( new Collection( $this->storage->all() ) )->get_attendee_count() <= $this->capacity ) {
+		// Counted from the comments themselves: an anonymous RSVP's identity is
+		// withheld from a viewer who cannot manage RSVPs, so storage drops it.
+		$attending = Query::get_instance()->get_rsvps(
+			array(
+				'post_id'   => $this->post->ID ?? 0,
+				'status'    => 'approve',
+				'fields'    => 'ids',
+				'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+					array(
+						'taxonomy' => Status::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => Status::ATTENDING->value,
+					),
+				),
+			)
+		);
+		$count     = 0;
+
+		foreach ( $attending as $id ) {
+			$count += 1 + (int) get_comment_meta( (int) $id, 'gatherpress_rsvp_guests', true );
+		}
+
+		if ( $count <= $this->capacity ) {
 			return false;
 		}
 
