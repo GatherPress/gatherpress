@@ -468,7 +468,7 @@ final class Rsvp {
 	 *
 	 * @return bool True when the RSVP moved to the waiting list.
 	 */
-	public function fit_to_capacity( int $comment_id ): bool {
+	public function enforce_capacity( int $comment_id ): bool {
 		$post_id = $this->post->ID ?? 0;
 
 		if (

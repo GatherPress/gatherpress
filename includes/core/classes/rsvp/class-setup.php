@@ -120,7 +120,7 @@ final class Setup {
 		// Priority 11 ensures post types are already registered (priority 10) before removing RSVP support.
 		add_action( 'init', array( $this, 'maybe_disable_rsvp' ), 11 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
-		add_action( 'transition_comment_status', array( $this, 'maybe_fit_approved_rsvp_to_capacity' ), 10, 3 );
+		add_action( 'transition_comment_status', array( $this, 'enforce_capacity_on_approval' ), 10, 3 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_set_rsvp_meta_default' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
 		add_filter( 'allowed_block_types_all', array( $this, 'filter_rsvp_block_types' ) );
@@ -311,7 +311,7 @@ final class Setup {
 	 *
 	 * @return void
 	 */
-	public function maybe_fit_approved_rsvp_to_capacity(
+	public function enforce_capacity_on_approval(
 		string $new_status,
 		string $old_status,
 		WP_Comment $comment
@@ -320,7 +320,7 @@ final class Setup {
 			return;
 		}
 
-		( new Rsvp( (int) $comment->comment_post_ID ) )->fit_to_capacity( (int) $comment->comment_ID );
+		( new Rsvp( (int) $comment->comment_post_ID ) )->enforce_capacity( (int) $comment->comment_ID );
 	}
 
 	/**

@@ -141,7 +141,7 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'transition_comment_status',
 				'priority' => 10,
-				'callback' => array( $instance, 'maybe_fit_approved_rsvp_to_capacity' ),
+				'callback' => array( $instance, 'enforce_capacity_on_approval' ),
 			),
 			array(
 				'type'     => 'action',
@@ -1843,15 +1843,15 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_fit_approved_rsvp_to_capacity on approval.
+	 * Coverage for enforce_capacity_on_approval on approval.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::maybe_fit_approved_rsvp_to_capacity
+	 * @covers ::enforce_capacity_on_approval
 	 *
 	 * @return void
 	 */
-	public function test_maybe_fit_approved_rsvp_to_capacity(): void {
+	public function test_enforce_capacity_on_approval(): void {
 		$post_id    = $this->create_event_with_attendee( 1 );
 		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '0' );
 
@@ -1864,22 +1864,22 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_fit_approved_rsvp_to_capacity ignoring other transitions.
+	 * Coverage for enforce_capacity_on_approval ignoring other transitions.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::maybe_fit_approved_rsvp_to_capacity
+	 * @covers ::enforce_capacity_on_approval
 	 *
 	 * @return void
 	 */
-	public function test_maybe_fit_approved_rsvp_to_capacity_skips(): void {
+	public function test_enforce_capacity_on_approval_skips(): void {
 		$instance   = Setup::get_instance();
 		$post_id    = $this->create_event_with_attendee( 1 );
 		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
 		$comment    = get_comment( $comment_id );
 
-		$instance->maybe_fit_approved_rsvp_to_capacity( 'unapproved', 'approved', $comment );
-		$instance->maybe_fit_approved_rsvp_to_capacity( 'approved', 'approved', $comment );
+		$instance->enforce_capacity_on_approval( 'unapproved', 'approved', $comment );
+		$instance->enforce_capacity_on_approval( 'approved', 'approved', $comment );
 
 		$this->assertTrue(
 			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
@@ -1889,7 +1889,7 @@ class Test_Setup extends Base {
 		$other_id = $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) );
 
 		wp_set_object_terms( $other_id, Status::ATTENDING->value, Status::TAXONOMY );
-		$instance->maybe_fit_approved_rsvp_to_capacity( 'approved', 'unapproved', get_comment( $other_id ) );
+		$instance->enforce_capacity_on_approval( 'approved', 'unapproved', get_comment( $other_id ) );
 
 		$this->assertTrue(
 			is_object_in_term( $other_id, Status::TAXONOMY, Status::ATTENDING->value ),

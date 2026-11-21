@@ -1525,28 +1525,28 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Coverage for fit_to_capacity.
+	 * Coverage for enforce_capacity.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::fit_to_capacity
+	 * @covers ::enforce_capacity
 	 *
 	 * @return void
 	 */
-	public function test_fit_to_capacity(): void {
+	public function test_enforce_capacity(): void {
 		$post_id = $this->create_event_with_attendee( 2 );
 
 		$fits = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
 
 		$this->assertFalse(
-			( new Rsvp( $post_id ) )->fit_to_capacity( $fits ),
+			( new Rsvp( $post_id ) )->enforce_capacity( $fits ),
 			'Failed to assert an RSVP within capacity stays attending.'
 		);
 
 		$over = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
 
 		$this->assertTrue(
-			( new Rsvp( $post_id ) )->fit_to_capacity( $over ),
+			( new Rsvp( $post_id ) )->enforce_capacity( $over ),
 			'Failed to assert an RSVP over capacity moves.'
 		);
 		$this->assertTrue(
@@ -1556,36 +1556,36 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Coverage for fit_to_capacity counting guests.
+	 * Coverage for enforce_capacity counting guests.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::fit_to_capacity
+	 * @covers ::enforce_capacity
 	 *
 	 * @return void
 	 */
-	public function test_fit_to_capacity_counts_guests(): void {
+	public function test_enforce_capacity_counts_guests(): void {
 		$post_id    = $this->create_event_with_attendee( 2 );
 		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
 
 		update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', 1 );
 
 		$this->assertTrue(
-			( new Rsvp( $post_id ) )->fit_to_capacity( $comment_id ),
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
 			'Failed to assert guests count toward capacity.'
 		);
 	}
 
 	/**
-	 * Coverage for fit_to_capacity reading fresh responses over a stale cache.
+	 * Coverage for enforce_capacity reading fresh responses over a stale cache.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::fit_to_capacity
+	 * @covers ::enforce_capacity
 	 *
 	 * @return void
 	 */
-	public function test_fit_to_capacity_ignores_stale_cache(): void {
+	public function test_enforce_capacity_ignores_stale_cache(): void {
 		$post_id = $this->create_event_with_attendee( 1 );
 
 		// Caches the responses before the new RSVP is approved.
@@ -1594,26 +1594,26 @@ class Test_Rsvp extends Base {
 		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
 
 		$this->assertTrue(
-			( new Rsvp( $post_id ) )->fit_to_capacity( $comment_id ),
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
 			'Failed to assert the check reads fresh responses.'
 		);
 	}
 
 	/**
-	 * Coverage for fit_to_capacity leaving RSVPs alone when there is nothing to check.
+	 * Coverage for enforce_capacity leaving RSVPs alone when there is nothing to check.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::fit_to_capacity
+	 * @covers ::enforce_capacity
 	 *
 	 * @return void
 	 */
-	public function test_fit_to_capacity_skips(): void {
+	public function test_enforce_capacity_skips(): void {
 		$post_id       = $this->create_event_with_attendee( 1 );
 		$not_attending = $this->create_rsvp( $post_id, Status::NOT_ATTENDING, '1' );
 
 		$this->assertFalse(
-			( new Rsvp( $post_id ) )->fit_to_capacity( $not_attending ),
+			( new Rsvp( $post_id ) )->enforce_capacity( $not_attending ),
 			'Failed to assert a not attending RSVP is left alone.'
 		);
 
@@ -1622,7 +1622,7 @@ class Test_Rsvp extends Base {
 		$attending = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
 
 		$this->assertFalse(
-			( new Rsvp( $post_id ) )->fit_to_capacity( $attending ),
+			( new Rsvp( $post_id ) )->enforce_capacity( $attending ),
 			'Failed to assert an event without a capacity is left alone.'
 		);
 	}

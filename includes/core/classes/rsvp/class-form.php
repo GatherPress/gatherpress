@@ -384,7 +384,7 @@ final class Form {
 			$this->process_fields( $comment_id, $data );
 
 			// A logged-in RSVP can be approved on creation, without a status change.
-			( new Rsvp( (int) get_comment( $comment_id )?->comment_post_ID ) )->fit_to_capacity( $comment_id );
+			( new Rsvp( (int) get_comment( $comment_id )?->comment_post_ID ) )->enforce_capacity( $comment_id );
 
 			// The email creates the token when it goes out.
 			Email::get_instance()->queue_confirmation( $comment_id );
