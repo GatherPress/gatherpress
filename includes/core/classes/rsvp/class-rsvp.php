@@ -455,7 +455,7 @@ final class Rsvp {
 			return $promoted_count;
 		}
 
-		$remaining_spots = $this->capacity - $responses->get_attendee_count();
+		$remaining_spots = $this->capacity - $this->count_attendees();
 
 		// No free spots left.
 		if ( $remaining_spots <= 0 ) {
@@ -577,8 +577,20 @@ final class Rsvp {
 			return false;
 		}
 
-		// Counted from the comments themselves: an anonymous RSVP's identity is
-		// withheld from a viewer who cannot manage RSVPs, so storage drops it.
+		return $this->count_attendees() > $this->capacity && $this->move_to_waiting_list( $comment_id );
+	}
+
+	/**
+	 * Counts the people attending the event, guests included.
+	 *
+	 * Counted from the comments themselves: an anonymous RSVP's identity is
+	 * withheld from a viewer who cannot manage RSVPs, so storage drops it.
+	 *
+	 * @since TBD
+	 *
+	 * @return int The number of people attending.
+	 */
+	private function count_attendees(): int {
 		$attending = Query::get_instance()->get_rsvps(
 			array(
 				'post_id'   => $this->post->ID ?? 0,
@@ -599,7 +611,7 @@ final class Rsvp {
 			$count += 1 + (int) get_comment_meta( (int) $id, 'gatherpress_rsvp_guests', true );
 		}
 
-		return $count > $this->capacity && $this->move_to_waiting_list( $comment_id );
+		return $count;
 	}
 
 	/**

@@ -1890,6 +1890,46 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for count_attendees counting anonymous RSVPs and guests for a visitor.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::count_attendees
+	 * @covers ::promote_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_count_attendees_includes_anonymous_rsvps(): void {
+		wp_set_current_user( 0 );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', 1 );
+
+		$anonymous = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		update_comment_meta( $anonymous, Rsvp::ANONYMOUS_META_KEY, 1 );
+		update_comment_meta( $anonymous, 'gatherpress_rsvp_guests', 1 );
+
+		$waiting = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1', $this->factory->user->create() );
+		$rsvp    = new Rsvp( $post_id );
+
+		$this->assertSame(
+			2,
+			Utility::invoke_hidden_method( $rsvp, 'count_attendees' ),
+			'Failed to assert an anonymous RSVP and its guest are counted.'
+		);
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert nobody is promoted into a seat an anonymous RSVP holds.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $waiting, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert the RSVP stays on the waiting list.'
+		);
+	}
+
+	/**
 	 * Creates an event with a capacity and one approved attendee.
 	 *
 	 * @since TBD
