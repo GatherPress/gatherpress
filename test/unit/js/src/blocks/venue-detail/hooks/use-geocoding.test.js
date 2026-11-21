@@ -1,0 +1,141 @@
+/**
+ * External dependencies
+ */
+import { renderHook, act } from '@testing-library/react';
+import { expect, test, jest, beforeEach } from '@jest/globals';
+
+/**
+ * WordPress dependencies
+ */
+jest.mock( '@wordpress/data', () => ( {
+	useDispatch: jest.fn(),
+} ) );
+
+jest.mock( '@wordpress/compose', () => ( {
+	useDebounce: jest.fn( ( callback ) => callback ),
+} ) );
+
+/**
+ * Internal dependencies
+ */
+jest.mock( '@src/helpers/geocoding', () => ( {
+	GEOCODE_NOTICE_ID: 'gatherpress-geocode-failed',
+	geocodeFailedMessage: () => 'Geocode failed.',
+	geocodeAddress: jest.fn( () =>
+		Promise.resolve( { latitude: '1', longitude: '2', error: null } ),
+	),
+} ) );
+
+import { useDispatch } from '@wordpress/data';
+import { geocodeAddress } from '@src/helpers/geocoding';
+import { useGeocoding } from '@src/blocks/venue-detail/hooks/use-geocoding';
+
+const venueStore = {
+	updateVenueLatitude: jest.fn(),
+	updateVenueLongitude: jest.fn(),
+};
+
+const notices = {
+	createErrorNotice: jest.fn(),
+};
+
+const updateVenueField = jest.fn();
+
+beforeEach( () => {
+	jest.clearAllMocks();
+
+	useDispatch.mockImplementation( ( store ) =>
+		'core/notices' === store ? notices : venueStore,
+	);
+} );
+
+/**
+ * Render the hook with the given props and let any lookup settle.
+ *
+ * @param {Object} props The initial props.
+ *
+ * @return {Object} The renderHook result.
+ */
+const renderGeocoding = async ( props ) => {
+	let result;
+
+	await act( async () => {
+		result = renderHook(
+			( { value, coordinates } ) =>
+				useGeocoding( 'address', value, updateVenueField, true, coordinates ),
+			{ initialProps: props },
+		);
+	} );
+
+	return result;
+};
+
+test( 'does not geocode a saved address with coordinates once the venue loads', async () => {
+	const { rerender } = await renderGeocoding( { value: '', coordinates: false } );
+
+	await act( async () => {
+		rerender( { value: '1 Main St', coordinates: true } );
+	} );
+
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+	expect( updateVenueField ).not.toHaveBeenCalledWith( {
+		gatherpress_latitude: '1',
+		gatherpress_longitude: '2',
+	} );
+} );
+
+test( 'geocodes a saved address that has no coordinates', async () => {
+	await renderGeocoding( { value: '1 Main St', coordinates: false } );
+
+	expect( geocodeAddress ).toHaveBeenCalledWith( '1 Main St' );
+	expect( updateVenueField ).toHaveBeenCalledWith( {
+		gatherpress_latitude: '1',
+		gatherpress_longitude: '2',
+	} );
+} );
+
+test( 'geocodes a changed address', async () => {
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true } );
+	} );
+
+	expect( geocodeAddress ).toHaveBeenCalledWith( '2 Main St' );
+	expect( venueStore.updateVenueLatitude ).toHaveBeenCalledWith( '1' );
+} );
+
+test( 'keeps the coordinates and shows a notice when the lookup fails', async () => {
+	geocodeAddress.mockResolvedValueOnce( {
+		latitude: '',
+		longitude: '',
+		error: 'Geocoding request failed.',
+	} );
+
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true } );
+	} );
+
+	expect( updateVenueField ).not.toHaveBeenCalled();
+	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalled();
+	expect( notices.createErrorNotice ).toHaveBeenCalledWith( 'Geocode failed.', {
+		id: 'gatherpress-geocode-failed',
+		type: 'snackbar',
+	} );
+} );
+
+test( 'clears the coordinates when the address is emptied', async () => {
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '', coordinates: true } );
+	} );
+
+	expect( updateVenueField ).toHaveBeenCalledWith( {
+		gatherpress_latitude: '',
+		gatherpress_longitude: '',
+	} );
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+} );
