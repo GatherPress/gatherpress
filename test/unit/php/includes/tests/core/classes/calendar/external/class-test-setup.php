@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Calendar\External;
 use GatherPress\Core\Calendar\External;
 use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -2391,5 +2392,143 @@ class Test_Setup extends Base {
 			$list,
 			'The password-protected event should not be in the feed.'
 		);
+	}
+
+	/**
+	 * Creates two upcoming events for the feed tests.
+	 *
+	 * @param string $tagged_title   Title of the event that gets the term.
+	 * @param string $untagged_title Title of the other event.
+	 *
+	 * @return int ID of the event that gets the term.
+	 */
+	private function create_feed_events( string $tagged_title, string $untagged_title ): int {
+		$params = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week 2 hours' ) ),
+			'timezone'       => 'UTC',
+		);
+		$ids    = array();
+
+		foreach ( array( $tagged_title, $untagged_title ) as $title ) {
+			$post_id = $this->factory->post->create(
+				array(
+					'post_type'  => Event::POST_TYPE,
+					'post_title' => $title,
+				)
+			);
+
+			( new Event( $post_id ) )->save_datetimes( $params );
+
+			$ids[] = $post_id;
+		}
+
+		return $ids[0];
+	}
+
+	/**
+	 * A feed of a term in a taxonomy that a companion plugin registers on
+	 * events lists only the events with that term (#1642).
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ical_list
+	 * @covers ::get_queried_tax_query
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_list_on_companion_taxonomy(): void {
+		register_taxonomy( 'gp_test_language', Event::POST_TYPE, array( 'public' => true ) );
+
+		try {
+			$event_id = $this->create_feed_events( 'Japanese Meetup', 'English Meetup' );
+			$term_id  = $this->factory->term->create(
+				array(
+					'taxonomy' => 'gp_test_language',
+					'slug'     => 'japanese',
+				)
+			);
+
+			wp_set_object_terms( $event_id, $term_id, 'gp_test_language' );
+
+			$wp_query = $GLOBALS['wp_query'];
+			$wp_query->init();
+			$wp_query->is_tax            = true;
+			$wp_query->queried_object    = get_term( $term_id, 'gp_test_language' );
+			$wp_query->queried_object_id = $term_id;
+
+			$list = Setup::get_instance()->get_ical_list();
+
+			$this->assertStringContainsString(
+				'Japanese Meetup',
+				$list,
+				'Failed to assert the event with the term is in the feed.'
+			);
+			$this->assertStringNotContainsString(
+				'English Meetup',
+				$list,
+				'Failed to assert the event without the term is not in the feed.'
+			);
+		} finally {
+			unregister_taxonomy( 'gp_test_language' );
+		}
+	}
+
+	/**
+	 * A feed of a post of a shadow-source post type that a companion plugin
+	 * registers lists only the events with the post's shadow term (#1642).
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_ical_list
+	 * @covers ::get_queried_tax_query
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_list_on_companion_shadow_source(): void {
+		register_post_type(
+			'gp_test_production',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Shadow_Source::SUPPORT ),
+			)
+		);
+		register_taxonomy( '_gp_test_production', Event::POST_TYPE, array( 'public' => false ) );
+
+		try {
+			$event_id      = $this->create_feed_events( 'Hamlet Night', 'Macbeth Night' );
+			$production_id = $this->factory->post->create(
+				array(
+					'post_type'  => 'gp_test_production',
+					'post_title' => 'Hamlet',
+					'post_name'  => 'hamlet',
+				)
+			);
+
+			wp_set_object_terms( $event_id, '_hamlet', '_gp_test_production' );
+
+			$wp_query = $GLOBALS['wp_query'];
+			$wp_query->init();
+			$wp_query->is_single         = true;
+			$wp_query->is_singular       = true;
+			$wp_query->queried_object    = get_post( $production_id );
+			$wp_query->queried_object_id = $production_id;
+
+			$list = Setup::get_instance()->get_ical_list();
+
+			$this->assertStringContainsString(
+				'Hamlet Night',
+				$list,
+				'Failed to assert the event with the shadow term is in the feed.'
+			);
+			$this->assertStringNotContainsString(
+				'Macbeth Night',
+				$list,
+				'Failed to assert the event without the shadow term is not in the feed.'
+			);
+		} finally {
+			unregister_taxonomy( '_gp_test_production' );
+			unregister_post_type( 'gp_test_production' );
+		}
 	}
 }
