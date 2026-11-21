@@ -10,7 +10,6 @@ namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Rsvp\Lock;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
 use RuntimeException;
 
 /**
@@ -35,16 +34,14 @@ class Test_Lock extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::run
-	 * @covers ::acquire
-	 * @covers ::delete
 	 *
 	 * @return void
 	 */
 	public function test_run(): void {
-		$during = Lock::run( self::POST_ID, fn(): ?string => $this->get_lock_value() );
+		$during = Lock::run( self::POST_ID, fn(): bool => $this->is_locked() );
 
-		$this->assertNotNull( $during, 'Failed to assert the lock is held while the callback runs.' );
-		$this->assertNull( $this->get_lock_value(), 'Failed to assert the lock is released.' );
+		$this->assertTrue( $during, 'Failed to assert the lock is held while the callback runs.' );
+		$this->assertFalse( $this->is_locked(), 'Failed to assert the lock is released.' );
 	}
 
 	/**
@@ -57,78 +54,13 @@ class Test_Lock extends Base {
 	 * @return void
 	 */
 	public function test_run_is_reentrant(): void {
-		$result = Lock::run(
+		$inner = Lock::run(
 			self::POST_ID,
-			static fn(): string => Lock::run( self::POST_ID, static fn(): string => 'inner', null, 1 )
+			fn(): bool => Lock::run( self::POST_ID, fn(): bool => $this->is_locked() ) && $this->is_locked()
 		);
 
-		$this->assertSame( 'inner', $result, 'Failed to assert a nested run does not wait on its own lock.' );
-		$this->assertNull( $this->get_lock_value(), 'Failed to assert the lock is released.' );
-	}
-
-	/**
-	 * Coverage for run when another request holds the lock.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::run
-	 * @covers ::acquire
-	 *
-	 * @return void
-	 */
-	public function test_run_returns_fallback_when_busy(): void {
-		$other = time() . ':other';
-
-		$this->set_lock_value( $other );
-
-		$result = Lock::run( self::POST_ID, static fn(): string => 'ran', 'fallback', 2 );
-
-		$this->assertSame( 'fallback', $result, 'Failed to assert the callback does not run without the lock.' );
-		$this->assertSame(
-			$other,
-			$this->get_lock_value(),
-			'Failed to assert the other request keeps its lock.'
-		);
-	}
-
-	/**
-	 * Coverage for delete leaving a lock another request holds.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::delete
-	 *
-	 * @return void
-	 */
-	public function test_delete_only_removes_matching_value(): void {
-		$this->set_lock_value( time() . ':other' );
-
-		Utility::invoke_hidden_static_method( Lock::class, 'delete', array( self::POST_ID, time() . ':mine' ) );
-
-		$this->assertNotNull( $this->get_lock_value(), 'Failed to assert another request\'s lock is kept.' );
-	}
-
-	/**
-	 * Coverage for acquire taking over a lock left behind.
-	 *
-	 * @since TBD
-	 *
-	 * @covers ::acquire
-	 *
-	 * @return void
-	 */
-	public function test_acquire_takes_over_expired_lock(): void {
-		$this->set_lock_value( ( time() - Lock::EXPIRES - 1 ) . ':other' );
-
-		$value = Utility::invoke_hidden_static_method( Lock::class, 'acquire', array( self::POST_ID, 2 ) );
-
-		$this->assertIsString( $value, 'Failed to assert an expired lock is taken over.' );
-		$this->assertGreaterThanOrEqual(
-			time() - 1,
-			(int) $value,
-			'Failed to assert the lock is stamped when it is taken.'
-		);
-		$this->assertSame( $value, $this->get_lock_value(), 'Failed to assert the lock holds the new value.' );
+		$this->assertTrue( $inner, 'Failed to assert the outer lock survives a nested run.' );
+		$this->assertFalse( $this->is_locked(), 'Failed to assert the lock is released.' );
 	}
 
 	/**
@@ -155,49 +87,49 @@ class Test_Lock extends Base {
 		}
 
 		$this->assertTrue( $thrown, 'Failed to assert the exception reaches the caller.' );
-		$this->assertNull( $this->get_lock_value(), 'Failed to assert the lock is released after an exception.' );
+		$this->assertFalse( $this->is_locked(), 'Failed to assert the lock is released after an exception.' );
 	}
 
 	/**
-	 * Reads the lock row.
+	 * Coverage for get_name.
 	 *
 	 * @since TBD
 	 *
-	 * @return string|null The lock value, or null when there is no lock.
-	 */
-	private function get_lock_value(): ?string {
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reads the lock row the way Lock does.
-		return $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT option_value FROM %i WHERE option_name = %s',
-				$wpdb->options,
-				sprintf( Lock::OPTION_NAME, self::POST_ID )
-			)
-		);
-	}
-
-	/**
-	 * Writes the lock row as another request would.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $value The lock value.
+	 * @covers ::get_name
 	 *
 	 * @return void
 	 */
-	private function set_lock_value( string $value ): void {
+	public function test_get_name(): void {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Writes the lock row the way Lock does.
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT INTO %i ( option_name, option_value, autoload ) VALUES ( %s, %s, 'off' )",
-				$wpdb->options,
-				sprintf( Lock::OPTION_NAME, self::POST_ID ),
-				$value
-			)
+		$this->assertSame(
+			$wpdb->prefix . 'gatherpress_rsvp_' . self::POST_ID,
+			Lock::get_name( self::POST_ID ),
+			'Failed to assert the lock name carries the table prefix.'
 		);
+
+		$prefix       = $wpdb->prefix;
+		$wpdb->prefix = str_repeat( 'p', 60 ) . '_';
+		$name         = Lock::get_name( self::POST_ID );
+		$wpdb->prefix = $prefix;
+
+		$this->assertSame( 64, strlen( $name ), 'Failed to assert a long name is cut to 64 characters.' );
+		$this->assertStringEndsWith( '_' . self::POST_ID, $name, 'Failed to assert the post ID is kept.' );
+	}
+
+	/**
+	 * Whether the test event's lock is held.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True when the lock is held.
+	 */
+	private function is_locked(): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
+		$holder = $wpdb->get_var( $wpdb->prepare( 'SELECT IS_USED_LOCK( %s )', Lock::get_name( self::POST_ID ) ) );
+
+		return null !== $holder;
 	}
 }
