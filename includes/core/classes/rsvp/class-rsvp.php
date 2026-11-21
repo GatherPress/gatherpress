@@ -485,6 +485,11 @@ final class Rsvp {
 				break;
 			}
 
+			// A party larger than the free spots keeps its place for the next opening.
+			if ( $state->get_attendee_count() > $remaining_spots ) {
+				continue;
+			}
+
 			$state = $this->storage->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
 
 			if ( $state instanceof State ) {

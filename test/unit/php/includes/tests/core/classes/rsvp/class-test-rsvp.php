@@ -1930,6 +1930,37 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for promote_waiting_list skipping a party that does not fit.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::promote_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_promote_waiting_list_skips_party_that_does_not_fit(): void {
+		$post_id = $this->create_event_with_attendee( 2 );
+		$party   = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1', $this->factory->user->create() );
+		$single  = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1', $this->factory->user->create() );
+
+		update_comment_meta( $party, 'gatherpress_rsvp_guests', 1 );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( new Rsvp( $post_id ), 'promote_waiting_list' ),
+			'Failed to assert only the RSVP that fits is promoted.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $party, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert a party of two does not take the last seat.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $single, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the RSVP behind it takes the seat.'
+		);
+	}
+
+	/**
 	 * Creates an event with a capacity and one approved attendee.
 	 *
 	 * @since TBD
