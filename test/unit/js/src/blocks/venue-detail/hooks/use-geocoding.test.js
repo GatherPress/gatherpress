@@ -61,8 +61,8 @@ const renderGeocoding = async ( props ) => {
 
 	await act( async () => {
 		result = renderHook(
-			( { value, coordinates } ) =>
-				useGeocoding( 'address', value, updateVenueField, true, coordinates ),
+			( { value, coordinates, enabled = true } ) =>
+				useGeocoding( 'address', value, updateVenueField, enabled, coordinates ),
 			{ initialProps: props },
 		);
 	} );
@@ -166,4 +166,31 @@ test( 'ignores a lookup that finishes after the address changes back', async () 
 	expect( geocodeAddress ).toHaveBeenCalledTimes( 1 );
 	expect( updateVenueField ).not.toHaveBeenCalled();
 	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalled();
+} );
+
+test( 'ignores a lookup that finishes after geocoding is turned off', async () => {
+	let resolveGeocode;
+
+	geocodeAddress.mockReturnValueOnce(
+		new Promise( ( resolve ) => {
+			resolveGeocode = resolve;
+		} ),
+	);
+
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true } );
+	} );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true, enabled: false } );
+	} );
+
+	await act( async () => {
+		resolveGeocode( { latitude: '', longitude: '', error: 'Geocoding request failed.' } );
+	} );
+
+	expect( updateVenueField ).not.toHaveBeenCalled();
+	expect( notices.createErrorNotice ).not.toHaveBeenCalled();
 } );

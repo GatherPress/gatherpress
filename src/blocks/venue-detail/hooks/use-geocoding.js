@@ -69,6 +69,9 @@ export function useGeocoding(
 		addressRef.current = fieldValue;
 	}
 
+	const enabledRef = useRef( enabled );
+	enabledRef.current = enabled;
+
 	// Geocode address field changes.
 	const handleGeocode = useCallback( async () => {
 		const address = addressRef.current;
@@ -96,8 +99,9 @@ export function useGeocoding(
 
 		const { latitude, longitude, error } = await geocodeAddress( address );
 
-		// Skip a stale lookup if the address changed while it ran.
-		if ( addressRef.current !== address ) {
+		// Skip a stale lookup if the address changed or geocoding was turned
+		// off, for example for manual coordinates, while it ran.
+		if ( addressRef.current !== address || ! enabledRef.current ) {
 			return;
 		}
 
