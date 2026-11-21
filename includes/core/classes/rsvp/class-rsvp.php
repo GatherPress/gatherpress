@@ -523,7 +523,7 @@ final class Rsvp {
 	}
 
 	/**
-	 * Moves an RSVP to the waiting list.
+	 * Moves an attending RSVP to the waiting list.
 	 *
 	 * Also used when the attendee count cannot be checked safely: the waiting
 	 * list never overbooks the event, and the next promotion fills any free spot.
@@ -532,9 +532,13 @@ final class Rsvp {
 	 *
 	 * @param int $comment_id The RSVP comment ID.
 	 *
-	 * @return bool Always true.
+	 * @return bool True when the RSVP moved to the waiting list.
 	 */
 	private function move_to_waiting_list( int $comment_id ): bool {
+		if ( ! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ) ) {
+			return false;
+		}
+
 		wp_set_object_terms( $comment_id, Status::WAITING_LIST->value, Status::TAXONOMY );
 		Cache::delete( $this->post->ID ?? 0 );
 

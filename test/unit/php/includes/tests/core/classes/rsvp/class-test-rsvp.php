@@ -1838,6 +1838,17 @@ class Test_Rsvp extends Base {
 			is_object_in_term( $comment_id, Status::TAXONOMY, Status::WAITING_LIST->value ),
 			'Failed to assert the RSVP waits rather than risk overbooking.'
 		);
+
+		$not_attending = $this->create_rsvp( $post_id, Status::NOT_ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->enforce_capacity( $not_attending ),
+			'Failed to assert a not attending RSVP is left alone without the lock.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $not_attending, Status::TAXONOMY, Status::NOT_ATTENDING->value ),
+			'Failed to assert a not attending RSVP keeps its status.'
+		);
 	}
 
 	/**
