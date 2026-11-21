@@ -13,7 +13,6 @@
 namespace GatherPress\Core\Rsvp;
 
 use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Utility;
 use WP_Comment;
 use WP_Post;
@@ -187,41 +186,13 @@ final class Token {
 			return;
 		}
 
-		$comment_id = (int) $this->comment->comment_ID;
-		$post_id    = (int) $this->comment->comment_post_ID;
+		wp_set_comment_status( (int) $this->comment->comment_ID, 'approve' );
 
-		$this->maybe_move_to_waiting_list( $comment_id, $post_id );
-
-		wp_set_comment_status( $comment_id, 'approve' );
+		$post_id = (int) $this->comment->comment_post_ID;
 
 		if ( $post_id ) {
 			Cache::delete( $post_id );
 			clean_post_cache( $post_id );
-		}
-	}
-
-	/**
-	 * Moves an attending RSVP to the waiting list when the event is full.
-	 *
-	 * An unconfirmed RSVP does not count toward capacity, so the event may
-	 * have filled up before the link was clicked.
-	 *
-	 * @since TBD
-	 *
-	 * @param int $comment_id The RSVP comment ID.
-	 * @param int $post_id    The event post ID.
-	 *
-	 * @return void
-	 */
-	private function maybe_move_to_waiting_list( int $comment_id, int $post_id ): void {
-		if ( ! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ) ) {
-			return;
-		}
-
-		$guests = (int) get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true );
-
-		if ( ( new Rsvp( $post_id ) )->attending_limit_reached( null, $guests ) ) {
-			wp_set_object_terms( $comment_id, Status::WAITING_LIST->value, Status::TAXONOMY );
 		}
 	}
 

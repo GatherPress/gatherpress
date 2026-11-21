@@ -1523,4 +1523,154 @@ class Test_Rsvp extends Base {
 		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
 		unset( $GLOBALS['comment'] );
 	}
+
+	/**
+	 * Coverage for fit_to_capacity.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::fit_to_capacity
+	 *
+	 * @return void
+	 */
+	public function test_fit_to_capacity(): void {
+		$post_id = $this->create_event_with_attendee( 2 );
+
+		$fits = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->fit_to_capacity( $fits ),
+			'Failed to assert an RSVP within capacity stays attending.'
+		);
+
+		$over = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->fit_to_capacity( $over ),
+			'Failed to assert an RSVP over capacity moves.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $over, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert the RSVP is on the waiting list.'
+		);
+	}
+
+	/**
+	 * Coverage for fit_to_capacity counting guests.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::fit_to_capacity
+	 *
+	 * @return void
+	 */
+	public function test_fit_to_capacity_counts_guests(): void {
+		$post_id    = $this->create_event_with_attendee( 2 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', 1 );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->fit_to_capacity( $comment_id ),
+			'Failed to assert guests count toward capacity.'
+		);
+	}
+
+	/**
+	 * Coverage for fit_to_capacity reading fresh responses over a stale cache.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::fit_to_capacity
+	 *
+	 * @return void
+	 */
+	public function test_fit_to_capacity_ignores_stale_cache(): void {
+		$post_id = $this->create_event_with_attendee( 1 );
+
+		// Caches the responses before the new RSVP is approved.
+		( new Rsvp( $post_id ) )->responses();
+
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->fit_to_capacity( $comment_id ),
+			'Failed to assert the check reads fresh responses.'
+		);
+	}
+
+	/**
+	 * Coverage for fit_to_capacity leaving RSVPs alone when there is nothing to check.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::fit_to_capacity
+	 *
+	 * @return void
+	 */
+	public function test_fit_to_capacity_skips(): void {
+		$post_id       = $this->create_event_with_attendee( 1 );
+		$not_attending = $this->create_rsvp( $post_id, Status::NOT_ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->fit_to_capacity( $not_attending ),
+			'Failed to assert a not attending RSVP is left alone.'
+		);
+
+		delete_post_meta( $post_id, 'gatherpress_capacity' );
+
+		$attending = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->fit_to_capacity( $attending ),
+			'Failed to assert an event without a capacity is left alone.'
+		);
+	}
+
+	/**
+	 * Creates an event with a capacity and one approved attendee.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $capacity The event capacity.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_event_with_attendee( int $capacity ): int {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', $capacity );
+
+		$this->create_rsvp( $post_id, Status::ATTENDING, '1', $this->factory->user->create() );
+
+		return $post_id;
+	}
+
+	/**
+	 * Creates an RSVP comment.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id  The event post ID.
+	 * @param Status $status   The RSVP status.
+	 * @param string $approved The comment approval value.
+	 * @param int    $user_id  The user ID, or 0 for someone without an account.
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function create_rsvp( int $post_id, Status $status, string $approved, int $user_id = 0 ): int {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'guest@example.org',
+				'user_id'              => $user_id,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, $status->value, Status::TAXONOMY );
+
+		return $comment_id;
+	}
 }

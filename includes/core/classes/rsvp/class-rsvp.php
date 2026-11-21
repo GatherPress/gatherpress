@@ -457,6 +457,41 @@ final class Rsvp {
 	}
 
 	/**
+	 * Moves an approved, attending RSVP to the waiting list when it puts the event over capacity.
+	 *
+	 * An RSVP that waits for approval does not count toward capacity, so the
+	 * event may have filled up by the time it is approved.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool True when the RSVP moved to the waiting list.
+	 */
+	public function fit_to_capacity( int $comment_id ): bool {
+		$post_id = $this->post->ID ?? 0;
+
+		if (
+			empty( $this->capacity ) ||
+			! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value )
+		) {
+			return false;
+		}
+
+		// The cached responses may predate this RSVP's approval.
+		Cache::delete( $post_id );
+
+		if ( $this->responses()[ Status::ATTENDING->value ]['count'] <= $this->capacity ) {
+			return false;
+		}
+
+		wp_set_object_terms( $comment_id, Status::WAITING_LIST->value, Status::TAXONOMY );
+		Cache::delete( $post_id );
+
+		return true;
+	}
+
+	/**
 	 * Determines whether RSVP is enabled for this event.
 	 *
 	 * A post type that does not declare `gatherpress-rsvp` never has RSVP
