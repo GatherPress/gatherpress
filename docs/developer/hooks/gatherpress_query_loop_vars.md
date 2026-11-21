@@ -10,7 +10,7 @@ add_filter(
    'gatherpress_query_loop_vars',
     function(
         array<string, mixed>,
-        array<string,,
+        $get_params,
         bool $inherited,
          = null
     ) {
@@ -25,15 +25,21 @@ add_filter(
 ## Parameters
 
 - *`array<string,`* `mixed>` $query_args  Arguments to be passed to WP_Query.
-- `array<string,` mixed> $block_query The block's query attribute, or the Other variable names: `$attrs`, `$block_query`, `$get_params`
+- `$get_params` Other variable names: `array<string, mixed> $block_query The block's query attribute, or the`, `$attrs`, `$block_query`
 - *`bool`* `$inherited` Whether the Query Loop inherits the main query.
 - ``
 
-## Returns
-
-`array<string,` mixed> Arguments to be passed to WP_Query.
-
 ## Files
+
+- [includes/core/classes/class-shadow-source.php:170](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L170)
+```php
+apply_filters(
+			'gatherpress_query_loop_vars',
+			$custom_args,
+			$request->get_params(),
+			false
+		)
+```
 
 - [includes/core/classes/blocks/class-event-query.php:217](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L217)
 ```php
@@ -68,16 +74,6 @@ apply_filters(
 - [includes/core/classes/blocks/class-calendar-query.php:491](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-calendar-query.php#L491)
 ```php
 apply_filters( 'gatherpress_query_loop_vars', $query_args, $block_query, false )
-```
-
-- [includes/core/classes/class-shadow-source.php:170](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L170)
-```php
-apply_filters(
-			'gatherpress_query_loop_vars',
-			$custom_args,
-			$request->get_params(),
-			false
-		)
 ```
 
 
