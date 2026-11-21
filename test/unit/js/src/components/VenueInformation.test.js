@@ -47,7 +47,7 @@ jest.mock( '@wordpress/components', () => ( {
  */
 jest.mock( '@src/helpers/geocoding', () => ( {
 	GEOCODE_LOCK_NAME: 'gatherpress/venue-geocoding',
-	GEOCODE_NOTICE_ID: 'gatherpress-geocode-failed',
+	GEOCODE_NOTICE_ID: 'gatherpress_geocode_failed',
 	geocodeFailedMessage: () => 'Geocode failed.',
 	geocodeAddress: jest.fn( () =>
 		Promise.resolve( { latitude: '1', longitude: '2' } ),
@@ -382,7 +382,7 @@ test( 'keeps the coordinates and shows a notice when the lookup fails', async ()
 	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalled();
 	expect( editor.editPost ).not.toHaveBeenCalled();
 	expect( notices.createErrorNotice ).toHaveBeenCalledWith( 'Geocode failed.', {
-		id: 'gatherpress-geocode-failed',
+		id: 'gatherpress_geocode_failed',
 		type: 'snackbar',
 	} );
 	expect( editor.unlockPostSaving ).toHaveBeenCalledWith( 'gatherpress/venue-geocoding' );

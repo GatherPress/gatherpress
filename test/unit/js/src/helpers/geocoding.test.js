@@ -45,7 +45,7 @@ describe( 'Geocoding helpers', () => {
 	let apiFetch;
 
 	it( 'exports the message and notice ID for a failed geocode', () => {
-		expect( GEOCODE_NOTICE_ID ).toBe( 'gatherpress-geocode-failed' );
+		expect( GEOCODE_NOTICE_ID ).toBe( 'gatherpress_geocode_failed' );
 		expect( geocodeFailedMessage() ).toBe(
 			'The address could not be located, so the venue keeps its saved map location.',
 		);

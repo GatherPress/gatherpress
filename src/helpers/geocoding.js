@@ -40,7 +40,7 @@ export const GEOCODE_LOCK_NAME = 'gatherpress/venue-geocoding';
  *
  * @type {string}
  */
-export const GEOCODE_NOTICE_ID = 'gatherpress-geocode-failed';
+export const GEOCODE_NOTICE_ID = 'gatherpress_geocode_failed';
 
 /**
  * Message shown when a geocode request fails.
