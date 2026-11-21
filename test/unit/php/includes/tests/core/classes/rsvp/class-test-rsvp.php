@@ -1680,6 +1680,55 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Coverage for the helpers that run while holding the event's lock.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::enforce_capacity_locked
+	 * @covers ::promote_waiting_list
+	 * @covers ::process_locked
+	 *
+	 * @return void
+	 */
+	public function test_locked_helpers(): void {
+		$post_id = $this->create_event_with_attendee( 1 );
+		$rsvp    = new Rsvp( $post_id );
+		$over    = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $rsvp, 'enforce_capacity_locked', array( $over ) ),
+			'Failed to assert the locked check moves an RSVP over capacity.'
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $rsvp, 'enforce_capacity_locked', array( $over ) ),
+			'Failed to assert the locked check leaves a waiting list RSVP alone.'
+		);
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert nobody is promoted on a full event.'
+		);
+
+		$user_id = $this->factory->user->create();
+		$state   = Utility::invoke_hidden_method(
+			$rsvp,
+			'process_locked',
+			array(
+				new Intent(
+					new Data( new Identity( Identity_Type::WP_USER_ID, $user_id ), Status::ATTENDING ),
+					Provider_Registry::get_instance()->get( 'user' )
+				),
+			)
+		);
+
+		$this->assertSame(
+			Status::WAITING_LIST,
+			$state->data->status,
+			'Failed to assert a new RSVP on a full event goes on the waiting list.'
+		);
+	}
+
+	/**
 	 * Creates an event with a capacity and one approved attendee.
 	 *
 	 * @since TBD

@@ -350,6 +350,22 @@ final class Rsvp {
 			return null;
 		}
 
+		// The count the business rules read must not change before the save.
+		return Lock::run( (int) ( $this->post->ID ?? 0 ), fn(): ?State => $this->process_locked( $intent ) );
+	}
+
+	/**
+	 * Process an RSVP request while holding the event's lock.
+	 *
+	 * @since TBD
+	 *
+	 * @param Intent $intent The RSVP response/intent to save.
+	 *
+	 * @return State|null
+	 */
+	private function process_locked( Intent $intent ): ?State {
+		$post_id = $this->post->ID ?? 0;
+
 		// Get current/prior RSVP response.
 		$current_response = $this->storage->get( $intent->data->identity, $intent->provider );
 
@@ -361,6 +377,9 @@ final class Rsvp {
 			$intent,
 			$current_response ? (int) $current_response->comment->comment_ID : null
 		);
+
+		// The next request to take the lock counts from the saved responses.
+		Cache::delete( $post_id );
 
 		if ( is_bool( $state ) ) {
 			return null;
@@ -381,6 +400,20 @@ final class Rsvp {
 	 * @return int Number of RSVPs promoted from the waiting list.
 	 */
 	public function check_waiting_list(): int {
+		$post_id = $this->post instanceof WP_Post ? $this->post->ID : 0;
+
+		// The free spots must not change while they are filled.
+		return (int) Lock::run( $post_id, fn(): int => $this->promote_waiting_list() );
+	}
+
+	/**
+	 * Promote pending RSVPs from the waiting list while holding the event's lock.
+	 *
+	 * @since TBD
+	 *
+	 * @return int Number of RSVPs promoted from the waiting list.
+	 */
+	private function promote_waiting_list(): int {
 		$states    = $this->storage->all();
 		$responses = new Collection( $states );
 		$post_id   = $this->post instanceof WP_Post ? $this->post->ID : 0;
@@ -416,6 +449,8 @@ final class Rsvp {
 					do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state );
 				}
 			}
+
+			Cache::delete( $post_id );
 
 			return $promoted_count;
 		}
@@ -453,6 +488,8 @@ final class Rsvp {
 			}
 		}
 
+		Cache::delete( $post_id );
+
 		return $promoted_count;
 	}
 
@@ -472,9 +509,26 @@ final class Rsvp {
 	public function enforce_capacity( int $comment_id ): bool {
 		if (
 			empty( $this->capacity ) ||
-			'1' !== (string) get_comment( $comment_id )?->comment_approved ||
-			! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value )
+			'1' !== (string) get_comment( $comment_id )?->comment_approved
 		) {
+			return false;
+		}
+
+		// Two approvals at once must not both read a count that includes the other.
+		return (bool) Lock::run( $this->post->ID ?? 0, fn(): bool => $this->enforce_capacity_locked( $comment_id ) );
+	}
+
+	/**
+	 * Moves an attending RSVP to the waiting list while holding the event's lock.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool True when the RSVP moved to the waiting list.
+	 */
+	private function enforce_capacity_locked( int $comment_id ): bool {
+		if ( ! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ) ) {
 			return false;
 		}
 
