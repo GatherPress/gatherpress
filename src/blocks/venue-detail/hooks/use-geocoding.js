@@ -69,12 +69,14 @@ export function useGeocoding(
 		addressRef.current = fieldValue;
 	}
 
-	const enabledRef = useRef( enabled );
-	enabledRef.current = enabled;
+	// Bumped whenever the address or the enabled state changes, so a lookup
+	// that finishes after either one is ignored.
+	const requestRef = useRef( 0 );
 
 	// Geocode address field changes.
 	const handleGeocode = useCallback( async () => {
 		const address = addressRef.current;
+		const request = requestRef.current;
 
 		// A debounced call reads the address when it runs, so check here: the
 		// coordinates may already belong to it.
@@ -99,9 +101,8 @@ export function useGeocoding(
 
 		const { latitude, longitude, error } = await geocodeAddress( address );
 
-		// Skip a stale lookup if the address changed or geocoding was turned
-		// off, for example for manual coordinates, while it ran.
-		if ( addressRef.current !== address || ! enabledRef.current ) {
+		// Skip a lookup made stale by a newer address or enabled state.
+		if ( request !== requestRef.current ) {
 			return;
 		}
 
@@ -140,6 +141,8 @@ export function useGeocoding(
 
 	// Trigger geocoding when address field value changes.
 	useEffect( () => {
+		requestRef.current++;
+
 		if ( enabled && 'address' === fieldType ) {
 			debouncedGeocode();
 		}

@@ -194,3 +194,35 @@ test( 'ignores a lookup that finishes after geocoding is turned off', async () =
 	expect( updateVenueField ).not.toHaveBeenCalled();
 	expect( notices.createErrorNotice ).not.toHaveBeenCalled();
 } );
+
+test( 'ignores a lookup that finishes after geocoding is turned off and on again', async () => {
+	let resolveGeocode;
+
+	geocodeAddress.mockReturnValueOnce(
+		new Promise( ( resolve ) => {
+			resolveGeocode = resolve;
+		} ),
+	);
+
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true } );
+	} );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true, enabled: false } );
+	} );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true, enabled: true } );
+	} );
+
+	await act( async () => {
+		resolveGeocode( { latitude: '3', longitude: '4', error: null } );
+	} );
+
+	expect( geocodeAddress ).toHaveBeenCalledTimes( 2 );
+	expect( venueStore.updateVenueLatitude ).toHaveBeenCalledWith( '1' );
+	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalledWith( '3' );
+} );
