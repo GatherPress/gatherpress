@@ -17,6 +17,8 @@ import {
 	ADDRESS_SEARCH_MIN_QUERY_LENGTH,
 	fetchAddressSuggestions,
 	geocodeAddress,
+	geocodeFailedMessage,
+	GEOCODE_NOTICE_ID,
 	getAddressSearchMinQueryLength,
 	clearGeocodeCache,
 	getGeocodeCacheSize,
@@ -41,6 +43,13 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
 
 describe( 'Geocoding helpers', () => {
 	let apiFetch;
+
+	it( 'exports the message and notice ID for a failed geocode', () => {
+		expect( GEOCODE_NOTICE_ID ).toBe( 'gatherpress_geocode_failed' );
+		expect( geocodeFailedMessage() ).toBe(
+			'The address could not be located, so the venue keeps its saved map location.',
+		);
+	} );
 
 	it( 'exports address search min length aligned with PHP', () => {
 		expect( ADDRESS_SEARCH_MIN_QUERY_LENGTH ).toBe( 3 );

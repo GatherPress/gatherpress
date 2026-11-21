@@ -34,6 +34,29 @@ const ADDRESS_SEARCH_MIN_QUERY_LENGTH_FALLBACK = 3;
 export const GEOCODE_LOCK_NAME = 'gatherpress/venue-geocoding';
 
 /**
+ * Notice ID for a failed geocode, so repeat failures replace one notice.
+ *
+ * @since TBD
+ *
+ * @type {string}
+ */
+export const GEOCODE_NOTICE_ID = 'gatherpress_geocode_failed';
+
+/**
+ * Message shown when a geocode request fails.
+ *
+ * @since TBD
+ *
+ * @return {string} The translated message.
+ */
+export function geocodeFailedMessage() {
+	return __(
+		'The address could not be located, so the venue keeps its saved map location.',
+		'gatherpress',
+	);
+}
+
+/**
  * Minimum trimmed query length before calling the address search REST route.
  * Resolved dynamically from the block editor config (PHP source of truth),
  * with a 3-char fallback when the config value is not yet available.
