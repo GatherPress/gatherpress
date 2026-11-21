@@ -77,13 +77,15 @@ class Test_Lock extends Base {
 	 * @return void
 	 */
 	public function test_run_returns_fallback_when_busy(): void {
-		$this->set_lock_value( time() . ':other' );
+		$other = time() . ':other';
+
+		$this->set_lock_value( $other );
 
 		$result = Lock::run( self::POST_ID, static fn(): string => 'ran', 'fallback', 2 );
 
 		$this->assertSame( 'fallback', $result, 'Failed to assert the callback does not run without the lock.' );
 		$this->assertSame(
-			time() . ':other',
+			$other,
 			$this->get_lock_value(),
 			'Failed to assert the other request keeps its lock.'
 		);
