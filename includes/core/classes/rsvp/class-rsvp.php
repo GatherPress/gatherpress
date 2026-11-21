@@ -140,6 +140,15 @@ final class Rsvp {
 	protected readonly Storage $storage;
 
 	/**
+	 * Lock that serializes capacity changes for this event.
+	 *
+	 * @since TBD
+	 *
+	 * @var Lock
+	 */
+	protected readonly Lock $lock;
+
+	/**
 	 * List of all RSVP providers.
 	 *
 	 * @var Provider[]
@@ -166,6 +175,7 @@ final class Rsvp {
 	public function __construct( int $post_id ) {
 		$this->post      = get_post( $post_id );
 		$this->storage   = new Storage( $post_id );
+		$this->lock      = new Lock( $post_id );
 		$this->capacity  = (int) get_post_meta( $post_id, 'gatherpress_capacity', true );
 		$this->providers = Provider_Registry::get_instance()->get_all();
 	}
@@ -351,7 +361,7 @@ final class Rsvp {
 		}
 
 		// The count the business rules read must not change before the save.
-		return Lock::run( (int) ( $this->post->ID ?? 0 ), fn(): ?State => $this->process_locked( $intent ) );
+		return $this->lock->run( fn(): ?State => $this->process_locked( $intent ) );
 	}
 
 	/**
@@ -400,10 +410,8 @@ final class Rsvp {
 	 * @return int Number of RSVPs promoted from the waiting list.
 	 */
 	public function check_waiting_list(): int {
-		$post_id = $this->post instanceof WP_Post ? $this->post->ID : 0;
-
 		// The free spots must not change while they are filled.
-		return (int) Lock::run( $post_id, fn(): int => $this->promote_waiting_list() );
+		return (int) $this->lock->run( fn(): int => $this->promote_waiting_list() );
 	}
 
 	/**
@@ -515,8 +523,7 @@ final class Rsvp {
 		}
 
 		// Two approvals at once must not both read a count that includes the other.
-		return (bool) Lock::run(
-			$this->post->ID ?? 0,
+		return (bool) $this->lock->run(
 			fn(): bool => $this->enforce_capacity_locked( $comment_id ),
 			fn(): bool => $this->fall_back_to_waiting_list( $comment_id )
 		);

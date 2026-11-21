@@ -34,6 +34,9 @@ final class Lock {
 	/**
 	 * Event post IDs whose lock this request holds.
 	 *
+	 * Shared by every instance, since one request can create several for the
+	 * same event and a nested run must not wait on its own lock.
+	 *
 	 * @since TBD
 	 *
 	 * @var array<int, true>
@@ -41,52 +44,16 @@ final class Lock {
 	private static array $held = array();
 
 	/**
-	 * Runs a callback while holding an event's lock.
-	 *
-	 * When the lock is not granted in time, the fallback runs instead, so the
-	 * callback never runs unlocked.
+	 * The lock's name.
 	 *
 	 * @since TBD
 	 *
-	 * @param int           $post_id  The event post ID.
-	 * @param callable      $callback The code to run.
-	 * @param callable|null $fallback Optional. What to run when the lock is not granted.
-	 *
-	 * @return mixed The callback's return value, or the fallback's.
+	 * @var string
 	 */
-	public static function run( int $post_id, callable $callback, ?callable $fallback = null ): mixed {
-		global $wpdb;
-
-		// Re-entrant, so code holding the lock can call code that takes it.
-		if ( isset( self::$held[ $post_id ] ) ) {
-			return $callback();
-		}
-
-		$name = self::get_name( $post_id );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
-		$granted = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, %d )', $name, self::TIMEOUT ) );
-
-		// MySQL returns 1 when granted, 0 on timeout and NULL on error. SQLite's
-		// stand-in returns a non-numeric string, which counts as granted.
-		if ( null === $granted || '0' === (string) $granted ) {
-			return $fallback ? $fallback() : null;
-		}
-
-		self::$held[ $post_id ] = true;
-
-		try {
-			return $callback();
-		} finally {
-			unset( self::$held[ $post_id ] );
-
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
-			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $name ) );
-		}
-	}
+	public readonly string $name;
 
 	/**
-	 * Gets the name of an event's lock.
+	 * Class constructor.
 	 *
 	 * Named locks are shared by every database on the server, so the table
 	 * prefix keeps sites apart. MySQL allows 64 characters, so a long prefix
@@ -95,12 +62,52 @@ final class Lock {
 	 * @since TBD
 	 *
 	 * @param int $post_id The event post ID.
-	 *
-	 * @return string The lock name.
 	 */
-	public static function get_name( int $post_id ): string {
+	public function __construct( private readonly int $post_id ) {
 		global $wpdb;
 
-		return substr( sprintf( '%sgatherpress_rsvp_%d', $wpdb->prefix, $post_id ), -64 );
+		$this->name = substr( sprintf( '%sgatherpress_rsvp_%d', $wpdb->prefix, $post_id ), -64 );
+	}
+
+	/**
+	 * Runs a callback while holding the event's lock.
+	 *
+	 * When the lock is not granted in time, the fallback runs instead, so the
+	 * callback never runs unlocked.
+	 *
+	 * @since TBD
+	 *
+	 * @param callable      $callback The code to run.
+	 * @param callable|null $fallback Optional. What to run when the lock is not granted.
+	 *
+	 * @return mixed The callback's return value, or the fallback's.
+	 */
+	public function run( callable $callback, ?callable $fallback = null ): mixed {
+		global $wpdb;
+
+		// Re-entrant, so code holding the lock can call code that takes it.
+		if ( isset( self::$held[ $this->post_id ] ) ) {
+			return $callback();
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
+		$granted = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, %d )', $this->name, self::TIMEOUT ) );
+
+		// MySQL returns 1 when granted, 0 on timeout and NULL on error. SQLite's
+		// stand-in returns a non-numeric string, which counts as granted.
+		if ( null === $granted || '0' === (string) $granted ) {
+			return $fallback ? $fallback() : null;
+		}
+
+		self::$held[ $this->post_id ] = true;
+
+		try {
+			return $callback();
+		} finally {
+			unset( self::$held[ $this->post_id ] );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $this->name ) );
+		}
 	}
 }

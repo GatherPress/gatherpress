@@ -47,7 +47,7 @@ class Test_Lock extends Base {
 	 * @return void
 	 */
 	public function test_run(): void {
-		$during = Lock::run( self::POST_ID, fn(): bool => $this->is_locked() );
+		$during = ( new Lock( self::POST_ID ) )->run( fn(): bool => $this->is_locked() );
 
 		$this->assertTrue( $during, 'Failed to assert the lock is held while the callback runs.' );
 		$this->assertFalse( $this->is_locked(), 'Failed to assert the lock is released.' );
@@ -63,9 +63,9 @@ class Test_Lock extends Base {
 	 * @return void
 	 */
 	public function test_run_is_reentrant(): void {
-		$inner = Lock::run(
-			self::POST_ID,
-			fn(): bool => Lock::run( self::POST_ID, fn(): bool => $this->is_locked() ) && $this->is_locked()
+		// A second instance for the same event, as a nested Rsvp would create.
+		$inner = ( new Lock( self::POST_ID ) )->run(
+			fn(): bool => ( new Lock( self::POST_ID ) )->run( fn(): bool => $this->is_locked() ) && $this->is_locked()
 		);
 
 		$this->assertTrue( $inner, 'Failed to assert the outer lock survives a nested run.' );
@@ -85,8 +85,7 @@ class Test_Lock extends Base {
 		$thrown = false;
 
 		try {
-			Lock::run(
-				self::POST_ID,
+			( new Lock( self::POST_ID ) )->run(
 				static function (): void {
 					throw new RuntimeException( 'Failed.' );
 				}
@@ -116,8 +115,7 @@ class Test_Lock extends Base {
 
 			$this->assertSame(
 				'fallback',
-				Lock::run(
-					self::POST_ID,
+				( new Lock( self::POST_ID ) )->run(
 					static function () use ( &$ran ): string {
 						$ran = true;
 
@@ -128,7 +126,7 @@ class Test_Lock extends Base {
 				'Failed to assert the fallback runs when the lock is not granted.'
 			);
 			$this->assertNull(
-				Lock::run( self::POST_ID, static fn(): string => 'ran' ),
+				( new Lock( self::POST_ID ) )->run( static fn(): string => 'ran' ),
 				'Failed to assert null is returned without a fallback.'
 			);
 		}
@@ -137,26 +135,26 @@ class Test_Lock extends Base {
 	}
 
 	/**
-	 * Coverage for get_name.
+	 * Coverage for the lock name.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::get_name
+	 * @covers ::__construct
 	 *
 	 * @return void
 	 */
-	public function test_get_name(): void {
+	public function test_name(): void {
 		global $wpdb;
 
 		$this->assertSame(
 			$wpdb->prefix . 'gatherpress_rsvp_' . self::POST_ID,
-			Lock::get_name( self::POST_ID ),
+			( new Lock( self::POST_ID ) )->name,
 			'Failed to assert the lock name carries the table prefix.'
 		);
 
 		$prefix       = $wpdb->prefix;
 		$wpdb->prefix = str_repeat( 'p', 60 ) . '_';
-		$name         = Lock::get_name( self::POST_ID );
+		$name         = ( new Lock( self::POST_ID ) )->name;
 		$wpdb->prefix = $prefix;
 
 		$this->assertSame( 64, strlen( $name ), 'Failed to assert a long name is cut to 64 characters.' );
@@ -195,7 +193,7 @@ class Test_Lock extends Base {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
-		$holder = $wpdb->get_var( $wpdb->prepare( 'SELECT IS_USED_LOCK( %s )', Lock::get_name( self::POST_ID ) ) );
+		$holder = $wpdb->get_var( $wpdb->prepare( 'SELECT IS_USED_LOCK( %s )', ( new Lock( self::POST_ID ) )->name ) );
 
 		return null !== $holder;
 	}
