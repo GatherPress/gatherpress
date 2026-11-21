@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add a pure PHPUnit test suite configuration (`phpunit-pure.xml.dist`), bootstrap (`test/unit/php-pure/bootstrap.php`), npm script (`test:unit:php:pure`), and seed pure unit tests for the `Validate` class.
