@@ -20,7 +20,8 @@ jest.mock( '@wordpress/compose', () => ( {
  */
 jest.mock( '@src/helpers/geocoding', () => ( {
 	GEOCODE_NOTICE_ID: 'gatherpress_geocode_failed',
-	geocodeFailedMessage: () => 'Geocode failed.',
+	geocodeFailedMessage: ( unavailable ) =>
+		unavailable ? 'Geocode unavailable.' : 'Geocode failed.',
 	geocodeAddress: jest.fn( () =>
 		Promise.resolve( { latitude: '1', longitude: '2', error: null } ),
 	),
@@ -124,6 +125,27 @@ test( 'keeps the coordinates and shows a notice when the lookup fails', async ()
 	expect( updateVenueField ).not.toHaveBeenCalled();
 	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalled();
 	expect( notices.createErrorNotice ).toHaveBeenCalledWith( 'Geocode failed.', {
+		id: 'gatherpress_geocode_failed',
+		type: 'snackbar',
+	} );
+} );
+
+test( 'shows the outage notice when the location service is unavailable', async () => {
+	geocodeAddress.mockResolvedValueOnce( {
+		latitude: '',
+		longitude: '',
+		error: 'Geocoding request failed.',
+		unavailable: true,
+	} );
+
+	const { rerender } = await renderGeocoding( { value: '1 Main St', coordinates: true } );
+
+	await act( async () => {
+		rerender( { value: '2 Main St', coordinates: true } );
+	} );
+
+	expect( updateVenueField ).not.toHaveBeenCalled();
+	expect( notices.createErrorNotice ).toHaveBeenCalledWith( 'Geocode unavailable.', {
 		id: 'gatherpress_geocode_failed',
 		type: 'snackbar',
 	} );

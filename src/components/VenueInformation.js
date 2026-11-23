@@ -121,7 +121,7 @@ const VenueInformation = () => {
 				return;
 			}
 
-			const { latitude, longitude, error } =
+			const { latitude, longitude, error, unavailable } =
 				await geocodeAddress( currentAddress );
 
 			// Skip a stale lookup if manual coordinates or the address changed while it ran.
@@ -134,7 +134,7 @@ const VenueInformation = () => {
 
 			// A failed lookup keeps the stored coordinates, like the server-side geocode.
 			if ( error ) {
-				createErrorNotice( geocodeFailedMessage(), {
+				createErrorNotice( geocodeFailedMessage( unavailable ), {
 					id: GEOCODE_NOTICE_ID,
 					type: 'snackbar',
 				} );

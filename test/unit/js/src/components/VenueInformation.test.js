@@ -48,7 +48,8 @@ jest.mock( '@wordpress/components', () => ( {
 jest.mock( '@src/helpers/geocoding', () => ( {
 	GEOCODE_LOCK_NAME: 'gatherpress/venue-geocoding',
 	GEOCODE_NOTICE_ID: 'gatherpress_geocode_failed',
-	geocodeFailedMessage: () => 'Geocode failed.',
+	geocodeFailedMessage: ( unavailable ) =>
+		unavailable ? 'Geocode unavailable.' : 'Geocode failed.',
 	geocodeAddress: jest.fn( () =>
 		Promise.resolve( { latitude: '1', longitude: '2' } ),
 	),
@@ -386,6 +387,24 @@ test( 'keeps the coordinates and shows a notice when the lookup fails', async ()
 		type: 'snackbar',
 	} );
 	expect( editor.unlockPostSaving ).toHaveBeenCalledWith( 'gatherpress/venue-geocoding' );
+} );
+
+test( 'shows the outage notice when the location service is unavailable', async () => {
+	geocodeAddress.mockResolvedValueOnce( {
+		latitude: '',
+		longitude: '',
+		error: 'Geocoding request failed.',
+		unavailable: true,
+	} );
+	meta = { gatherpress_address: '1 Main St' };
+
+	await renderVenueInformation();
+
+	expect( editor.editPost ).not.toHaveBeenCalled();
+	expect( notices.createErrorNotice ).toHaveBeenCalledWith( 'Geocode unavailable.', {
+		id: 'gatherpress_geocode_failed',
+		type: 'snackbar',
+	} );
 } );
 
 test( 'clears the coordinates once when the address is emptied', async () => {

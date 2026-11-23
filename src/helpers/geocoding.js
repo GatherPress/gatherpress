@@ -47,9 +47,18 @@ export const GEOCODE_NOTICE_ID = 'gatherpress_geocode_failed';
  *
  * @since TBD
  *
+ * @param {boolean} unavailable Whether the geocoding service could not be reached.
+ *
  * @return {string} The translated message.
  */
-export function geocodeFailedMessage() {
+export function geocodeFailedMessage( unavailable = false ) {
+	if ( unavailable ) {
+		return __(
+			'The location service is unavailable, so the venue keeps its saved map location. Try again later.',
+			'gatherpress',
+		);
+	}
+
 	return __(
 		'The address could not be located, so the venue keeps its saved map location.',
 		'gatherpress',
@@ -195,6 +204,7 @@ export function primeGeocodeCache( address, latitude, longitude ) {
  * @return {Promise<Object>} Promise resolving to { latitude, longitude, error }.
  *                           On success: { latitude: string, longitude: string, error: null }
  *                           On error: { latitude: '', longitude: '', error: string }
+ *                           A failed request also sets `unavailable: true`.
  */
 export async function geocodeAddress( address ) {
 	if ( ! address || '' === address.trim() ) {
@@ -263,6 +273,7 @@ export async function geocodeAddress( address ) {
 				error:
 					error.message ||
 					__( 'Geocoding request failed.', 'gatherpress' ),
+				unavailable: true,
 			};
 		} finally {
 			geocodeInFlight.delete( trimmedAddress );

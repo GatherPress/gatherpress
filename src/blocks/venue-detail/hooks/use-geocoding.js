@@ -107,7 +107,8 @@ export function useGeocoding(
 			return;
 		}
 
-		const { latitude, longitude, error } = await geocodeAddress( address );
+		const { latitude, longitude, error, unavailable } =
+			await geocodeAddress( address );
 
 		// Skip a lookup made stale by a newer address or enabled state.
 		if ( request !== requestRef.current ) {
@@ -116,7 +117,7 @@ export function useGeocoding(
 
 		// A failed lookup keeps the stored coordinates, like the server-side geocode.
 		if ( error ) {
-			createErrorNotice( geocodeFailedMessage(), {
+			createErrorNotice( geocodeFailedMessage( unavailable ), {
 				id: GEOCODE_NOTICE_ID,
 				type: 'snackbar',
 			} );
