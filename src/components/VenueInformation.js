@@ -15,7 +15,12 @@ import { useDebounce } from '@wordpress/compose';
 /**
  * Internal dependencies
  */
-import { geocodeAddress, GEOCODE_LOCK_NAME } from '../helpers/geocoding';
+import {
+	geocodeAddress,
+	geocodeFailedMessage,
+	GEOCODE_LOCK_NAME,
+	GEOCODE_NOTICE_ID,
+} from '../helpers/geocoding';
 import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
@@ -39,6 +44,8 @@ const VenueInformation = () => {
 
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
+
+	const { createErrorNotice } = useDispatch( 'core/notices' );
 
 	const { venueMeta } = useSelect(
 		( selectData ) => ( {
@@ -64,6 +71,12 @@ const VenueInformation = () => {
 	addressRef.current = address;
 	manualCoordinatesRef.current = manualCoordinates;
 
+	// The address the current coordinates belong to. A saved address that
+	// already has coordinates is not geocoded again when the editor opens.
+	const geocodedAddressRef = useRef(
+		address && initialLat && initialLng && ! manualCoordinates ? address : null,
+	);
+
 	// Initialize venue store with saved lat/long values on mount only.
 	// After initialization, getData manages the store directly for live updates.
 	useEffect( () => {
@@ -87,8 +100,12 @@ const VenueInformation = () => {
 		const currentAddress = addressRef.current;
 
 		try {
-			// Coordinates set by hand stay as they are.
-			if ( manualCoordinatesRef.current ) {
+			// Coordinates set by hand stay as they are, and a debounced call
+			// that runs after the address changed back needs no lookup.
+			if (
+				manualCoordinatesRef.current ||
+				currentAddress === geocodedAddressRef.current
+			) {
 				return;
 			}
 
@@ -100,10 +117,12 @@ const VenueInformation = () => {
 					gatherpress_latitude: '',
 					gatherpress_longitude: '',
 				} );
+				geocodedAddressRef.current = currentAddress;
 				return;
 			}
 
-			const { latitude, longitude } = await geocodeAddress( currentAddress );
+			const { latitude, longitude, error, unavailable } =
+				await geocodeAddress( currentAddress );
 
 			// Skip a stale lookup if manual coordinates or the address changed while it ran.
 			if (
@@ -112,6 +131,17 @@ const VenueInformation = () => {
 			) {
 				return;
 			}
+
+			// A failed lookup keeps the stored coordinates, like the server-side geocode.
+			if ( error ) {
+				createErrorNotice( geocodeFailedMessage( unavailable ), {
+					id: GEOCODE_NOTICE_ID,
+					type: 'snackbar',
+				} );
+				return;
+			}
+
+			geocodedAddressRef.current = currentAddress;
 
 			updateVenueLatitude( latitude || null );
 			updateVenueLongitude( longitude || null );
@@ -129,6 +159,7 @@ const VenueInformation = () => {
 		updateVenueLongitude,
 		updateVenueField,
 		unlockPostSaving,
+		createErrorNotice,
 	] ); // address removed - read from ref instead.
 
 	// Longer debounce than autocomplete: geocoding is not user-visible during
@@ -140,6 +171,12 @@ const VenueInformation = () => {
 		// Coordinates set by hand need no geocoding. Turning them off geocodes
 		// the address again.
 		if ( manualCoordinates ) {
+			geocodedAddressRef.current = null;
+			return undefined;
+		}
+
+		// The coordinates already belong to this address.
+		if ( address === geocodedAddressRef.current ) {
 			return undefined;
 		}
 
