@@ -4,6 +4,7 @@
 import DateTimeRange from '../../../components/DateTimeRange';
 import ShowTimezone from '../../../components/ShowTimezone';
 import EventStatus from '../../../components/EventStatus';
+import RescheduledOffer from '../../../components/RescheduledOffer';
 
 /**
  * A panel component for managing date and time ranges.
@@ -26,6 +27,7 @@ const DateTimeRangePanel = () => {
 			</section>
 			<section>
 				<EventStatus />
+				<RescheduledOffer />
 			</section>
 		</>
 	);

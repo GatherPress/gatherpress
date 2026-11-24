@@ -51,6 +51,15 @@ final class Email {
 	const EVENT_TYPE = 'event';
 
 	/**
+	 * The Mailer type for the message about a change to an event.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CHANGE_TYPE = 'event_change';
+
+	/**
 	 * The Mailer type for waiting list promotion emails.
 	 *
 	 * @since TBD
@@ -109,6 +118,18 @@ final class Email {
 			)
 		);
 
+		// A change to the date, venue, or status is about the attendee's own
+		// RSVP, so it skips the opt-in, like the promotion below. Only
+		// Event\Change queues it, and only for a change it detected.
+		$mailer->register(
+			self::CHANGE_TYPE,
+			array(
+				'context'    => Mailer::CONTEXT_RSVP,
+				'recipients' => $this->get_change_email_rsvps( ... ),
+				'compose'    => $this->compose_event_email( ... ),
+			)
+		);
+
 		// A promotion is about the attendee's own RSVP, so it skips the opt-in.
 		$mailer->register(
 			self::PROMOTION_TYPE,
@@ -153,6 +174,58 @@ final class Email {
 					'subject' => $subject,
 				)
 			);
+	}
+
+	/**
+	 * Queue the message about a change to an event.
+	 *
+	 * Attending and waiting list go through the change type, which skips the
+	 * opt-in. Not attending goes through the event update type, which follows
+	 * it. Call this through `Event\Change::send()`, which checks that a change
+	 * was detected and uses it up.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id Event post ID.
+	 * @param array  $send    The groups to send to.
+	 * @param string $message The message.
+	 * @param string $subject The subject line. Defaults to the `📅 {title}` template when empty.
+	 * @phpstan-param array{attending: bool, waiting_list: bool, not_attending: bool} $send
+	 *
+	 * @return bool True when every part is queued, false otherwise.
+	 */
+	public function send_change_emails( int $post_id, array $send, string $message, string $subject ): bool {
+		$mailer  = Mailer::get_instance();
+		$queued  = true;
+		$payload = array(
+			'post_id' => $post_id,
+			'message' => $message,
+			'subject' => $subject,
+		);
+
+		if ( $send['attending'] || $send['waiting_list'] ) {
+			$queued = $mailer->queue(
+				self::CHANGE_TYPE,
+				array_merge(
+					$payload,
+					array(
+						'send' => array(
+							'attending'    => $send['attending'],
+							'waiting_list' => $send['waiting_list'],
+						),
+					)
+				)
+			);
+		}
+
+		if ( $send['not_attending'] ) {
+			$queued = $mailer->queue(
+				self::EVENT_TYPE,
+				array_merge( $payload, array( 'send' => array( 'not_attending' => true ) ) )
+			) && $queued;
+		}
+
+		return $queued;
 	}
 
 	/**
@@ -242,6 +315,31 @@ final class Email {
 		}
 
 		return $recipients;
+	}
+
+	/**
+	 * Get the RSVPs a queued change email goes to.
+	 *
+	 * Only attending and waiting list, whatever the payload asks for, so the
+	 * change type can never reach a group that must follow the opt-in.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $payload The queued email: its `post_id` and `send` options.
+	 * @phpstan-param Payload $payload
+	 *
+	 * @return array<int, Recipient> Recipient rows from the event's RSVPs.
+	 */
+	private function get_change_email_rsvps( array $payload ): array {
+		$send = (array) ( $payload['send'] ?? array() );
+
+		return $this->get_rsvp_recipients(
+			array(
+				'attending'    => ! empty( $send['attending'] ),
+				'waiting_list' => ! empty( $send['waiting_list'] ),
+			),
+			(int) ( $payload['post_id'] ?? 0 )
+		);
 	}
 
 	/**

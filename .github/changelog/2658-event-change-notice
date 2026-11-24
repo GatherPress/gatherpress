@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+After a save that changes the date, time, time zone, venue, or status of a published event that has not started, the editor offers to tell the attendees. The message is filled in with the old and the new value. People who are attending or on the waiting list get it even if they turned off event updates, because it is about their own RSVP. The notice no longer shows after saves that change nothing attendees need to know. When the start moves, the editor offers to set the status to Rescheduled before the save. Sites can change which changes count, who gets the message, and whether it goes out without the organizer, with the gatherpress_event_change_fields, gatherpress_event_change_recipients, gatherpress_event_change_show_notice, and gatherpress_event_change_send filters.

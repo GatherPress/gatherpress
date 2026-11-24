@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Change;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Event\Setup as Event_Setup;
@@ -422,6 +423,86 @@ class Test_Rest_Api extends Base {
 		$response = $instance->email( $request );
 
 		$this->assertEquals( 1, $response->data['success'], 'Failed to assert that success was true.' );
+	}
+
+	/**
+	 * A change message without a stored change fails closed with a 409.
+	 *
+	 * @covers ::email
+	 *
+	 * @return void
+	 */
+	public function test_email_change_without_a_change(): void {
+		$instance = Rest_Api::get_instance();
+		$request  = new WP_REST_Request( 'POST' );
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		$request->set_query_params(
+			array(
+				'post_id' => $event_id,
+				'message' => 'The time moved.',
+				'change'  => true,
+				'send'    => array(
+					'all'           => false,
+					'attending'     => true,
+					'waiting_list'  => true,
+					'not_attending' => false,
+				),
+			)
+		);
+
+		$response = $instance->email( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $response );
+		$this->assertSame( 409, $response->get_error_data()['status'] );
+	}
+
+	/**
+	 * A change message with a stored change is queued through Event\Change.
+	 *
+	 * @covers ::email
+	 *
+	 * @return void
+	 */
+	public function test_email_change_with_a_change(): void {
+		$instance = Rest_Api::get_instance();
+		$request  = new WP_REST_Request( 'POST' );
+		$event_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		update_post_meta( $event_id, 'gatherpress_datetime_start', gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ) );
+		update_post_meta(
+			$event_id,
+			Change::META_KEY,
+			array(
+				'keys'        => array( 'venue' ),
+				'before'      => array(),
+				'after'       => array(),
+				'show_notice' => true,
+			)
+		);
+
+		$request->set_query_params(
+			array(
+				'post_id' => $event_id,
+				'change'  => true,
+				'send'    => array(
+					'all'           => false,
+					'attending'     => true,
+					'waiting_list'  => true,
+					'not_attending' => false,
+				),
+			)
+		);
+
+		$response = $instance->email( $request );
+
+		$this->assertTrue( $response->data['success'] );
+		$this->assertSame( '', get_post_meta( $event_id, Change::META_KEY, true ), 'The change is used up.' );
 	}
 
 	/**

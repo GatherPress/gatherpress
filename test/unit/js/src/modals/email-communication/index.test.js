@@ -11,11 +11,15 @@ import '@testing-library/jest-dom';
 jest.mock( '@wordpress/dom-ready', () => jest.fn() );
 jest.mock( '@wordpress/api-fetch', () => jest.fn() );
 let mockIsOpen = true;
+let mockChange = null;
+const mockCloseModal = jest.fn();
+const mockRemoveNotice = jest.fn();
 jest.mock( '@wordpress/data', () => {
 	const stores = {
 		'gatherpress/email-modal': {
 			isModalOpen: () => mockIsOpen,
 			isSaving: () => false,
+			getChange: () => mockChange,
 		},
 		'core/editor': {
 			getEditedPostAttribute: () => 'Event',
@@ -25,18 +29,25 @@ jest.mock( '@wordpress/data', () => {
 
 	return {
 		select: ( store ) => stores[ store ],
+		dispatch: () => ( { removeNotice: mockRemoveNotice } ),
 		useSelect: ( callback ) => callback( ( store ) => stores[ store ] ),
-		useDispatch: () => ( { closeModal: jest.fn() } ),
+		useDispatch: () => ( { closeModal: mockCloseModal } ),
 	};
 } );
 // The real components import rich-text, which registers a data store at load
 // time. The modal does not use it, and the data mock above has no stores.
 jest.mock( '@wordpress/rich-text', () => ( {} ) );
 // The real controls, so focus, group names and the disabled Send button are
-// what the browser gets. Only the Modal shell is replaced.
+// what the browser gets. Only the Modal shell is replaced, with a button
+// that closes it the way Escape or the close icon would.
 jest.mock( '@wordpress/components', () => ( {
 	...jest.requireActual( '@wordpress/components' ),
-	Modal: ( { children } ) => <div>{ children }</div>,
+	Modal: ( { children, onRequestClose } ) => (
+		<div>
+			<button onClick={ onRequestClose }>Close</button>
+			{ children }
+		</div>
+	),
 } ) );
 jest.mock( '@src/helpers/editor-settings', () => ( {
 	getFromConfig: jest.fn(),
@@ -73,6 +84,7 @@ describe( 'EventCommunicationModal', () => {
 	beforeEach( () => {
 		jest.clearAllMocks();
 		mockIsOpen = true;
+		mockChange = null;
 	} );
 
 	it( 'renders nothing and moves no focus while closed', async () => {
@@ -133,7 +145,12 @@ describe( 'EventCommunicationModal', () => {
 			[ ...group.querySelectorAll( 'input[type="checkbox"]' ) ].map(
 				( input ) => input.labels[ 0 ].textContent,
 			),
-		).toEqual( [ 'All Members', 'Attending', 'Waiting List', 'Not Attending' ] );
+		).toEqual( [
+			'All Members',
+			'Attending',
+			'Waiting List',
+			'Not Attending',
+		] );
 	} );
 
 	it( 'keeps Send focusable and says why when no group is chosen', async () => {
@@ -225,7 +242,207 @@ describe( 'EventCommunicationModal', () => {
 				},
 			} ),
 		);
+		expect( mockCloseModal ).toHaveBeenCalledTimes( 1 );
+		expect( mockRemoveNotice ).not.toHaveBeenCalled();
 
 		confirm.mockRestore();
+	} );
+
+	it( 'keeps an ordinary message in the fields when it closes', async () => {
+		getFromConfig.mockReturnValue( true );
+
+		await renderModal();
+
+		fireEvent.change( screen.getByRole( 'textbox', { name: 'Subject' } ), {
+			target: { value: 'Draft' },
+		} );
+		fireEvent.click( screen.getByRole( 'button', { name: 'Close' } ) );
+
+		expect( mockCloseModal ).toHaveBeenCalledTimes( 1 );
+		expect( screen.getByRole( 'textbox', { name: 'Subject' } ) ).toHaveValue(
+			'Draft',
+		);
+	} );
+} );
+
+/**
+ * Coverage for the modal opened for a change the last save detected.
+ */
+describe( 'EventCommunicationModal for a change', () => {
+	const change = {
+		keys: [ 'datetime_start' ],
+		headline: 'The start date or time changed.',
+		subject: 'Book Club: The start date or time changed.',
+		message: 'Start: was 6:00 pm, now 7:00 pm.',
+		attendees: 12,
+		offer_not_attending: true,
+		show_notice: true,
+	};
+
+	beforeEach( () => {
+		jest.clearAllMocks();
+		getFromConfig.mockReturnValue( true );
+		mockIsOpen = true;
+		mockChange = change;
+	} );
+
+	it( 'fills in the message and names who gets it', async () => {
+		await renderModal();
+
+		expect( screen.getByRole( 'textbox', { name: 'Subject' } ) ).toHaveValue(
+			change.subject,
+		);
+		expect( screen.getByRole( 'textbox', { name: 'Message' } ) ).toHaveValue(
+			change.message,
+		);
+
+		const group = screen.getByRole( 'group', { name: 'Recipients' } );
+
+		expect( group ).toHaveAccessibleDescription(
+			'This message goes to 12 people who are attending or on the waiting list, even if they turned off event updates.',
+		);
+		expect( screen.queryByLabelText( 'All Members' ) ).not.toBeInTheDocument();
+		expect( screen.queryByLabelText( 'Attending' ) ).not.toBeInTheDocument();
+		expect(
+			screen.getByLabelText(
+				'Also tell people who are not attending, if they get event updates',
+			),
+		).not.toBeChecked();
+		expect(
+			screen.getByRole( 'button', { name: 'Send Email' } ),
+		).not.toHaveAttribute( 'aria-disabled' );
+	} );
+
+	it( 'uses the singular for one attendee', async () => {
+		mockChange = { ...change, attendees: 1 };
+
+		await renderModal();
+
+		expect(
+			screen.getByRole( 'group', { name: 'Recipients' } ),
+		).toHaveAccessibleDescription(
+			'This message goes to 1 person who is attending or on the waiting list, even if they turned off event updates.',
+		);
+	} );
+
+	it( 'does not offer not attending for a change that is not about the date', async () => {
+		mockChange = { ...change, keys: [ 'venue' ], offer_not_attending: false };
+
+		await renderModal();
+
+		expect(
+			screen.queryByLabelText(
+				'Also tell people who are not attending, if they get event updates',
+			),
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'sends it as a change and removes the notice', async () => {
+		const confirm = jest.spyOn( window, 'confirm' ).mockReturnValue( true );
+		apiFetch.mockResolvedValue( { success: true } );
+
+		await renderModal();
+
+		fireEvent.click(
+			screen.getByLabelText(
+				'Also tell people who are not attending, if they get event updates',
+			),
+		);
+
+		await act( async () => {
+			fireEvent.click( screen.getByRole( 'button', { name: 'Send Email' } ) );
+		} );
+
+		expect( apiFetch ).toHaveBeenCalledWith(
+			expect.objectContaining( {
+				data: {
+					post_id: 1,
+					subject: change.subject,
+					message: change.message,
+					send: {
+						all: false,
+						attending: true,
+						waiting_list: true,
+						not_attending: true,
+					},
+					change: true,
+				},
+			} ),
+		);
+		expect( mockRemoveNotice ).toHaveBeenCalledWith(
+			'gatherpress_event_communication',
+		);
+		expect( mockCloseModal ).toHaveBeenCalledTimes( 1 );
+
+		confirm.mockRestore();
+	} );
+
+	it( 'keeps the modal open when the server reports no success', async () => {
+		const confirm = jest.spyOn( window, 'confirm' ).mockReturnValue( true );
+		apiFetch.mockResolvedValue( { success: false } );
+
+		await renderModal();
+
+		await act( async () => {
+			fireEvent.click( screen.getByRole( 'button', { name: 'Send Email' } ) );
+		} );
+
+		expect( mockCloseModal ).not.toHaveBeenCalled();
+		expect( mockRemoveNotice ).not.toHaveBeenCalled();
+
+		confirm.mockRestore();
+	} );
+
+	it( 'shows the error the server returns', async () => {
+		const confirm = jest.spyOn( window, 'confirm' ).mockReturnValue( true );
+		apiFetch.mockRejectedValue( {
+			message:
+				'There is no change to tell attendees about. Save a change to the event first.',
+		} );
+
+		await renderModal();
+
+		await act( async () => {
+			fireEvent.click( screen.getByRole( 'button', { name: 'Send Email' } ) );
+		} );
+
+		expect(
+			screen.getByText(
+				'There is no change to tell attendees about. Save a change to the event first.',
+			),
+		).toBeInTheDocument();
+		expect( mockCloseModal ).not.toHaveBeenCalled();
+
+		confirm.mockRestore();
+	} );
+
+	it( 'shows a general error when the server gives no message', async () => {
+		const confirm = jest.spyOn( window, 'confirm' ).mockReturnValue( true );
+		apiFetch.mockRejectedValue( {} );
+
+		await renderModal();
+
+		await act( async () => {
+			fireEvent.click( screen.getByRole( 'button', { name: 'Send Email' } ) );
+		} );
+
+		expect(
+			screen.getByText( 'The message could not be sent.' ),
+		).toBeInTheDocument();
+
+		confirm.mockRestore();
+	} );
+
+	it( 'clears the filled-in message when it closes', async () => {
+		await renderModal();
+
+		await act( async () => {
+			fireEvent.click( screen.getByRole( 'button', { name: 'Close' } ) );
+		} );
+
+		expect( mockCloseModal ).toHaveBeenCalledTimes( 1 );
+		expect( screen.getByRole( 'textbox', { name: 'Subject' } ) ).toHaveValue(
+			'',
+		);
 	} );
 } );

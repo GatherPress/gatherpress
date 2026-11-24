@@ -94,6 +94,7 @@ final class Setup {
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
 		Admin_List::get_instance();
+		Change::get_instance();
 		Email::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
