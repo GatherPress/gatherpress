@@ -18,7 +18,8 @@ It covers different needs:
     * **Compose Message** opens the email with the old and the new value already written in. You can change the text before you send it.
     * The message goes to people who are attending or on the waiting list, even if they turned event updates off, because it is about their own RSVP.
     * For a change to the date, the time, or the time zone, you can also send it to people who are not attending. Only those who get event updates receive it.
-    * The notice does not show after a save that changes nothing on this list. You can still send a message at any time from the event settings panel.
+    * If you save more changes before you send the message, one message covers all of them, from the values attendees last heard about. The notice shows after each save until you send the message, or until you put the old values back.
+    * The notice does not show when nothing on this list changed. You can still send a message at any time from the event settings panel.
     * When you change the start of a published event, the event settings panel offers to set the status to Rescheduled before you save.
 * Site-wide messages to users
     * From **Events → Email** an administrator can message users without tying it to an event. The message can go to:

@@ -272,18 +272,24 @@ class Test_Change extends Base {
 	}
 
 	/**
-	 * A save that changes only the title stores nothing, and clears an older change.
+	 * A save that changes none of the compared values stores nothing and keeps an older change.
+	 *
+	 * The editor's meta box save is such a save: a second `wp_update_post()`
+	 * right after the REST save. Clearing the change there made Send fail.
 	 *
 	 * @covers ::store
+	 * @covers ::changed_keys
+	 * @covers ::finish
 	 * @covers ::get
 	 *
 	 * @return void
 	 */
-	public function test_title_only_save_clears_the_stored_change(): void {
+	public function test_save_without_a_change_keeps_the_stored_change(): void {
 		$post_id = $this->create_event();
-
-		$this->editor_save( $post_id, HOUR_IN_SECONDS );
-		$this->assertNotNull( Change::get_instance()->get( $post_id ) );
+		$fired   = 0;
+		$count   = static function () use ( &$fired ): void {
+			++$fired;
+		};
 
 		$this->new_request();
 		wp_update_post(
@@ -292,6 +298,97 @@ class Test_Change extends Base {
 				'post_title' => 'Book Club, renamed',
 			)
 		);
+		Change::get_instance()->finish();
+		$this->assertNull( Change::get_instance()->get( $post_id ), 'A title change is not a change.' );
+
+		$this->editor_save( $post_id, HOUR_IN_SECONDS );
+		Change::get_instance()->finish();
+		$stored = Change::get_instance()->get( $post_id );
+		$this->assertNotNull( $stored );
+
+		add_action( 'gatherpress_event_changed', $count );
+
+		// The meta box save, then a later title fix.
+		wp_update_post( array( 'ID' => $post_id ) );
+		Change::get_instance()->finish();
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => 'Book Club, renamed again',
+			)
+		);
+		Change::get_instance()->finish();
+
+		remove_action( 'gatherpress_event_changed', $count );
+
+		$this->assertSame( $stored, Change::get_instance()->get( $post_id ) );
+		$this->assertSame( 0, $fired, 'A save without a change does not fire the action again.' );
+	}
+
+	/**
+	 * Later saves add to the stored change and keep the values from before the first change.
+	 *
+	 * @covers ::store
+	 * @covers ::changed_keys
+	 *
+	 * @return void
+	 */
+	public function test_later_saves_add_to_the_stored_change(): void {
+		$post_id  = $this->create_event();
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( Event::POST_TYPE );
+		$hall     = $this->create_venue_term( 'Main Hall' );
+		$library  = $this->create_venue_term( 'Library' );
+		$park     = $this->create_venue_term( 'Park' );
+
+		wp_set_object_terms( $post_id, $hall, $taxonomy );
+		$this->new_request();
+		$start = get_post_meta( $post_id, 'gatherpress_datetime_start', true );
+
+		wp_set_object_terms( $post_id, $library, $taxonomy );
+		Change::get_instance()->finish();
+
+		wp_set_object_terms( $post_id, $park, $taxonomy );
+		Change::get_instance()->finish();
+
+		$change = Change::get_instance()->get( $post_id );
+		$this->assertSame(
+			array( '_main-hall' => 'Main Hall' ),
+			$change['before']['venue'],
+			'Two moves: from the first venue.'
+		);
+		$this->assertSame( array( '_park' => 'Park' ), $change['after']['venue'], 'Two moves: to the last venue.' );
+
+		$this->editor_save( $post_id, HOUR_IN_SECONDS );
+		Change::get_instance()->finish();
+
+		$change = Change::get_instance()->get( $post_id );
+		$this->assertSame( array( 'datetime_start', 'datetime_end', 'venue' ), $change['keys'] );
+		$this->assertSame( $start, $change['before']['datetime_start'] );
+		$this->assertSame( array( '_main-hall' => 'Main Hall' ), $change['before']['venue'] );
+	}
+
+	/**
+	 * Putting every value back clears the stored change.
+	 *
+	 * @covers ::store
+	 *
+	 * @return void
+	 */
+	public function test_putting_values_back_clears_the_stored_change(): void {
+		$post_id  = $this->create_event();
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( Event::POST_TYPE );
+		$hall     = $this->create_venue_term( 'Main Hall' );
+		$library  = $this->create_venue_term( 'Library' );
+
+		wp_set_object_terms( $post_id, $hall, $taxonomy );
+		$this->new_request();
+
+		wp_set_object_terms( $post_id, $library, $taxonomy );
+		Change::get_instance()->finish();
+		$this->assertNotNull( Change::get_instance()->get( $post_id ) );
+
+		wp_set_object_terms( $post_id, $hall, $taxonomy );
+		Change::get_instance()->finish();
 
 		$this->assertNull( Change::get_instance()->get( $post_id ) );
 		$this->assertSame( '', get_post_meta( $post_id, Change::META_KEY, true ) );
@@ -432,6 +529,9 @@ class Test_Change extends Base {
 
 		( new Status( $post_id ) )->set( 'postponed' );
 		$this->new_request();
+
+		// As if the message about the postponement was sent.
+		delete_post_meta( $post_id, Change::META_KEY );
 
 		$this->assertTrue( ( new Status( $post_id ) )->set( 'canceled' ) );
 		Change::get_instance()->finish();
@@ -789,6 +889,49 @@ class Test_Change extends Base {
 			array( 'datetime_start', 'datetime_end' ),
 			Change::get_instance()->get_rest_value( array( 'id' => $post_id ) )['keys']
 		);
+
+		// The change stays stored after the event starts, but is no longer offered.
+		( new Event( $post_id ) )->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS ),
+				'timezone'       => 'UTC',
+			)
+		);
+		$this->new_request();
+
+		$this->assertNotNull( Change::get_instance()->get( $post_id ) );
+		$this->assertNull( Change::get_instance()->get_rest_value( array( 'id' => $post_id ) ) );
+	}
+
+	/**
+	 * The subject and the venue names are plain text, without HTML entities.
+	 *
+	 * @covers ::describe
+	 * @covers ::format_venue
+	 *
+	 * @return void
+	 */
+	public function test_describe_decodes_entities(): void {
+		$post_id  = $this->create_event();
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( Event::POST_TYPE );
+		$grill    = $this->create_venue_term( 'Bar & Grill' );
+
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => "Sam's & Co",
+			)
+		);
+		$this->new_request();
+
+		wp_set_object_terms( $post_id, $grill, $taxonomy );
+		Change::get_instance()->finish();
+
+		$description = Change::get_instance()->describe( $post_id );
+
+		$this->assertSame( "Sam\u{2019}s & Co: The venue changed.", $description['subject'] );
+		$this->assertSame( 'Venue: was no venue, now Bar & Grill.', $description['message'] );
 	}
 
 	/**

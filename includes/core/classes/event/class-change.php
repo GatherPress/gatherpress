@@ -28,8 +28,11 @@ use WP_Post;
  * When the date, the time, the time zone, the venue, or the status changes
  * on a published event that has not started, the change is stored on the
  * event. The editor reads it from the save response and offers to tell the
- * attendees. Each save compares only the event before and after that save:
- * nothing tracks what attendees were told before.
+ * attendees. Until the message is sent, the stored change keeps the values
+ * from before the first change, so later saves add to it: two moves of the
+ * venue give one message from the first venue to the last, and a save that
+ * puts every value back clears it. A save that changes none of the compared
+ * values leaves it alone, such as a title fix or the editor's meta box save.
  *
  * The stored change is also what lets the message skip the event updates
  * opt-in. Sending it uses the change up, so the opt-in can be skipped once
@@ -310,13 +313,18 @@ final class Change {
 			 *
 			 * Fires once per request, for saves through the editor, the REST API,
 			 * WP-CLI, or code. A site can use it for its own rules, for example to
-			 * wait a few minutes and combine several saves into one message.
+			 * wait a few minutes and then send one message.
+			 *
+			 * The keys cover every change since attendees were last told, not only
+			 * this save: after a venue change and then a date change, the second
+			 * save passes the venue too. Read `Change::get()` for the old and the
+			 * new values.
 			 *
 			 * @since TBD
 			 *
 			 * @param int      $post_id The event post ID.
-			 * @param string[] $keys    What changed: `datetime_start`, `datetime_end`, `timezone`,
-			 *                          `venue`, `status`.
+			 * @param string[] $keys    What changed since the last message: `datetime_start`,
+			 *                          `datetime_end`, `timezone`, `venue`, `status`.
 			 */
 			do_action( 'gatherpress_event_changed', $post_id, $keys );
 
@@ -363,12 +371,15 @@ final class Change {
 	 *
 	 * @param array<string, mixed> $post The post as prepared for the response.
 	 *
-	 * @return Description|null The change, or null when there is none or the user cannot edit the event.
+	 * @return Description|null The change, or null when there is none, the user cannot edit the event,
+	 *                          or the event can no longer change for its attendees.
 	 */
 	public function get_rest_value( array $post ): ?array {
 		$post_id = (int) ( $post['id'] ?? 0 );
 
-		if ( ! current_user_can( Event::edit_capability(), $post_id ) ) {
+		// A change stays stored until it is sent, so it can outlive the event's
+		// start. `send()` refuses it then, so the editor must not offer it.
+		if ( ! current_user_can( Event::edit_capability(), $post_id ) || ! $this->is_eligible( $post_id ) ) {
 			return null;
 		}
 
@@ -382,7 +393,7 @@ final class Change {
 	 *
 	 * @param int $post_id The event post ID.
 	 *
-	 * @return StoredChange|null The change, or null when the last save changed nothing that counts.
+	 * @return StoredChange|null The change, or null when nothing that counts changed since the last message.
 	 */
 	public function get( int $post_id ): ?array {
 		$change = get_post_meta( $post_id, self::META_KEY, true );
@@ -429,7 +440,9 @@ final class Change {
 			'subject'             => sprintf(
 				/* translators: 1: Event title. 2: What changed, for example "The venue changed." */
 				_x( '%1$s: %2$s', 'Event change email subject', 'gatherpress' ),
-				get_the_title( $post_id ),
+				// The editor shows the subject as plain text, so decode the
+				// entities that `get_the_title()` adds, as the mailer does.
+				html_entity_decode( get_the_title( $post_id ), ENT_QUOTES, 'UTF-8' ),
 				$headline
 			),
 			'message'             => $this->message( $change ),
@@ -688,28 +701,36 @@ final class Change {
 	}
 
 	/**
-	 * Compare the snapshot with the event now, and store or clear the change.
+	 * Compare the event now with its values before the first change, and store or clear the change.
+	 *
+	 * A request that changes none of the compared values leaves the stored
+	 * change alone. Otherwise the event is compared with the `before` of the
+	 * stored change, or with this request's snapshot when none is stored, so
+	 * the change covers every save since attendees were last told.
 	 *
 	 * @since TBD
 	 *
 	 * @param int $post_id The event post ID.
 	 *
-	 * @return string[] What changed and counts, or an empty array.
+	 * @return string[] What changed and counts, or an empty array when this request changed nothing
+	 *                  that counts.
 	 */
 	private function store( int $post_id ): array {
-		$before = $this->snapshots[ $post_id ];
-		$after  = $this->read_values( $post_id );
-		$found  = array();
+		$after = $this->read_values( $post_id );
 
-		foreach ( self::KEYS as $key ) {
-			// A venue is compared by its term slugs, so a renamed venue is not a change.
-			$old = 'venue' === $key ? array_keys( $before['venue'] ) : $before[ $key ];
-			$new = 'venue' === $key ? array_keys( $after['venue'] ) : $after[ $key ];
+		// The post can stop being published later in the same request.
+		if ( 'publish' !== get_post_status( $post_id ) ) {
+			delete_post_meta( $post_id, self::META_KEY );
 
-			if ( $old !== $new ) {
-				$found[] = $key;
-			}
+			return array();
 		}
+
+		if ( empty( $this->changed_keys( $this->snapshots[ $post_id ], $after ) ) ) {
+			return array();
+		}
+
+		$before = $this->get( $post_id )['before'] ?? $this->snapshots[ $post_id ];
+		$found  = $this->changed_keys( $before, $after );
 
 		// A status change counts only when the new status affects attendance.
 		$keys = array_values(
@@ -728,17 +749,17 @@ final class Change {
 		 *
 		 * @since TBD
 		 *
-		 * @param string[] $keys    The changes that count: `datetime_start`, `datetime_end`,
-		 *                          `timezone`, `venue`, `status`.
-		 * @param string[] $found   Every value that changed, including a status change
-		 *                          that does not count by default.
+		 * @param string[] $keys    The changes since the last message that count: `datetime_start`,
+		 *                          `datetime_end`, `timezone`, `venue`, `status`.
+		 * @param string[] $found   Every value that changed since the last message, including
+		 *                          a status change that does not count by default.
 		 * @param int      $post_id The event post ID.
 		 */
 		$keys = (array) apply_filters( 'gatherpress_event_change_fields', $keys, $found, $post_id );
 		$keys = array_values( array_intersect( $found, $keys ) );
 
-		// The post can stop being published later in the same request.
-		if ( empty( $keys ) || 'publish' !== get_post_status( $post_id ) ) {
+		// Every value that counts is back to what attendees were last told.
+		if ( empty( $keys ) ) {
 			delete_post_meta( $post_id, self::META_KEY );
 
 			return array();
@@ -770,6 +791,34 @@ final class Change {
 		);
 
 		return $keys;
+	}
+
+	/**
+	 * Get the compared values that differ.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $before The values before.
+	 * @phpstan-param Values $before
+	 * @param array $after  The values after.
+	 * @phpstan-param Values $after
+	 *
+	 * @return string[] The keys that differ, in the order of `KEYS`.
+	 */
+	private function changed_keys( array $before, array $after ): array {
+		$found = array();
+
+		foreach ( self::KEYS as $key ) {
+			// A venue is compared by its term slugs, so a renamed venue is not a change.
+			$old = 'venue' === $key ? array_keys( $before['venue'] ) : $before[ $key ];
+			$new = 'venue' === $key ? array_keys( $after['venue'] ) : $after[ $key ];
+
+			if ( $old !== $new ) {
+				$found[] = $key;
+			}
+		}
+
+		return $found;
 	}
 
 	/**
@@ -940,6 +989,11 @@ final class Change {
 	 * @return string The names, or "no venue".
 	 */
 	private function format_venue( array $venue ): string {
-		return empty( $venue ) ? __( 'no venue', 'gatherpress' ) : implode( ', ', $venue );
+		if ( empty( $venue ) ) {
+			return __( 'no venue', 'gatherpress' );
+		}
+
+		// Term names are stored with entities, and the message is plain text.
+		return html_entity_decode( implode( ', ', $venue ), ENT_QUOTES, 'UTF-8' );
 	}
 }
