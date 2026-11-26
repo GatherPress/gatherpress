@@ -52,7 +52,6 @@ const EventStatus = () => {
 			onChange={ updateStatus }
 			options={ getStatusOptions() }
 			help={ getStatusDescription( status ) }
-			__nextHasNoMarginBottom
 		/>
 	);
 };
