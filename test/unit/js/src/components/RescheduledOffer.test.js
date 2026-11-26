@@ -14,7 +14,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import RescheduledOffer, { parseStart } from '@src/components/RescheduledOffer';
+import RescheduledOffer from '@src/components/RescheduledOffer';
 import { EVENT_STATUS_ID } from '@src/components/EventStatus';
 
 jest.mock( '@wordpress/data', () => ( {
@@ -45,18 +45,8 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
 jest.mock( '@src/helpers/datetime', () => ( {
 	createMomentWithTimezone: ( datetime, timezone ) =>
 		jest.requireActual( 'moment-timezone' ).tz( datetime, timezone ),
+	dateTimeDatabaseFormat: 'YYYY-MM-DD HH:mm:ss',
 } ) );
-
-/**
- * A `gatherpress_datetime` meta value.
- *
- * @param {string} start    The start, `YYYY-MM-DD HH:mm:ss`.
- * @param {string} timezone The time zone.
- *
- * @return {string} The JSON value.
- */
-const datetime = ( start, timezone = 'UTC' ) =>
-	JSON.stringify( { dateTimeStart: start, dateTimeEnd: start, timezone } );
 
 describe( 'RescheduledOffer', () => {
 	const editPost = jest.fn();
@@ -67,35 +57,43 @@ describe( 'RescheduledOffer', () => {
 	beforeEach( () => {
 		jest.clearAllMocks();
 
+		// The saved values come from the derived meta, the edited ones from
+		// the date store.
 		editor = {
 			postStatus: 'publish',
 			status: undefined,
-			saved: datetime( tomorrow ),
-			edited: datetime( later ),
+			savedStart: tomorrow,
+			savedTimezone: 'UTC',
+			editedStart: later,
+			editedTimezone: 'UTC',
 		};
 
 		useDispatch.mockReturnValue( { editPost } );
 		useSelect.mockImplementation( ( callback ) =>
-			callback( () => ( {
-				getCurrentPostAttribute: ( key ) => {
-					if ( 'meta' !== key ) {
-						return editor.postStatus;
-					}
+			callback( ( store ) => {
+				if ( 'gatherpress/datetime' === store ) {
+					return {
+						getDateTimeStart: () => editor.editedStart,
+						getTimezone: () => editor.editedTimezone,
+					};
+				}
 
-					return editor.noMeta
-						? undefined
-						: { gatherpress_datetime: editor.saved };
-				},
-				getEditedPostAttribute: ( key ) => {
-					if ( 'meta' !== key ) {
-						return editor.status;
-					}
+				return {
+					getCurrentPostAttribute: ( key ) => {
+						if ( 'meta' !== key ) {
+							return editor.postStatus;
+						}
 
-					return editor.noMeta
-						? undefined
-						: { gatherpress_datetime: editor.edited };
-				},
-			} ) ),
+						return editor.noMeta
+							? undefined
+							: {
+								gatherpress_datetime_start: editor.savedStart,
+								gatherpress_timezone: editor.savedTimezone,
+							};
+					},
+					getEditedPostAttribute: () => editor.status,
+				};
+			} ),
 		);
 	} );
 
@@ -110,7 +108,8 @@ describe( 'RescheduledOffer', () => {
 	} );
 
 	it( 'offers it when only the time zone moves', () => {
-		editor.edited = datetime( tomorrow, 'Europe/Paris' );
+		editor.editedStart = tomorrow;
+		editor.editedTimezone = 'Europe/Paris';
 
 		render( <RescheduledOffer /> );
 
@@ -150,18 +149,20 @@ describe( 'RescheduledOffer', () => {
 	it.each( [
 		[ 'the event is not published', { postStatus: 'draft' } ],
 		[ 'the event already has another status', { status: 'canceled' } ],
-		[ 'the event has no saved start', { saved: undefined } ],
+		[ 'the event has no saved start', { savedStart: '' } ],
 		[ 'the event has no meta at all', { noMeta: true } ],
-		[ 'the start did not move', { edited: datetime( tomorrow ) } ],
+		[ 'the start did not move', { editedStart: tomorrow } ],
+		[
+			'the same start is written in another format',
+			{ editedStart: tomorrow.replace( ' ', 'T' ) },
+		],
 		[
 			'the event has started',
 			{
-				saved: datetime(
-					moment
-						.utc()
-						.subtract( 1, 'hour' )
-						.format( 'YYYY-MM-DD HH:mm:ss' ),
-				),
+				savedStart: moment
+					.utc()
+					.subtract( 1, 'hour' )
+					.format( 'YYYY-MM-DD HH:mm:ss' ),
 			},
 		],
 	] )( 'offers nothing when %s', ( _, state ) => {
@@ -170,21 +171,5 @@ describe( 'RescheduledOffer', () => {
 		const { container } = render( <RescheduledOffer /> );
 
 		expect( container ).toBeEmptyDOMElement();
-	} );
-
-	it( 'reads the start and time zone, and survives a value it cannot read', () => {
-		expect( parseStart( datetime( tomorrow, 'Europe/Paris' ) ) ).toEqual( {
-			dateTimeStart: tomorrow,
-			timezone: 'Europe/Paris',
-		} );
-		expect( parseStart( '{}' ) ).toEqual( { dateTimeStart: '', timezone: '' } );
-		expect( parseStart( undefined ) ).toEqual( {
-			dateTimeStart: '',
-			timezone: '',
-		} );
-		expect( parseStart( 'not json' ) ).toEqual( {
-			dateTimeStart: '',
-			timezone: '',
-		} );
 	} );
 } );

@@ -13,27 +13,11 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { createMomentWithTimezone } from '../helpers/datetime';
+import {
+	createMomentWithTimezone,
+	dateTimeDatabaseFormat,
+} from '../helpers/datetime';
 import { EVENT_STATUS_ID } from './EventStatus';
-
-/**
- * Read the start and the time zone from a `gatherpress_datetime` meta value.
- *
- * @since TBD
- *
- * @param {string|undefined} value The JSON meta value.
- *
- * @return {Object} The `dateTimeStart` and `timezone`, empty when the value cannot be read.
- */
-export const parseStart = ( value ) => {
-	try {
-		const { dateTimeStart = '', timezone = '' } = JSON.parse( value || '{}' );
-
-		return { dateTimeStart, timezone };
-	} catch {
-		return { dateTimeStart: '', timezone: '' };
-	}
-};
 
 /**
  * Offer to mark a published event as Rescheduled when its start moves.
@@ -51,12 +35,13 @@ const RescheduledOffer = () => {
 	const { editPost } = useDispatch( 'core/editor' );
 	const show = useSelect( ( select ) => {
 		const editor = select( 'core/editor' );
-		const saved = parseStart(
-			editor.getCurrentPostAttribute( 'meta' )?.gatherpress_datetime,
-		);
-		const edited = parseStart(
-			editor.getEditedPostAttribute( 'meta' )?.gatherpress_datetime,
-		);
+
+		// The saved start comes from the read-only meta the server derives
+		// for every event, also one created without the editor. The edited
+		// start is in the date store, which the date controls write to.
+		const meta = editor.getCurrentPostAttribute( 'meta' ) || {};
+		const savedStart = meta.gatherpress_datetime_start || '';
+		const savedTimezone = meta.gatherpress_timezone || '';
 		const status =
 			editor.getEditedPostAttribute( 'gatherpress_status' ) || 'scheduled';
 
@@ -65,19 +50,24 @@ const RescheduledOffer = () => {
 		if (
 			'publish' !== editor.getCurrentPostAttribute( 'status' ) ||
 			'scheduled' !== status ||
-			! saved.dateTimeStart ||
-			( saved.dateTimeStart === edited.dateTimeStart &&
-				saved.timezone === edited.timezone )
+			! savedStart
 		) {
 			return false;
 		}
 
-		const start = createMomentWithTimezone(
-			saved.dateTimeStart,
-			saved.timezone,
-		);
+		const datetime = select( 'gatherpress/datetime' );
+		const moved =
+			savedTimezone !== datetime.getTimezone() ||
+			moment( savedStart ).format( dateTimeDatabaseFormat ) !==
+				moment( datetime.getDateTimeStart() ).format(
+					dateTimeDatabaseFormat,
+				);
 
-		return start.valueOf() > moment().valueOf();
+		return (
+			moved &&
+			createMomentWithTimezone( savedStart, savedTimezone ).valueOf() >
+				moment().valueOf()
+		);
 	}, [] );
 
 	if ( ! show ) {

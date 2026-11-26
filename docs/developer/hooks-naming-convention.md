@@ -29,7 +29,7 @@ The subsystem segment names a single area of the plugin. The current set:
 | Subsystem | Covers |
 |---|---|
 | `asset_*` | Stylesheet/script registration, enqueue gating, and block-asset coverage shared with companion plugins. |
-| `event_*` | Event lifecycle, queries, feed output. |
+| `event_*` | Event lifecycle, queries, feed output. Its `event_change_*` area covers a change to the date, venue, or status of a published event and the message that tells attendees about it. |
 | `venue_*` | Venue post type resolution, structured-address sync. |
 | `rsvp_*` | RSVP storage (comment-based), attendee management, comment-query coexistence. |
 | `calendar_*` | The calendar: the weekend days, the post limit and the time grid rows of a calendar view, and the action before a calendar entry renders. Its `calendar_external_*` area gets events into calendars outside GatherPress: iCal / Outlook / Google / Yahoo URL builders, .ics file & feed responses, `<head>` alternate-link tags. |

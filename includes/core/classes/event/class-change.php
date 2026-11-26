@@ -11,23 +11,19 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use DateTimeImmutable;
-use DateTimeZone;
-use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Error;
 use WP_Post;
 
 /**
- * Compares a published event before and after a save.
+ * Compares the logistics of a published event before and after a save.
  *
  * When the date, the time, the time zone, the venue, or the status changes
  * on a published event that has not started, the change is stored on the
- * event. The editor reads it from the save response and offers to tell the
+ * event as a `Stored_Change`. The editor reads it from the save response and offers to tell the
  * attendees. Until the message is sent, the stored change keeps the values
  * from before the first change, so later saves add to it: two moves of the
  * venue give one message from the first venue to the last, and a save that
@@ -40,19 +36,6 @@ use WP_Post;
  *
  * @since TBD
  *
- * @phpstan-type Values array{
- *     datetime_start: string,
- *     datetime_end: string,
- *     timezone: string,
- *     venue: array<string, string>,
- *     status: array<int, string>
- * }
- * @phpstan-type StoredChange array{
- *     keys: array<int, string>,
- *     before: Values,
- *     after: Values,
- *     show_notice: bool
- * }
  * @phpstan-type Description array{
  *     keys: array<int, string>,
  *     headline: string,
@@ -89,24 +72,6 @@ final class Change {
 	const REST_FIELD = 'gatherpress_change';
 
 	/**
-	 * The values that are compared, in the order they are reported.
-	 *
-	 * @since TBD
-	 *
-	 * @var string[]
-	 */
-	const KEYS = array( 'datetime_start', 'datetime_end', 'timezone', 'venue', 'status' );
-
-	/**
-	 * The keys that are about the date or the time.
-	 *
-	 * @since TBD
-	 *
-	 * @var string[]
-	 */
-	const DATETIME_KEYS = array( 'datetime_start', 'datetime_end', 'timezone' );
-
-	/**
 	 * The post meta keys `Event::save_datetimes()` writes the dates to.
 	 *
 	 * @since TBD
@@ -129,13 +94,27 @@ final class Change {
 	const NOTIFY_STATUSES = array( Status::STATUS_CANCELED, 'postponed', 'rescheduled', 'moved-online' );
 
 	/**
-	 * The event values before the first write of this request, keyed by post ID.
+	 * The logistics before the first write of this request, keyed by post ID.
 	 *
 	 * @since TBD
 	 *
-	 * @var array<int, Values>
+	 * @var array<int, Logistics>
 	 */
 	private array $snapshots = array();
+
+	/**
+	 * The logistics attendees were last told about, keyed by post ID.
+	 *
+	 * Read once, with the snapshot: the `before` of the change stored when
+	 * this request started, or the snapshot when none was stored. A request
+	 * can compare more than once, and its first compare can delete the stored
+	 * change, so later compares must not read it again.
+	 *
+	 * @since TBD
+	 *
+	 * @var array<int, Logistics>
+	 */
+	private array $baselines = array();
 
 	/**
 	 * Posts that were not eligible when this request first wrote to them.
@@ -176,7 +155,8 @@ final class Change {
 		add_action( 'pre_post_update', array( $this, 'snapshot_before_update' ) );
 		add_action( 'set_object_terms', array( $this, 'snapshot_before_terms' ), 10, 6 );
 		add_filter( 'update_post_metadata', array( $this, 'snapshot_before_meta' ), 10, 3 );
-		add_action( 'wp_after_insert_post', array( $this, 'compare' ), 20 );
+		// 11: after `Event\Setup::set_datetimes()`, which writes the dates at 10.
+		add_action( 'wp_after_insert_post', array( $this, 'compare' ), 11 );
 		add_action( 'shutdown', array( $this, 'finish' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_field' ) );
 	}
@@ -235,16 +215,15 @@ final class Change {
 		}
 
 		$old_tt_ids = array_map( 'intval', (array) $old_tt_ids );
-		$values     = $this->read_values( $object_id );
+		$logistics  = Logistics::from_post( $object_id );
 
 		// Every other value is still the old one.
-		if ( Event::TAXONOMY_STATUS === $taxonomy ) {
-			$values['status'] = $this->status_from_tt_ids( $object_id, $old_tt_ids );
-		} else {
-			$values['venue'] = $this->venue_from_tt_ids( $old_tt_ids, $taxonomy );
-		}
-
-		$this->snapshots[ $object_id ] = $values;
+		$this->take_snapshot(
+			$object_id,
+			Event::TAXONOMY_STATUS === $taxonomy
+				? $logistics->with_status( $this->status_from_tt_ids( $object_id, $old_tt_ids ) )
+				: $logistics->with_venue( $this->terms_from_tt_ids( $old_tt_ids, $taxonomy ) )
+		);
 	}
 
 	/**
@@ -273,9 +252,9 @@ final class Change {
 	/**
 	 * Compare the event with its snapshot and store what changed.
 	 *
-	 * Runs after `Event\Setup::set_datetimes()` (priority 10) has written the
-	 * dates. The snapshot stays until shutdown, so a later write in the same
-	 * request is compared again.
+	 * Runs after `Event\Setup::set_datetimes()` has written the dates. The
+	 * snapshot stays until shutdown, so a later write in the same request is
+	 * compared again.
 	 *
 	 * @since TBD
 	 *
@@ -302,7 +281,7 @@ final class Change {
 		foreach ( array_keys( $this->snapshots ) as $post_id ) {
 			$keys = $this->store( $post_id );
 
-			unset( $this->snapshots[ $post_id ] );
+			unset( $this->snapshots[ $post_id ], $this->baselines[ $post_id ] );
 
 			if ( empty( $keys ) ) {
 				continue;
@@ -352,7 +331,7 @@ final class Change {
 					'get_callback' => array( $this, 'get_rest_value' ),
 					'schema'       => array(
 						'description' => __(
-							'What the last save changed for the people who RSVP\'d, if anything.',
+							'What changed for the people who RSVP\'d since they were last told, if anything.',
 							'gatherpress'
 						),
 						'type'        => array( 'object', 'null' ),
@@ -393,21 +372,10 @@ final class Change {
 	 *
 	 * @param int $post_id The event post ID.
 	 *
-	 * @return StoredChange|null The change, or null when nothing that counts changed since the last message.
+	 * @return Stored_Change|null The change, or null when nothing that counts changed since the last message.
 	 */
-	public function get( int $post_id ): ?array {
-		$change = get_post_meta( $post_id, self::META_KEY, true );
-
-		if ( ! is_array( $change ) || empty( $change['keys'] ) ) {
-			return null;
-		}
-
-		/**
-		 * The meta that `store()` writes, in the shape it writes it.
-		 *
-		 * @phpstan-var StoredChange $change
-		 */
-		return $change;
+	public function get( int $post_id ): ?Stored_Change {
+		return Stored_Change::from_meta( get_post_meta( $post_id, self::META_KEY, true ) );
 	}
 
 	/**
@@ -432,10 +400,10 @@ final class Change {
 		$responses = ( new Rsvp( $post_id ) )->responses();
 		$attendees = (int) ( $responses['attending']['count'] ?? 0 )
 			+ (int) ( $responses['waiting_list']['count'] ?? 0 );
-		$headline  = $this->headline( $change );
+		$headline  = $change->headline();
 
 		return array(
-			'keys'                => $change['keys'],
+			'keys'                => $change->keys,
 			'headline'            => $headline,
 			'subject'             => sprintf(
 				/* translators: 1: Event title. 2: What changed, for example "The venue changed." */
@@ -445,10 +413,10 @@ final class Change {
 				html_entity_decode( get_the_title( $post_id ), ENT_QUOTES, 'UTF-8' ),
 				$headline
 			),
-			'message'             => $this->message( $change ),
+			'message'             => $change->message(),
 			'attendees'           => $attendees,
-			'offer_not_attending' => $this->has_datetime_change( $change['keys'] ),
-			'show_notice'         => $change['show_notice'] && 0 < $attendees,
+			'offer_not_attending' => $change->has_datetime_change(),
+			'show_notice'         => $change->show_notice && 0 < $attendees,
 		);
 	}
 
@@ -485,7 +453,7 @@ final class Change {
 		$send = array(
 			'attending'     => true,
 			'waiting_list'  => true,
-			'not_attending' => $not_attending && $this->has_datetime_change( $change['keys'] ),
+			'not_attending' => $not_attending && $change->has_datetime_change(),
 		);
 
 		/**
@@ -501,7 +469,7 @@ final class Change {
 		 * @param string[]                                                         $keys    What changed.
 		 * @param int                                                              $post_id The event post ID.
 		 */
-		$send = (array) apply_filters( 'gatherpress_event_change_recipients', $send, $change['keys'], $post_id );
+		$send = (array) apply_filters( 'gatherpress_event_change_recipients', $send, $change->keys, $post_id );
 
 		$queued = Email::get_instance()->send_change_emails(
 			$post_id,
@@ -532,8 +500,23 @@ final class Change {
 	 */
 	private function maybe_snapshot( int $post_id ): void {
 		if ( $this->should_snapshot( $post_id ) ) {
-			$this->snapshots[ $post_id ] = $this->read_values( $post_id );
+			$this->take_snapshot( $post_id, Logistics::from_post( $post_id ) );
 		}
+	}
+
+	/**
+	 * Keep the logistics before this request's first write, and what attendees were last told.
+	 *
+	 * @since TBD
+	 *
+	 * @param int       $post_id   The event post ID.
+	 * @param Logistics $logistics The logistics before this request's first write.
+	 *
+	 * @return void
+	 */
+	private function take_snapshot( int $post_id, Logistics $logistics ): void {
+		$this->snapshots[ $post_id ] = $logistics;
+		$this->baselines[ $post_id ] = $this->get( $post_id )->before ?? $logistics;
 	}
 
 	/**
@@ -588,38 +571,6 @@ final class Change {
 	}
 
 	/**
-	 * Read the values that are compared, as they are stored now.
-	 *
-	 * The dates are read from meta rather than through `Event::get_datetime()`,
-	 * which caches and applies the viewer's time zone preference.
-	 *
-	 * @since TBD
-	 *
-	 * @param int $post_id The event post ID.
-	 *
-	 * @return Values The values.
-	 */
-	private function read_values( int $post_id ): array {
-		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( (string) get_post_type( $post_id ) );
-		$terms    = get_the_terms( $post_id, $taxonomy );
-		$venue    = array();
-
-		foreach ( is_array( $terms ) ? $terms : array() as $term ) {
-			$venue[ $term->slug ] = $term->name;
-		}
-
-		ksort( $venue );
-
-		return array(
-			'datetime_start' => (string) get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
-			'datetime_end'   => (string) get_post_meta( $post_id, 'gatherpress_datetime_end', true ),
-			'timezone'       => (string) get_post_meta( $post_id, 'gatherpress_timezone', true ),
-			'venue'          => $venue,
-			'status'         => ( new Status( $post_id ) )->get_all(),
-		);
-	}
-
-	/**
 	 * Get the status slugs an event had, from term taxonomy IDs.
 	 *
 	 * @since TBD
@@ -649,24 +600,6 @@ final class Change {
 		);
 
 		return $slugs;
-	}
-
-	/**
-	 * Get the venue terms an event had, from term taxonomy IDs.
-	 *
-	 * @since TBD
-	 *
-	 * @param int[]  $tt_ids   The term taxonomy IDs.
-	 * @param string $taxonomy The venue taxonomy.
-	 *
-	 * @return array<string, string> Term names keyed by slug, sorted by slug.
-	 */
-	private function venue_from_tt_ids( array $tt_ids, string $taxonomy ): array {
-		$venue = $this->terms_from_tt_ids( $tt_ids, $taxonomy );
-
-		ksort( $venue );
-
-		return $venue;
 	}
 
 	/**
@@ -704,9 +637,9 @@ final class Change {
 	 * Compare the event now with its values before the first change, and store or clear the change.
 	 *
 	 * A request that changes none of the compared values leaves the stored
-	 * change alone. Otherwise the event is compared with the `before` of the
-	 * stored change, or with this request's snapshot when none is stored, so
-	 * the change covers every save since attendees were last told.
+	 * change alone. Otherwise the event is compared with what attendees were
+	 * last told, read when the request took its snapshot, so the change
+	 * covers every save since then.
 	 *
 	 * @since TBD
 	 *
@@ -716,7 +649,7 @@ final class Change {
 	 *                  that counts.
 	 */
 	private function store( int $post_id ): array {
-		$after = $this->read_values( $post_id );
+		$after = Logistics::from_post( $post_id );
 
 		// The post can stop being published later in the same request.
 		if ( 'publish' !== get_post_status( $post_id ) ) {
@@ -725,19 +658,19 @@ final class Change {
 			return array();
 		}
 
-		if ( empty( $this->changed_keys( $this->snapshots[ $post_id ], $after ) ) ) {
+		if ( empty( $this->snapshots[ $post_id ]->changed_keys( $after ) ) ) {
 			return array();
 		}
 
-		$before = $this->get( $post_id )['before'] ?? $this->snapshots[ $post_id ];
-		$found  = $this->changed_keys( $before, $after );
+		$before = $this->baselines[ $post_id ];
+		$found  = $before->changed_keys( $after );
 
 		// A status change counts only when the new status affects attendance.
 		$keys = array_values(
 			array_filter(
 				$found,
 				static fn( string $key ): bool => 'status' !== $key
-					|| in_array( $after['status'][0] ?? '', self::NOTIFY_STATUSES, true )
+					|| in_array( $after->status[0] ?? '', self::NOTIFY_STATUSES, true )
 			)
 		);
 
@@ -779,46 +712,11 @@ final class Change {
 		 */
 		$show_notice = (bool) apply_filters( 'gatherpress_event_change_show_notice', true, $keys, $post_id );
 
-		update_post_meta(
-			$post_id,
-			self::META_KEY,
-			array(
-				'keys'        => $keys,
-				'before'      => $before,
-				'after'       => $after,
-				'show_notice' => $show_notice,
-			)
-		);
+		$change = new Stored_Change( $keys, $before, $after, $show_notice );
+
+		update_post_meta( $post_id, self::META_KEY, $change->to_meta() );
 
 		return $keys;
-	}
-
-	/**
-	 * Get the compared values that differ.
-	 *
-	 * @since TBD
-	 *
-	 * @param array $before The values before.
-	 * @phpstan-param Values $before
-	 * @param array $after  The values after.
-	 * @phpstan-param Values $after
-	 *
-	 * @return string[] The keys that differ, in the order of `KEYS`.
-	 */
-	private function changed_keys( array $before, array $after ): array {
-		$found = array();
-
-		foreach ( self::KEYS as $key ) {
-			// A venue is compared by its term slugs, so a renamed venue is not a change.
-			$old = 'venue' === $key ? array_keys( $before['venue'] ) : $before[ $key ];
-			$new = 'venue' === $key ? array_keys( $after['venue'] ) : $after[ $key ];
-
-			if ( $old !== $new ) {
-				$found[] = $key;
-			}
-		}
-
-		return $found;
 	}
 
 	/**
@@ -855,145 +753,5 @@ final class Change {
 		if ( null !== $description ) {
 			$this->send( $post_id, false, $description['message'], $description['subject'] );
 		}
-	}
-
-	/**
-	 * Whether the change includes the date, the time, or the time zone.
-	 *
-	 * @since TBD
-	 *
-	 * @param string[] $keys What changed.
-	 *
-	 * @return bool True when a date key changed.
-	 */
-	private function has_datetime_change( array $keys ): bool {
-		return ! empty( array_intersect( $keys, self::DATETIME_KEYS ) );
-	}
-
-	/**
-	 * One sentence that says what changed.
-	 *
-	 * @since TBD
-	 *
-	 * @param array $change The stored change.
-	 * @phpstan-param StoredChange $change
-	 *
-	 * @return string The sentence.
-	 */
-	private function headline( array $change ): string {
-		if ( 1 < count( $change['keys'] ) ) {
-			return __( 'Several event details changed.', 'gatherpress' );
-		}
-
-		return match ( $change['keys'][0] ) {
-			'datetime_start' => __( 'The start date or time changed.', 'gatherpress' ),
-			'datetime_end'   => __( 'The end date or time changed.', 'gatherpress' ),
-			'timezone'       => __( 'The time zone changed.', 'gatherpress' ),
-			'venue'          => __( 'The venue changed.', 'gatherpress' ),
-			default          => sprintf(
-				/* translators: %s: Event status, for example "Canceled". */
-				__( 'The event status changed to %s.', 'gatherpress' ),
-				Status::label( $change['after']['status'][0] ?? '' )
-			),
-		};
-	}
-
-	/**
-	 * The message that says what changed, with the old and the new value.
-	 *
-	 * @since TBD
-	 *
-	 * @param array $change The stored change.
-	 * @phpstan-param StoredChange $change
-	 *
-	 * @return string The message, one change per line.
-	 */
-	private function message( array $change ): string {
-		$lines = array();
-
-		foreach ( $change['keys'] as $key ) {
-			$lines[] = match ( $key ) {
-				'datetime_start' => sprintf(
-					/* translators: 1: Old start date and time. 2: New start date and time. */
-					__( 'Start: was %1$s, now %2$s.', 'gatherpress' ),
-					$this->format_datetime( $change['before']['datetime_start'], $change['before']['timezone'] ),
-					$this->format_datetime( $change['after']['datetime_start'], $change['after']['timezone'] )
-				),
-				'datetime_end'   => sprintf(
-					/* translators: 1: Old end date and time. 2: New end date and time. */
-					__( 'End: was %1$s, now %2$s.', 'gatherpress' ),
-					$this->format_datetime( $change['before']['datetime_end'], $change['before']['timezone'] ),
-					$this->format_datetime( $change['after']['datetime_end'], $change['after']['timezone'] )
-				),
-				'timezone'       => sprintf(
-					/* translators: 1: Old time zone. 2: New time zone. */
-					__( 'Time zone: was %1$s, now %2$s.', 'gatherpress' ),
-					$change['before']['timezone'],
-					$change['after']['timezone']
-				),
-				'venue'          => sprintf(
-					/* translators: 1: Old venue. 2: New venue. */
-					__( 'Venue: was %1$s, now %2$s.', 'gatherpress' ),
-					$this->format_venue( $change['before']['venue'] ),
-					$this->format_venue( $change['after']['venue'] )
-				),
-				default          => sprintf(
-					/* translators: 1: Old event status. 2: New event status. */
-					__( 'Status: was %1$s, now %2$s.', 'gatherpress' ),
-					Status::label( $change['before']['status'][0] ?? '' ),
-					Status::label( $change['after']['status'][0] ?? '' )
-				),
-			};
-		}
-
-		return implode( "\n", $lines );
-	}
-
-	/**
-	 * Format a stored local date and time in the site's formats.
-	 *
-	 * @since TBD
-	 *
-	 * @param string $datetime The local date and time, `Y-m-d H:i:s`.
-	 * @param string $timezone The time zone it is in.
-	 *
-	 * @return string The formatted date and time, or "not set".
-	 */
-	private function format_datetime( string $datetime, string $timezone ): string {
-		if ( '' === $datetime ) {
-			return __( 'not set', 'gatherpress' );
-		}
-
-		try {
-			$timezone = '' === $timezone ? wp_timezone_string() : $timezone;
-			$zone     = new DateTimeZone( Utility::normalize_timezone_string( $timezone ) );
-			$date     = new DateTimeImmutable( $datetime, $zone );
-		} catch ( Exception ) {
-			return $datetime;
-		}
-
-		return (string) wp_date(
-			sprintf( '%s %s T', get_option( 'date_format' ), get_option( 'time_format' ) ),
-			$date->getTimestamp(),
-			$zone
-		);
-	}
-
-	/**
-	 * Format the venue terms of an event.
-	 *
-	 * @since TBD
-	 *
-	 * @param array<string, string> $venue Term names keyed by slug.
-	 *
-	 * @return string The names, or "no venue".
-	 */
-	private function format_venue( array $venue ): string {
-		if ( empty( $venue ) ) {
-			return __( 'no venue', 'gatherpress' );
-		}
-
-		// Term names are stored with entities, and the message is plain text.
-		return html_entity_decode( implode( ', ', $venue ), ENT_QUOTES, 'UTF-8' );
 	}
 }

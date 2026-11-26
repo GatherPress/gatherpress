@@ -84,6 +84,7 @@ class Test_Change extends Base {
 		$instance = Change::get_instance();
 
 		Utility::set_and_get_hidden_property( $instance, 'snapshots', array() );
+		Utility::set_and_get_hidden_property( $instance, 'baselines', array() );
 		Utility::set_and_get_hidden_property( $instance, 'skipped', array() );
 	}
 
@@ -210,7 +211,7 @@ class Test_Change extends Base {
 				array(
 					'type'     => 'action',
 					'name'     => 'wp_after_insert_post',
-					'priority' => 20,
+					'priority' => 11,
 					'callback' => array( $instance, 'compare' ),
 				),
 				array(
@@ -237,7 +238,6 @@ class Test_Change extends Base {
 	 * @covers ::maybe_snapshot
 	 * @covers ::should_snapshot
 	 * @covers ::is_eligible
-	 * @covers ::read_values
 	 * @covers ::compare
 	 * @covers ::store
 	 * @covers ::get
@@ -251,9 +251,9 @@ class Test_Change extends Base {
 
 		$change = Change::get_instance()->get( $post_id );
 
-		$this->assertSame( array( 'datetime_start', 'datetime_end' ), $change['keys'] );
-		$this->assertTrue( $change['show_notice'] );
-		$this->assertNotSame( $change['before']['datetime_start'], $change['after']['datetime_start'] );
+		$this->assertSame( array( 'datetime_start', 'datetime_end' ), $change->keys );
+		$this->assertTrue( $change->show_notice );
+		$this->assertNotSame( $change->before->datetime_start, $change->after->datetime_start );
 	}
 
 	/**
@@ -268,7 +268,7 @@ class Test_Change extends Base {
 
 		$this->editor_save( $post_id, 0, 'America/New_York' );
 
-		$this->assertSame( array( 'timezone' ), Change::get_instance()->get( $post_id )['keys'] );
+		$this->assertSame( array( 'timezone' ), Change::get_instance()->get( $post_id )->keys );
 	}
 
 	/**
@@ -278,7 +278,6 @@ class Test_Change extends Base {
 	 * right after the REST save. Clearing the change there made Send fail.
 	 *
 	 * @covers ::store
-	 * @covers ::changed_keys
 	 * @covers ::finish
 	 * @covers ::get
 	 *
@@ -299,7 +298,10 @@ class Test_Change extends Base {
 			)
 		);
 		Change::get_instance()->finish();
-		$this->assertNull( Change::get_instance()->get( $post_id ), 'A title change is not a change.' );
+		$this->assertNull(
+			Change::get_instance()->get( $post_id ),
+			'Failed to assert a title change is not a change.'
+		);
 
 		$this->editor_save( $post_id, HOUR_IN_SECONDS );
 		Change::get_instance()->finish();
@@ -321,15 +323,14 @@ class Test_Change extends Base {
 
 		remove_action( 'gatherpress_event_changed', $count );
 
-		$this->assertSame( $stored, Change::get_instance()->get( $post_id ) );
-		$this->assertSame( 0, $fired, 'A save without a change does not fire the action again.' );
+		$this->assertEquals( $stored, Change::get_instance()->get( $post_id ) );
+		$this->assertSame( 0, $fired, 'Failed to assert a save without a change does not fire the action again.' );
 	}
 
 	/**
 	 * Later saves add to the stored change and keep the values from before the first change.
 	 *
 	 * @covers ::store
-	 * @covers ::changed_keys
 	 *
 	 * @return void
 	 */
@@ -353,18 +354,61 @@ class Test_Change extends Base {
 		$change = Change::get_instance()->get( $post_id );
 		$this->assertSame(
 			array( '_main-hall' => 'Main Hall' ),
-			$change['before']['venue'],
-			'Two moves: from the first venue.'
+			$change->before->venue,
+			'Failed to assert two moves keep the first venue.'
 		);
-		$this->assertSame( array( '_park' => 'Park' ), $change['after']['venue'], 'Two moves: to the last venue.' );
+		$this->assertSame(
+			array( '_park' => 'Park' ),
+			$change->after->venue,
+			'Failed to assert two moves end at the last venue.'
+		);
 
 		$this->editor_save( $post_id, HOUR_IN_SECONDS );
 		Change::get_instance()->finish();
 
 		$change = Change::get_instance()->get( $post_id );
-		$this->assertSame( array( 'datetime_start', 'datetime_end', 'venue' ), $change['keys'] );
-		$this->assertSame( $start, $change['before']['datetime_start'] );
-		$this->assertSame( array( '_main-hall' => 'Main Hall' ), $change['before']['venue'] );
+		$this->assertSame( array( 'datetime_start', 'datetime_end', 'venue' ), $change->keys );
+		$this->assertSame( $start, $change->before->datetime_start );
+		$this->assertSame( array( '_main-hall' => 'Main Hall' ), $change->before->venue );
+	}
+
+	/**
+	 * An editor save compares twice, and its second compare keeps what the first one found.
+	 *
+	 * The REST save compares at `wp_after_insert_post`, and again at
+	 * shutdown. When the first compare clears the change, the second must
+	 * still compare with what attendees were last told, not with this
+	 * request's snapshot.
+	 *
+	 * @covers ::take_snapshot
+	 * @covers ::store
+	 * @covers ::finish
+	 *
+	 * @return void
+	 */
+	public function test_editor_saves_add_up_and_put_back(): void {
+		$post_id = $this->create_event();
+		$start   = get_post_meta( $post_id, 'gatherpress_datetime_start', true );
+
+		$this->editor_save( $post_id, HOUR_IN_SECONDS );
+		Change::get_instance()->finish();
+		$this->editor_save( $post_id, HOUR_IN_SECONDS );
+		Change::get_instance()->finish();
+
+		$this->assertSame(
+			$start,
+			Change::get_instance()->get( $post_id )->before->datetime_start,
+			'Failed to assert two editor saves keep the first start.'
+		);
+
+		$this->editor_save( $post_id, -2 * HOUR_IN_SECONDS );
+		Change::get_instance()->finish();
+
+		$this->assertSame( $start, get_post_meta( $post_id, 'gatherpress_datetime_start', true ) );
+		$this->assertNull(
+			Change::get_instance()->get( $post_id ),
+			'Failed to assert saving the first start back clears the change.'
+		);
 	}
 
 	/**
@@ -488,11 +532,14 @@ class Test_Change extends Base {
 			)
 		);
 
-		$this->assertNull( Change::get_instance()->get( $post_id ), 'Nothing is stored before the request ends.' );
+		$this->assertNull(
+			Change::get_instance()->get( $post_id ),
+			'Failed to assert nothing is stored before the request ends.'
+		);
 
 		Change::get_instance()->finish();
 
-		$this->assertSame( array( 'datetime_start', 'datetime_end' ), Change::get_instance()->get( $post_id )['keys'] );
+		$this->assertSame( array( 'datetime_start', 'datetime_end' ), Change::get_instance()->get( $post_id )->keys );
 		$this->assertSame( array( array( $post_id, array( 'datetime_start', 'datetime_end' ) ) ), $fired );
 		$this->assertSame( array(), Utility::get_hidden_property( Change::get_instance(), 'snapshots' ) );
 	}
@@ -538,9 +585,9 @@ class Test_Change extends Base {
 
 		$change = Change::get_instance()->get( $post_id );
 
-		$this->assertSame( array( 'status' ), $change['keys'] );
-		$this->assertSame( array( 'postponed' ), $change['before']['status'] );
-		$this->assertSame( array( 'canceled' ), $change['after']['status'] );
+		$this->assertSame( array( 'status' ), $change->keys );
+		$this->assertSame( array( 'postponed' ), $change->before->status );
+		$this->assertSame( array( 'canceled' ), $change->after->status );
 	}
 
 	/**
@@ -567,7 +614,7 @@ class Test_Change extends Base {
 		Change::get_instance()->finish();
 		remove_filter( 'gatherpress_event_change_fields', $count );
 
-		$this->assertSame( array( 'status' ), Change::get_instance()->get( $post_id )['keys'] );
+		$this->assertSame( array( 'status' ), Change::get_instance()->get( $post_id )->keys );
 	}
 
 	/**
@@ -592,8 +639,7 @@ class Test_Change extends Base {
 	 * A venue change is stored with the venue names.
 	 *
 	 * @covers ::snapshot_before_terms
-	 * @covers ::venue_from_tt_ids
-	 * @covers ::read_values
+	 * @covers ::terms_from_tt_ids
 	 *
 	 * @return void
 	 */
@@ -611,9 +657,9 @@ class Test_Change extends Base {
 
 		$change = Change::get_instance()->get( $post_id );
 
-		$this->assertSame( array( 'venue' ), $change['keys'] );
-		$this->assertSame( array( '_main-hall' => 'Main Hall' ), $change['before']['venue'] );
-		$this->assertSame( array( '_library' => 'Library' ), $change['after']['venue'] );
+		$this->assertSame( array( 'venue' ), $change->keys );
+		$this->assertSame( array( '_main-hall' => 'Main Hall' ), $change->before->venue );
+		$this->assertSame( array( '_library' => 'Library' ), $change->after->venue );
 	}
 
 	/**
@@ -677,10 +723,6 @@ class Test_Change extends Base {
 	 * The description says what changed, to whom, and whether to show the notice.
 	 *
 	 * @covers ::describe
-	 * @covers ::headline
-	 * @covers ::message
-	 * @covers ::format_datetime
-	 * @covers ::has_datetime_change
 	 *
 	 * @return void
 	 */
@@ -720,7 +762,10 @@ class Test_Change extends Base {
 		$post_id = $this->create_event();
 
 		$this->editor_save( $post_id, HOUR_IN_SECONDS );
-		$this->assertFalse( Change::get_instance()->describe( $post_id )['show_notice'], 'No attendees.' );
+		$this->assertFalse(
+			Change::get_instance()->describe( $post_id )['show_notice'],
+			'Failed to assert no notice without attendees.'
+		);
 
 		( new Rsvp( $post_id ) )->save( 'one@example.test', 'waiting_list' );
 		$this->new_request();
@@ -729,89 +774,10 @@ class Test_Change extends Base {
 		remove_filter( 'gatherpress_event_change_show_notice', '__return_false' );
 
 		$this->assertSame( 1, Change::get_instance()->describe( $post_id )['attendees'] );
-		$this->assertFalse( Change::get_instance()->describe( $post_id )['show_notice'], 'Turned off by the filter.' );
-	}
-
-	/**
-	 * Each kind of change has its own headline and message line.
-	 *
-	 * @covers ::headline
-	 * @covers ::message
-	 * @covers ::format_venue
-	 *
-	 * @return void
-	 */
-	public function test_headline_and_message_per_change(): void {
-		$instance = Change::get_instance();
-		$before   = array(
-			'datetime_start' => '2030-01-01 18:00:00',
-			'datetime_end'   => '2030-01-01 20:00:00',
-			'timezone'       => 'UTC',
-			'venue'          => array(),
-			'status'         => array( 'scheduled' ),
+		$this->assertFalse(
+			Change::get_instance()->describe( $post_id )['show_notice'],
+			'Failed to assert the filter turns the notice off.'
 		);
-		$after    = array_merge(
-			$before,
-			array(
-				'timezone' => 'Europe/Paris',
-				'venue'    => array(
-					'_library'     => 'Library',
-					'online-event' => 'Online event',
-				),
-				'status'   => array( 'canceled' ),
-			)
-		);
-		$cases    = array(
-			'datetime_start' => array( 'The start date or time changed.', 'Start: was ' ),
-			'datetime_end'   => array( 'The end date or time changed.', 'End: was ' ),
-			'timezone'       => array( 'The time zone changed.', 'Time zone: was UTC, now Europe/Paris.' ),
-			'venue'          => array( 'The venue changed.', 'Venue: was no venue, now Library, Online event.' ),
-			'status'         => array(
-				'The event status changed to Canceled.',
-				'Status: was Scheduled, now Canceled.',
-			),
-		);
-
-		foreach ( $cases as $key => $expected ) {
-			$change = array(
-				'keys'        => array( $key ),
-				'before'      => $before,
-				'after'       => $after,
-				'show_notice' => true,
-			);
-
-			$this->assertSame( $expected[0], Utility::invoke_hidden_method( $instance, 'headline', array( $change ) ) );
-			$this->assertStringStartsWith(
-				$expected[1],
-				Utility::invoke_hidden_method( $instance, 'message', array( $change ) )
-			);
-		}
-	}
-
-	/**
-	 * Dates format in the site's formats, and fall back when they cannot be read.
-	 *
-	 * @covers ::format_datetime
-	 *
-	 * @return void
-	 */
-	public function test_format_datetime(): void {
-		$instance = Change::get_instance();
-
-		update_option( 'date_format', 'Y-m-d' );
-		update_option( 'time_format', 'H:i' );
-		update_option( 'timezone_string', 'UTC' );
-
-		$format = static fn( string $datetime, string $timezone ): string => Utility::invoke_hidden_method(
-			$instance,
-			'format_datetime',
-			array( $datetime, $timezone )
-		);
-
-		$this->assertSame( 'not set', $format( '', 'UTC' ) );
-		$this->assertSame( '2030-01-01 18:00 CET', $format( '2030-01-01 18:00:00', 'Europe/Paris' ) );
-		$this->assertSame( '2030-01-01 18:00 UTC', $format( '2030-01-01 18:00:00', '' ) );
-		$this->assertSame( 'not a date', $format( 'not a date', 'UTC' ) );
 	}
 
 	/**
@@ -908,7 +874,6 @@ class Test_Change extends Base {
 	 * The subject and the venue names are plain text, without HTML entities.
 	 *
 	 * @covers ::describe
-	 * @covers ::format_venue
 	 *
 	 * @return void
 	 */
@@ -1004,7 +969,7 @@ class Test_Change extends Base {
 		$this->editor_save( $post_id, HOUR_IN_SECONDS );
 
 		$this->assertTrue( Change::get_instance()->send( $post_id, false, 'The time moved.', 'Book Club moved' ) );
-		$this->assertNull( Change::get_instance()->get( $post_id ), 'Sending uses the change up.' );
+		$this->assertNull( Change::get_instance()->get( $post_id ), 'Failed to assert sending uses the change up.' );
 
 		$this->run_mail_jobs();
 
@@ -1119,7 +1084,10 @@ class Test_Change extends Base {
 
 		$this->editor_save( $post_id, HOUR_IN_SECONDS );
 		Change::get_instance()->finish();
-		$this->assertNotNull( Change::get_instance()->get( $post_id ), 'Off by default.' );
+		$this->assertNotNull(
+			Change::get_instance()->get( $post_id ),
+			'Failed to assert automatic sending is off by default.'
+		);
 
 		add_filter( 'gatherpress_event_change_send', '__return_true' );
 		$this->editor_save( $post_id, HOUR_IN_SECONDS );
