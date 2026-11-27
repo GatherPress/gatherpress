@@ -164,6 +164,11 @@ final class Query {
 	 *     @type string[] $venues          Venue slugs for additional filtering.
 	 *     @type bool     $has_password    Optional. False to leave out password-protected
 	 *                                     events, true to get only them. Default both.
+	 *     @type array[]  $tax_query       Optional. `WP_Query` tax_query clauses for any other
+	 *                                     taxonomy, for example one that a companion plugin
+	 *                                     registers. An event must match every clause, and the
+	 *                                     topics and venues too. Members that are not arrays
+	 *                                     are left out.
 	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
@@ -215,6 +220,16 @@ final class Query {
 			);
 		} elseif ( ! empty( $venues ) ) {
 			$tax_query[] = $this->build_venue_tax_query( $venues );
+		}
+
+		if ( isset( $args['tax_query'] ) && is_array( $args['tax_query'] ) ) {
+			// The clauses sit next to the topic and venue clauses, and WP_Query
+			// joins top-level clauses with AND.
+			foreach ( $args['tax_query'] as $clause ) {
+				if ( is_array( $clause ) ) {
+					$tax_query[] = $clause;
+				}
+			}
 		}
 
 		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query

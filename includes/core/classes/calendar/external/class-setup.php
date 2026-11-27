@@ -23,10 +23,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Shadow_Source;
-use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 use WP_Post_Type;
@@ -752,41 +750,28 @@ final class Setup {
 	 *
 	 * Supports:
 	 * - The `gatherpress_event` post type archive (upcoming and past events).
-	 * - Single `gatherpress_venue` requests (events for the queried venue).
-	 * - Event-bearing taxonomies (events tagged with the queried term).
+	 * - Single posts of a shadow-source post type, such as a venue (events
+	 *   tagged with the post's shadow term).
+	 * - Event-bearing taxonomies, including those of companion plugins
+	 *   (events tagged with the queried term).
 	 *
 	 * @since 0.34.0
+	 * @since TBD    Filters by any event-bearing taxonomy and shadow-source post type,
+	 *               not only topics and venues.
 	 *
 	 * @return string Concatenated VEVENT blocks for the queried events.
 	 */
 	public function get_ical_list(): string {
 		$event_list_type = 'upcoming'; // Ended events drop out of the feed.
 		$number          = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
-		$topics          = array();
-		$venues          = array();
 		$output          = array();
-		$queried_object  = get_queried_object();
-
-		if (
-			is_singular( Venue::POST_TYPE ) &&
-			$queried_object instanceof WP_Post &&
-			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
-		) {
-			$venues = array( '_' . $queried_object->post_name );
-		} elseif (
-			is_tax( Topic::TAXONOMY ) &&
-			$queried_object instanceof WP_Term &&
-			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
-		) {
-			$topics = array( $queried_object->slug );
-		}
 
 		$query = Query::get_instance()->get_events_list(
 			array(
 				'event_list_type' => $event_list_type,
 				'number'          => $number,
-				'topics'          => $topics,
-				'venues'          => $venues,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query'       => $this->get_queried_tax_query(),
 				// A feed is shared by every viewer, so it never lists a
 				// password-protected event's details.
 				'has_password'    => false,
@@ -802,6 +787,49 @@ final class Setup {
 		wp_reset_postdata();
 
 		return implode( "\r\n", $output );
+	}
+
+	/**
+	 * The tax_query clauses that limit a feed to the queried object.
+	 *
+	 * A single post of a shadow-source post type, such as a venue, gives its
+	 * shadow term. A term of an event-bearing taxonomy, such as a topic, gives
+	 * itself. Both cover the post types and taxonomies of companion plugins,
+	 * which get a feed endpoint from the same checks. Anything else gives no
+	 * clause, so the feed lists all events.
+	 *
+	 * The queried object is a term only on a term archive, so its type is the
+	 * check. A post that is not a shadow source, such as the page for posts,
+	 * gives no clause.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<int, array<string, mixed>> The tax_query clauses.
+	 */
+	protected function get_queried_tax_query(): array {
+		$queried_object = get_queried_object();
+
+		if (
+			$queried_object instanceof WP_Post &&
+			$this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type )
+		) {
+			return array( Shadow_Source::get_instance()->build_tax_query_clause( $queried_object ) );
+		}
+
+		if (
+			$queried_object instanceof WP_Term &&
+			$this->has_post_type_for_taxonomy( $queried_object->taxonomy )
+		) {
+			return array(
+				array(
+					'taxonomy' => $queried_object->taxonomy,
+					'field'    => 'term_id',
+					'terms'    => array( $queried_object->term_id ),
+				),
+			);
+		}
+
+		return array();
 	}
 
 	/**

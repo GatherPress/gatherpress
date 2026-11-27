@@ -362,6 +362,60 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * Coverage for tax_query clauses of other taxonomies: they join the topic
+	 * clause, and members that are not arrays are left out.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_tax_query(): void {
+		$instance = Query::get_instance();
+		$clause   = array(
+			'taxonomy' => 'gp_test_language',
+			'field'    => 'slug',
+			'terms'    => array( 'japanese' ),
+		);
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'topics'          => array( 'wordcamps' ),
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query'       => array( $clause, 'not-a-clause', 3 ),
+			)
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'taxonomy' => Topic::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( 'wordcamps' ),
+				),
+				$clause,
+			),
+			$results->query['tax_query'],
+			'Failed to assert the clause joins the topic clause and other members are left out.'
+		);
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'tax_query'       => 'not-an-array', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			)
+		);
+
+		$this->assertSame(
+			array(),
+			$results->query['tax_query'],
+			'Failed to assert a tax_query that is not an array adds no clause.'
+		);
+	}
+
+	/**
 	 * Coverage for normalize_slug_list rejecting a non-array value.
 	 *
 	 * @covers ::normalize_slug_list
