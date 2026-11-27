@@ -40,7 +40,11 @@ hand-edited file — improve them like any other file, no regeneration step.
    roster corrections applied to the pre-release file first. Group order in
    the generated output is fixed (leads, team, contributors) regardless of
    the file's key order. A patch version can skip this step: with no file,
-   the bump starts one from the previous patch's file.
+   the bump starts one from the previous patch's leads and noteworthy.
+   Contributors are credited per version: a new version's `contributors`
+   starts empty (pre-releases of the same version carry theirs into its
+   stable file), and only `leads` and `noteworthy` carry over between
+   versions.
 2. Either run the **Version Bump** workflow (Actions → Version Bump → enter
    the version) — it bumps everything, refreshes the lockfile, and opens the
    `version-X.Y.Z` PR against develop; with the patch branch as the branch,

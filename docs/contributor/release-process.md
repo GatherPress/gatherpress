@@ -50,7 +50,10 @@ It reads the target version's credits file at
 `.github/scripts/release/credits/X.Y.Z.json` (hand-added first via a normal
 PR; new contributors accumulate in `credits/unreleased.json` and fold in
 automatically at bump time). A patch version with no file starts from the
-previous patch's file, so `X.Y.1` starts from `X.Y.0`. It then writes:
+previous patch's leads and noteworthy, so `X.Y.1` starts from `X.Y.0`, with
+`contributors` left empty. Contributors are credited for the version they
+worked on and never carry over from another version; only `leads` and
+`noteworthy` do. It then writes:
 
 - `gatherpress.php` `Version:` header, `package.json` version, `readme.txt`
   `Stable tag:`, the version badge in `README.md`, and the regenerated
@@ -216,7 +219,7 @@ Every one of these is required; skipping any of them bites the next release:
   "Preparing demo-data for a new version of GatherPress" steps in the
   [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
   so the Playground demo content matches the release.
-- [ ] **Open the next cycle** (minor and major releases only, not patches): bump develop to `X.Y+1.0-alpha.0` via the **Version Bump** workflow and merge its PR. Add the `credits/X.Y+1.0-alpha.0.json` file first (the workflow refuses a version with no credits file), seeded from the most recent release's file, which for a line that took patches means the `X.Y.N` file that landed on main rather than the `X.Y.0` one on develop.
+- [ ] **Open the next cycle** (minor and major releases only, not patches): bump develop to `X.Y+1.0-alpha.0` via the **Version Bump** workflow and merge its PR. Add the `credits/X.Y+1.0-alpha.0.json` file first (the workflow refuses a version with no credits file), with `leads` and `noteworthy` copied from the most recent release's file (for a line that took patches, the `X.Y.N` file that landed on main rather than the `X.Y.0` one on develop) and `contributors` left empty. Contributors are credited for the version they worked on, so each cycle's list starts fresh and fills from `credits/unreleased.json`.
 
   This is a marker, not a release. Nothing is tagged, and only tags deploy,
   so merging it ships nothing. What it buys is that develop stops

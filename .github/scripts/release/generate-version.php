@@ -15,7 +15,8 @@
  * Requires a credits file for the target version at
  * .github/scripts/release/credits/<version>.json (add it there first — a
  * stable version's file is a copy of its latest pre-release file). A patch
- * version with no file starts from the previous patch's file.
+ * version with no file starts from the previous patch's leads and noteworthy,
+ * with contributors left empty: contributors are credited per version.
  *
  * Unlike the old tooling, README.md and readme.txt are hand-edited files —
  * this script only patches the strings that change per release, in place:
@@ -223,9 +224,11 @@ function fold_unreleased_credits( $entry, $credits_file, $version ) {
 /**
  * Start a patch version's credits file from the version before it.
  *
- * A patch's file is a copy of the previous release's (X.Y.0 for X.Y.1),
- * with contributors folded in from credits/unreleased.json as for any bump.
- * Other versions still need their file added by hand.
+ * A patch's file keeps the previous release's leads and noteworthy (X.Y.0
+ * for X.Y.1) and starts its contributors empty, since contributors are
+ * credited for the version they worked on. Contributors are then folded in
+ * from credits/unreleased.json as for any bump. Other versions still need
+ * their file added by hand.
  *
  * @since TBD
  *
@@ -245,8 +248,17 @@ function copy_previous_patch_credits( $version, $credits_file ) {
 		return;
 	}
 
-	if ( ! copy( $previous_file, $credits_file ) ) {
-		fail( "Failed to copy credits/{$previous}.json to credits/{$version}.json." );
+	$entry = json_decode( file_get_contents( $previous_file ), true );
+
+	if ( ! is_array( $entry ) ) {
+		fail( "credits/{$previous}.json is not valid JSON." );
+	}
+
+	$entry['contributors'] = array();
+	$json                  = json_encode( $entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n";
+
+	if ( file_put_contents( $credits_file, $json ) === false ) {
+		fail( "Failed to start credits/{$version}.json from credits/{$previous}.json." );
 	}
 
 	success( "Started credits/{$version}.json from credits/{$previous}.json." );
