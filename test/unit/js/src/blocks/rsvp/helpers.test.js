@@ -1,12 +1,21 @@
 /**
  * External dependencies
  */
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
+
+jest.mock( '@wordpress/blocks', () => ( {
+	createBlock: ( name, attributes, innerBlocks ) => ( { name, attributes, innerBlocks } ),
+	parse: ( markup ) => [ { parsed: markup } ],
+} ) );
 
 /**
  * Internal dependencies
  */
-import { parseSerializedInnerBlocks } from '@src/blocks/rsvp/helpers';
+import {
+	getStatusInnerBlocks,
+	parseSerializedInnerBlocks,
+	templateToBlocks,
+} from '@src/blocks/rsvp/helpers';
 
 /**
  * Regression coverage for #1704 — "RSVP block has encountered an error and
@@ -62,5 +71,46 @@ describe( 'parseSerializedInnerBlocks', () => {
 	it( 'returns {} for valid JSON that is not an object (e.g. null/number)', () => {
 		expect( parseSerializedInnerBlocks( 'null' ) ).toEqual( {} );
 		expect( parseSerializedInnerBlocks( '42' ) ).toEqual( {} );
+	} );
+} );
+
+describe( 'templateToBlocks', () => {
+	it( 'builds nested blocks from a template', () => {
+		expect(
+			templateToBlocks( [ [ 'core/buttons', { a: 1 }, [ [ 'core/button', { b: 2 } ] ] ] ] ),
+		).toEqual( [
+			{
+				name: 'core/buttons',
+				attributes: { a: 1 },
+				innerBlocks: [ { name: 'core/button', attributes: { b: 2 }, innerBlocks: [] } ],
+			},
+		] );
+	} );
+} );
+
+describe( 'getStatusInnerBlocks', () => {
+	const defaults = {
+		past: [ [ 'core/paragraph', { content: 'Past' } ] ],
+		canceled: [ [ 'core/paragraph', { content: 'Canceled' } ] ],
+	};
+
+	it( 'loads the saved blocks for a status', () => {
+		const serialized = JSON.stringify( { canceled: '<!-- wp:paragraph /-->' } );
+
+		expect( getStatusInnerBlocks( serialized, 'canceled', defaults ) ).toEqual( [
+			{ parsed: '<!-- wp:paragraph /-->' },
+		] );
+	} );
+
+	it( 'starts a status saved before it existed from its default template', () => {
+		const serialized = JSON.stringify( { past: '<!-- wp:paragraph /-->' } );
+
+		expect( getStatusInnerBlocks( serialized, 'canceled', defaults ) ).toEqual( [
+			{ name: 'core/paragraph', attributes: { content: 'Canceled' }, innerBlocks: [] },
+		] );
+	} );
+
+	it( 'returns null for a status with no saved blocks or default', () => {
+		expect( getStatusInnerBlocks( JSON.stringify( { attending: '' } ), 'attending', defaults ) ).toBeNull();
 	} );
 } );

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Calendar links now work at the addresses GatherPress links to. The event archive feed follows an archive slug set through `has_archive`, and the archive feed, single-event calendar links and term feeds of custom post types and taxonomies follow the permalink front (such as `/blog/`). Before, those links returned a 404.

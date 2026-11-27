@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+A static venue map image that is replaced now stays on disk for a week before it is deleted, so a page cache or CDN that still serves the old page keeps showing the map. Before, the old image was deleted at once, and a cached page showed a blank map until the cache expired. The new `gatherpress_static_map_delete_unused_delay` filter changes the delay, and 0 deletes at once.

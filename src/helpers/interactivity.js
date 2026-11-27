@@ -244,7 +244,6 @@ export const getNonce = ( () => {
  * @param {string}      args.status            - The RSVP status (`attending`, `not_attending`, etc.).
  * @param {number}      [args.guests=0]        - The number of additional guests.
  * @param {boolean}     [args.anonymous=false] - Whether the RSVP is anonymous.
- * @param {string}      [args.rsvpToken]       - Optional RSVP token for anonymous users.
  * @param {Object}      [state=null]           - A state object to update with the API response data.
  * @param {Function}    [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                             Receives the API response as its argument.
@@ -289,6 +288,8 @@ export async function sendRsvpApiRequest(
 			gatherPressState.eventApiUrl + '/rsvp',
 			{
 				method: 'POST',
+				// Lets a save started as the page is left finish (see the RSVP block's guest count).
+				keepalive: true,
 				headers: {
 					'Content-Type': 'application/json',
 					'X-WP-Nonce': nonce,
@@ -298,7 +299,6 @@ export async function sendRsvpApiRequest(
 					status: args.status,
 					guests: args.guests,
 					anonymous: args.anonymous,
-					rsvp_token: args.rsvpToken,
 				} ),
 			},
 		);
@@ -538,6 +538,7 @@ function getTopMostOpenElement() {
  *
  * @since 0.32.0
  * @since 0.36.0 `Escape` closes only the top-most open element.
+ * @since 0.37.0 `Escape` is cancelled once handled, so a modal `<dialog>` around the element stays open.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
  * @param {string}   contentSelector - Selector for the inner content element.
@@ -570,6 +571,8 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 		}
 
 		event.gatherpressEscapeHandled = true;
+		// The key closed this element, so a modal <dialog> around it stays open.
+		event.preventDefault();
 		handleClose( topMost );
 	};
 

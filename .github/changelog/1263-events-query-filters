@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+The event list query, `Event\Query::get_events_list()`, now takes an arguments array instead of positional parameters, so code calling it with positional arguments needs to pass an array. A new `gatherpress_event_query_vars` filter runs on every query that lists upcoming or past events, including the Event Query block, event archives and feeds, and the iCal feed. A plugin can use it to add meta constraints, taxonomies or its own ordering, for example to filter events by location, and GatherPress still applies the upcoming or past date range.

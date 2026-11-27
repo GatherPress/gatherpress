@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The lines of an event in a calendar download or feed are now folded at 75 octets, as RFC 5545 asks. Folding used to count characters instead of octets and leave out the property name, so a long title, location or link could run past 75 octets, and text in a script such as Japanese could run to three times that.

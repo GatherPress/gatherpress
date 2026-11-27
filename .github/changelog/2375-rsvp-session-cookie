@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Clicking the confirmation link in an RSVP email now remembers the RSVP in that browser until it closes, and takes the token off the address bar, so it no longer ends up in browser history or a copied link. The RSVP block and REST API read this session cookie instead of the `gatherpress_rsvp_token` URL parameter, and the RSVP REST route no longer takes an `rsvp_token` parameter.

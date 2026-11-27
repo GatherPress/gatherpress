@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Keep backslashes in RSVP names and other form input instead of stripping them.

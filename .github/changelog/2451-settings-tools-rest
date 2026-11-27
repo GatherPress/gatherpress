@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Settings import and export on the Tools tab now go through the `gatherpress/v1/settings/export` and `gatherpress/v1/settings/import` REST routes, replacing the `gatherpress_export_settings` and `gatherpress_import_settings` admin-ajax actions. Results and errors show on the page instead of in an alert, and the import preview shows the file's contents as text rather than HTML.

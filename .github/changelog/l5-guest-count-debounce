@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Changing "Number of guests?" in the RSVP block now saves and announces the RSVP once, a moment after the last change, instead of once for every step of the arrow keys.

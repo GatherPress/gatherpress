@@ -54,6 +54,9 @@ class Test_Map extends Base {
 		$this->tile_png = base64_decode( $png );
 
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		// Delete unused files at once, so a test can check which files go.
+		add_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
 	}
 
 	/**
@@ -63,7 +66,9 @@ class Test_Map extends Base {
 	 */
 	public function tearDown(): void {
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
 		wp_clear_scheduled_hook( Map::GENERATE_CRON_ACTION );
+		wp_clear_scheduled_hook( Saved_Image::DELETE_CRON_ACTION );
 
 		$dirs     = wp_get_upload_dir();
 		$base_dir = trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR;
@@ -168,6 +173,12 @@ class Test_Map extends Base {
 				'name'     => Map::GENERATE_CRON_ACTION,
 				'priority' => 10,
 				'callback' => array( $instance, 'process_generate_job' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => Saved_Image::DELETE_CRON_ACTION,
+				'priority' => 10,
+				'callback' => array( Saved_Image::class, 'delete_unused_now' ),
 			),
 		);
 
@@ -1902,9 +1913,39 @@ class Test_Map extends Base {
 		$this->assertSame( 800, $descriptor['width'] );
 		$this->assertSame( 400, $descriptor['height'] );
 		$this->assertStringEndsWith(
-			'1-infinite-loop-osm-roadmap-15-800-400-' . substr( $descriptor['hash'], 0, 8 ) . '.png',
+			'-osm-roadmap-15-800-400-' . substr( $descriptor['hash'], 0, 8 ) . '.png',
 			$descriptor['url']
 		);
+	}
+
+	/**
+	 * Two venues at one address get their own images when their coordinates
+	 * differ, so warming one does not overwrite the image of the other.
+	 *
+	 * @covers ::warm
+	 * @covers ::build_image_url
+	 * @covers ::filename_for
+	 *
+	 * @return void
+	 */
+	public function test_warm_keeps_venues_at_one_address_apart(): void {
+		$instance = Map::get_instance();
+		$venue_a  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$venue_b  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $venue_a, 'gatherpress_address', 'Vondelpark, Amsterdam' );
+		add_post_meta( $venue_a, 'gatherpress_latitude', '52.3621' );
+		add_post_meta( $venue_a, 'gatherpress_longitude', '4.8829' );
+		add_post_meta( $venue_b, 'gatherpress_address', 'Vondelpark, Amsterdam' );
+		add_post_meta( $venue_b, 'gatherpress_latitude', '52.3580' );
+		add_post_meta( $venue_b, 'gatherpress_longitude', '4.8686' );
+
+		$first  = $instance->warm( $venue_a, 16, 600, 300, '2/1' );
+		$second = $instance->warm( $venue_b, 16, 600, 300, '2/1' );
+
+		$this->assertNotSame( $first['url'], $second['url'], 'Each venue has its own image.' );
+		$this->assertFileExists( $this->path_for_url( $first['url'] ) );
+		$this->assertFileExists( $this->path_for_url( $second['url'] ) );
 	}
 
 	/**
@@ -1943,18 +1984,26 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 
 		// Empty string → fallback slug.
-		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400, 'osm' ) );
-		$this->assertSame( 'venue-osm-roadmap-15-800-400.png', $empty );
+		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 0.0, 0.0, 15, 800, 400, 'osm' ) );
+		$this->assertSame( 'venue-0.000000_0.000000-osm-roadmap-15-800-400.png', $empty );
 
 		// All-special-char input sanitize_title strips to '' → fallback.
-		$weird = Utility::invoke_hidden_method( $instance, 'filename_for', array( '!!!', 15, 800, 400, 'osm' ) );
-		$this->assertSame( 'venue-osm-roadmap-15-800-400.png', $weird );
+		$weird = Utility::invoke_hidden_method(
+			$instance,
+			'filename_for',
+			array( '!!!', 0.0, 0.0, 15, 800, 400, 'osm' )
+		);
+		$this->assertSame( 'venue-0.000000_0.000000-osm-roadmap-15-800-400.png', $weird );
 
 		// Long slugs get truncated so the full filename stays under fs caps.
 		$long    = str_repeat( 'a', 300 );
-		$result  = Utility::invoke_hidden_method( $instance, 'filename_for', array( $long, 18, 600, 300, 'osm' ) );
+		$result  = Utility::invoke_hidden_method(
+			$instance,
+			'filename_for',
+			array( $long, 1.5, -2.25, 18, 600, 300, 'osm' )
+		);
 		$matches = array();
-		preg_match( '/^([a-z]+)-osm-roadmap-18-600-300\.png$/', $result, $matches );
+		preg_match( '/^([a-z]+)-1\.500000_-2\.250000-osm-roadmap-18-600-300\.png$/', $result, $matches );
 		$this->assertNotEmpty( $matches, 'Truncated filename still matches the expected pattern.' );
 		$this->assertSame( 150, strlen( $matches[1] ), 'Slug is capped at 150 characters.' );
 	}
@@ -1998,9 +2047,8 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Writes the PNG and returns a URL inside the plugin uploads subdir.
-	 * Provider slug is baked into the filename so two providers' files for
-	 * the same venue + dimensions can coexist on disk.
+	 * Writes the PNG under the given filename and returns a URL inside the
+	 * plugin uploads subdir.
 	 *
 	 * @covers ::save_image
 	 *
@@ -2010,12 +2058,12 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
-		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400, 1, 'osm' );
+		$url = $instance->save_image( $canvas, 'save-image-test-osm-roadmap-15-800-400.png' );
 		unset( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
-		$this->assertStringEndsWith( '1-infinite-loop-osm-roadmap-15-800-400.png', $url );
+		$this->assertStringEndsWith( 'save-image-test-osm-roadmap-15-800-400.png', $url );
 
 		$path = $this->path_for_url( $url );
 		$this->assertFileExists( $path );
@@ -2306,7 +2354,7 @@ class Test_Map extends Base {
 		};
 		add_filter( 'upload_dir', $force_error );
 
-		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400, 1, 'osm' );
+		$url = $instance->save_image( $canvas, 'test-address-osm-roadmap-15-800-400.png' );
 
 		remove_filter( 'upload_dir', $force_error );
 		unset( $canvas );
@@ -2830,16 +2878,16 @@ class Test_Map extends Base {
 		$one_x = Utility::invoke_hidden_method(
 			$instance,
 			'filename_for',
-			array( '1 Infinite Loop', 15, 800, 400, 'osm', 1 )
+			array( '1 Infinite Loop', 37.3318, -122.0312, 15, 800, 400, 'osm', 1 )
 		);
 		$two_x = Utility::invoke_hidden_method(
 			$instance,
 			'filename_for',
-			array( '1 Infinite Loop', 15, 800, 400, 'osm', 2 )
+			array( '1 Infinite Loop', 37.3318, -122.0312, 15, 800, 400, 'osm', 2 )
 		);
 
-		$this->assertSame( '1-infinite-loop-osm-roadmap-15-800-400.png', $one_x );
-		$this->assertSame( '1-infinite-loop-osm-roadmap-15-800-400@2x.png', $two_x );
+		$this->assertSame( '1-infinite-loop-37.331800_-122.031200-osm-roadmap-15-800-400.png', $one_x );
+		$this->assertSame( '1-infinite-loop-37.331800_-122.031200-osm-roadmap-15-800-400@2x.png', $two_x );
 	}
 
 
@@ -3282,6 +3330,8 @@ class Test_Map extends Base {
 			'build_image_url',
 			array(
 				'1 Infinite Loop',
+				37.3318,
+				-122.0312,
 				Map::DEFAULT_ZOOM,
 				Map::DEFAULT_HEIGHT * 2,
 				Map::DEFAULT_HEIGHT,
@@ -3348,8 +3398,8 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_address', '2 Infinite Loop' );
-		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3400' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
 		// Seed two providers: the active slug AND `google`. The active
@@ -3362,6 +3412,8 @@ class Test_Map extends Base {
 			'build_image_url',
 			array(
 				'1 Infinite Loop',
+				37.3318,
+				-122.0312,
 				Map::DEFAULT_ZOOM,
 				Map::DEFAULT_HEIGHT * 2,
 				Map::DEFAULT_HEIGHT,
@@ -3728,7 +3780,7 @@ class Test_Map extends Base {
 		$url      = Utility::invoke_hidden_method(
 			$instance,
 			'build_image_url',
-			array( '1 Infinite Loop', Map::DEFAULT_ZOOM, 800, 400, 'always-null' )
+			array( '1 Infinite Loop', 37.3318, -122.0312, Map::DEFAULT_ZOOM, 800, 400, 'always-null' )
 		);
 		$png      = $this->touch_image( $url );
 		$key      = Utility::invoke_hidden_method(
@@ -3867,7 +3919,7 @@ class Test_Map extends Base {
 		$plain    = Utility::invoke_hidden_method(
 			$instance,
 			'build_image_url',
-			array( '1 Infinite Loop', Map::DEFAULT_ZOOM, 800, 400, 'osm', 1, 'roadmap' )
+			array( '1 Infinite Loop', 37.3318, -122.0312, Map::DEFAULT_ZOOM, 800, 400, 'osm', 1, 'roadmap' )
 		);
 		$all      = $instance->get_all_descriptors( $post_id );
 		$key      = array_key_first( $all['osm'] );
@@ -4030,7 +4082,7 @@ class Test_Map extends Base {
 
 		$key    = Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 800, 400, 'roadmap' ) );
 		$url    = Saved_Image::url(
-			Saved_Image::filename( '1 Infinite Loop', 14, 800, 400, 'always-null', 1, 'roadmap' )
+			Saved_Image::filename( '1 Infinite Loop', 37.3318, -122.0312, 14, 800, 400, 'always-null', 1, 'roadmap' )
 		);
 		$filter = static function ( array $descriptors ): array {
 			foreach ( $descriptors as $slug => $combos ) {

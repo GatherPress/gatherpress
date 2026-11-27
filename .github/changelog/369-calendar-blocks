@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Four calendar blocks and an "Event Calendar" variation of the Query Loop block show events, or other posts, in a month, week or day calendar, with Previous and Next links, a popover for each event and an optional time grid of hours. The blocks come from the GatherPress Calendar plugin and keep its block names, so content made with the plugin continues to work.

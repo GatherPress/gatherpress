@@ -321,14 +321,24 @@ jobs:
           # Open the PR back to develop and let it merge itself once checks
           # pass (squash keeps develop linear). The release manager still
           # sanity-checks the rendered release body on the Release itself.
+          # Unmatched @since docblocks hold it: once it merges, the fixes need
+          # a PR of their own (0.36.2's #2590 merged before they were made).
+          merge_note="Auto-merges once checks pass"
+
+          if [ "${unmatched}" -gt 0 ]; then
+            merge_note="Not set to auto-merge, because of the @since tags below. Resolve them on this branch, then merge it"
+          fi
+
           pr_url=$(gh pr create \
             --base develop \
             --head "${branch}" \
             --title "Roll up changelog for ${VERSION}" \
-            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Auto-merges once checks pass; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. The matching parity PR to main is opened alongside this one and is **not** set to auto-merge.${since_note}" \
+            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. ${merge_note}; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. The matching parity PR to main is opened alongside this one and is **not** set to auto-merge.${since_note}" \
             --label "Skip Changelog")
 
-          gh pr merge --auto --squash "${pr_url}"
+          if [ "${unmatched}" -eq 0 ]; then
+            gh pr merge --auto --squash "${pr_url}"
+          fi
 
       - name: Open the changelog parity PR to main (stable only)
         if: needs.prepare.outputs.is_prerelease == 'false'

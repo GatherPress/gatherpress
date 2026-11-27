@@ -51,13 +51,19 @@ The settings page is organized into tabs, each managed by its own class:
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `rsvp_mode` | select | `'enabled'` | Controls sitewide RSVP availability. See [RSVP Mode](#rsvp-mode) below. |
-| `capacity` | number | `50` | Maximum attendees per event (0 = unlimited). Called `max_attendance_limit` before 0.36.0, which still answers until 0.37.0 |
+| `capacity` | number | `50` | Maximum attendees per event (0 = unlimited) |
 | `guest_limit` | number | `0` | Maximum guests per attendee (0-5) |
 | `enable_anonymous_rsvp` | checkbox | `false` | Allow anonymous RSVPs |
 | `enable_open_rsvp` | checkbox | `true` | Allow visitors to RSVP without a site account (email verification). Enabled by default. |
+| `enable_waiting_list_emails` | checkbox | `true` | Email attendees when they move off the waiting list |
+| `enable_event_reminders` | checkbox | `true` | Email attendees a reminder before an event starts |
+| `event_reminder_day_before` | checkbox | `true` | Send a reminder a day before the start |
+| `event_reminder_hour_before` | checkbox | `false` | Send a reminder an hour before the start |
 | `enable_rsvp_cleanup` | select | `'disabled'` | Enable/disable RSVP cleanup |
 | `rsvp_cleanup_frequency` | select | `'daily'` | Cleanup frequency (hourly, daily, weekly, monthly, yearly) |
 | `rsvp_cleanup_multiplier` | number | `1` | Interval multiplier for cleanup frequency |
+
+The `gatherpress_event_reminder_timings` filter can add or remove reminder timings. Each one gets an `event_reminder_{timing}` checkbox.
 
 #### RSVP Mode
 

@@ -16,17 +16,17 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
-use GatherPress\Core\Calendar;
+use GatherPress\Core\Calendar\External;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Traits\Has_Capabilities;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue;
 use WP_Post;
-use WP_REST_Request;
 use WP_Term;
 
 /**
@@ -45,6 +45,11 @@ use WP_Term;
  * }
  */
 class Event {
+
+	/**
+	 * Gives the class its read and edit capabilities.
+	 */
+	use Has_Capabilities;
 
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
@@ -79,27 +84,6 @@ class Event {
 	const SUPPORT = 'gatherpress-event-date';
 
 	/**
-	 * Capability for reading a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID and
-	 * resolves through WordPress to the right primitive for the event's status.
-	 *
-	 * @since 0.35.1
-	 * @var string
-	 */
-	const READ_CAPABILITY = 'read_post';
-
-	/**
-	 * Capability for editing a specific event.
-	 *
-	 * A meta capability, so it is always paired with the event's post ID.
-	 *
-	 * @since 0.35.1
-	 * @var string
-	 */
-	const EDIT_CAPABILITY = 'edit_post';
-
-	/**
 	 * Placeholder displayed when no datetime is set.
 	 *
 	 * @since 0.34.0
@@ -126,7 +110,17 @@ class Event {
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
-
+	/**
+	 * Taxonomy that stores which status an event is in.
+	 *
+	 * Private to GatherPress: the leading underscore keeps it out of the
+	 * public taxonomy space, and a status is read and written through
+	 * Event\Status rather than as terms.
+	 *
+	 * @since 0.37.0
+	 * @var string
+	 */
+	const TAXONOMY_STATUS = '_gatherpress_event_status';
 
 	/**
 	 * The event post.
@@ -180,7 +174,7 @@ class Event {
 		return (
 			( is_preview() && (int) get_queried_object_id() === $post_id )
 			|| 'publish' === get_post_status( $post_id )
-			|| current_user_can( self::READ_CAPABILITY, $post_id )
+			|| current_user_can( self::read_capability(), $post_id )
 		);
 	}
 
@@ -205,36 +199,13 @@ class Event {
 			return false;
 		}
 
-		if ( current_user_can( self::EDIT_CAPABILITY, $post->ID ) ) {
+		if ( current_user_can( self::edit_capability(), $post->ID ) ) {
 			return true;
 		}
 
 		return 'publish' === $post->post_status
 			? ! post_password_required( $post )
-			: current_user_can( self::READ_CAPABILITY, $post->ID );
-	}
-
-	/**
-	 * Whether a post password keeps an event's details from the current viewer.
-	 *
-	 * The viewer still needs the password and cannot edit the event. A REST
-	 * request that passes the right `password` argument counts as having it.
-	 *
-	 * @since 0.36.1
-	 *
-	 * @param WP_Post              $post    The event post.
-	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.
-	 * @phpstan-param WP_REST_Request<array<string, mixed>>|null $request
-	 *
-	 * @return bool True when the event's details stay hidden.
-	 */
-	public static function is_hidden_by_password( WP_Post $post, ?WP_REST_Request $request = null ): bool {
-		return post_password_required( $post )
-			&& ! current_user_can( self::EDIT_CAPABILITY, $post->ID )
-			&& (
-				null === $request
-				|| ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
-			);
+			: current_user_can( self::read_capability(), $post->ID );
 	}
 
 	/**
@@ -1104,7 +1075,7 @@ class Event {
 			return array();
 		}
 
-		$calendar = new Calendar( $this->post->ID );
+		$calendar = new External( $this->post->ID );
 
 		// Each URL getter only reports false when its event post cannot be resolved, and the
 		// calendar was built from the post resolved directly above.
@@ -1310,7 +1281,7 @@ class Event {
 		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
 
 		if ( ! $force_online_event_link && ! is_admin() ) {
-			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = $user_identifier ?? Rsvp_Setup::get_instance()->get_user_identifier( $this->post->ID );
 			$response        = ( new Rsvp( $this->post->ID ) )->get( $user_identifier );
 
 			if (

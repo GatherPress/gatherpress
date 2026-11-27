@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The event's Compose Message dialog now opens on the Subject field, groups the recipient checkboxes under a "Recipients" heading that screen readers announce, and keeps the Send Email button reachable by keyboard with a note that says to choose at least one group first.

@@ -47,6 +47,34 @@ describe( 'buildFilterUrl', () => {
 		);
 	} );
 
+	it( 'carries the chosen check-in state', () => {
+		expect( buildFilterUrl( SCREEN, null, [], 'not-recorded' ) ).toContain(
+			'check_in=not-recorded',
+		);
+	} );
+
+	it( 'omits an empty check-in state, which means every state', () => {
+		expect( buildFilterUrl( SCREEN, 11, [] ) ).not.toContain( 'check_in' );
+	} );
+
+	it( 'drops a check-in filter that was previously applied', () => {
+		expect(
+			buildFilterUrl( `${ SCREEN }&check_in=no-show`, null, [], '' ),
+		).not.toContain( 'check_in' );
+	} );
+
+	it( 'drops a row action, so filtering does not run it again', () => {
+		const url = buildFilterUrl(
+			`${ SCREEN }&action=clear_check_in&gatherpress_rsvp_id=7&_wpnonce=abc`,
+			11,
+			[],
+		);
+
+		expect( url ).not.toContain( 'action=' );
+		expect( url ).not.toContain( 'gatherpress_rsvp_id' );
+		expect( url ).not.toContain( '_wpnonce' );
+	} );
+
 	it( 'resets paging, which rarely survives a narrower result', () => {
 		expect( buildFilterUrl( `${ SCREEN }&paged=4`, 11, [] ) ).not.toContain(
 			'paged',

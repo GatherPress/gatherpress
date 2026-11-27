@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Screen readers now name the RSVP form "RSVP", so people can tell it apart from the theme's comment form, which also asks for a name and email. A name set on the form in the editor is kept.

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The "Past Event" and "Canceled" buttons in the RSVP block are now skipped by the Tab key and announced by screen readers as unavailable, instead of acting like buttons that do nothing.

@@ -55,7 +55,7 @@ The workflow scripts can also be used to **manually create screenshots**. In gen
    ```
 
    > [!NOTE]
-   > You also need to use Node.js 20 or later
+   > You also need Node.js 26, the version in `.nvmrc`
 
 2. Install the dependencies to create the Playground instance, using the following command:
 

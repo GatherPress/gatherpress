@@ -15,7 +15,7 @@ if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 	return;
 }
 ?>
-<div style="margin-top: 40px; margin-bottom: 30px;">
+<div class="gatherpress-profile__time-formatting">
 	<h2 id="gatherpress-user-time-formatting">
 		<?php esc_html_e( 'Time Display Formatting', 'gatherpress' ); ?>
 	</h2>

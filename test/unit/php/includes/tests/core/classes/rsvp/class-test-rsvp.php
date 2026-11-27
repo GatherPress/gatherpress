@@ -464,6 +464,14 @@ class Test_Rsvp extends Base {
 			)
 		);
 
+		// The free spot promotes the waiting list RSVP, so read it again.
+		$current_response = $rsvp->find( $user_id );
+
+		$this->assertSame(
+			Status::ATTENDING,
+			$current_response->data->status,
+			'Failed to assert the RSVP was promoted.'
+		);
 		$this->assertFalse(
 			$rsvp->attending_limit_reached( $current_response ),
 			'Failed to assert that limit has not been reached.'
@@ -1274,6 +1282,16 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list_promotes_on_freed_spot(): void {
+		$promotions = array();
+		add_action(
+			'gatherpress_rsvp_waiting_list_promoted',
+			static function ( int $post_id, State $state ) use ( &$promotions ): void {
+				$promotions[] = array( $post_id, $state );
+			},
+			10,
+			2
+		);
+
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		update_post_meta( $event_id, 'gatherpress_capacity', 1 );
 
@@ -1296,6 +1314,11 @@ class Test_Rsvp extends Base {
 			( new Rsvp( $event_id ) )->get( $waiter_id )['status'],
 			'Freeing a spot promotes the waiting-list responder.'
 		);
+		$this->assertCount( 1, $promotions, 'A successful promotion fires one notification action.' );
+		$this->assertSame( $event_id, $promotions[0][0] );
+		$this->assertInstanceOf( State::class, $promotions[0][1] );
+		$this->assertTrue( $promotions[0][1]->is_attending() );
+		$this->assertSame( $waiter_id, (int) $promotions[0][1]->data->identity->value );
 	}
 
 	/**
@@ -1507,5 +1530,480 @@ class Test_Rsvp extends Base {
 		$GLOBALS['comment'] = $rsvp_comment; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		$this->assertFalse( Rsvp::is_comment_type( 0 ) );
 		unset( $GLOBALS['comment'] );
+	}
+
+	/**
+	 * Coverage for enforce_capacity.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity(): void {
+		$post_id = $this->create_event_with_attendee( 2 );
+
+		$fits = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->enforce_capacity( $fits ),
+			'Failed to assert an RSVP within capacity stays attending.'
+		);
+
+		$over = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $over ),
+			'Failed to assert an RSVP over capacity moves.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $over, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert the RSVP is on the waiting list.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity counting guests.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_counts_guests(): void {
+		$post_id    = $this->create_event_with_attendee( 2 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', 1 );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert guests count toward capacity.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity reading fresh responses over a stale cache.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_ignores_stale_cache(): void {
+		$post_id = $this->create_event_with_attendee( 1 );
+
+		// Caches the responses before the new RSVP is approved.
+		( new Rsvp( $post_id ) )->responses();
+
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert the check reads fresh responses.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity counting an anonymous RSVP for a visitor.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_counts_anonymous_rsvps(): void {
+		wp_set_current_user( 0 );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', 1 );
+
+		$anonymous = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		update_comment_meta( $anonymous, Rsvp::ANONYMOUS_META_KEY, 1 );
+
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert an anonymous RSVP counts toward capacity.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity leaving a pending RSVP alone.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_skips_pending_rsvp(): void {
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '0' );
+
+		$this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert a pending RSVP is left alone.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert a pending RSVP stays attending.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity leaving RSVPs alone when there is nothing to check.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_skips(): void {
+		$post_id       = $this->create_event_with_attendee( 1 );
+		$not_attending = $this->create_rsvp( $post_id, Status::NOT_ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->enforce_capacity( $not_attending ),
+			'Failed to assert a not attending RSVP is left alone.'
+		);
+
+		delete_post_meta( $post_id, 'gatherpress_capacity' );
+
+		$attending = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->enforce_capacity( $attending ),
+			'Failed to assert an event without a capacity is left alone.'
+		);
+	}
+
+	/**
+	 * Coverage for the helpers that run while holding the event's lock.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity_locked
+	 * @covers ::promote_waiting_list
+	 * @covers ::process_locked
+	 *
+	 * @return void
+	 */
+	public function test_locked_helpers(): void {
+		$post_id = $this->create_event_with_attendee( 1 );
+		$rsvp    = new Rsvp( $post_id );
+		$over    = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $rsvp, 'enforce_capacity_locked', array( $over ) ),
+			'Failed to assert the locked check moves an RSVP over capacity.'
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $rsvp, 'enforce_capacity_locked', array( $over ) ),
+			'Failed to assert the locked check leaves a waiting list RSVP alone.'
+		);
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert nobody is promoted on a full event.'
+		);
+
+		$user_id = $this->factory->user->create();
+		$state   = Utility::invoke_hidden_method(
+			$rsvp,
+			'process_locked',
+			array(
+				new Intent(
+					new Data( new Identity( Identity_Type::WP_USER_ID, $user_id ), Status::ATTENDING ),
+					Provider_Registry::get_instance()->get( 'user' )
+				),
+			)
+		);
+
+		$this->assertSame(
+			Status::WAITING_LIST,
+			$state->data->status,
+			'Failed to assert a new RSVP on a full event goes on the waiting list.'
+		);
+	}
+
+	/**
+	 * Coverage for promote_waiting_list in each case.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::promote_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_promote_waiting_list(): void {
+		$post_id = $this->create_event_with_attendee( 2 );
+		$rsvp    = new Rsvp( $post_id );
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert nobody is promoted from an empty waiting list.'
+		);
+
+		$first  = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1' );
+		$second = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1' );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert one RSVP fills the one free spot.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $first, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the first RSVP on the waiting list is promoted.'
+		);
+
+		Utility::set_and_get_hidden_property( $rsvp, 'capacity', 0 );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert everyone is promoted without a capacity.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $second, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the rest of the waiting list is promoted.'
+		);
+	}
+
+	/**
+	 * Coverage for process_locked when the save removes the RSVP.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_locked
+	 *
+	 * @return void
+	 */
+	public function test_process_locked_without_saved_state(): void {
+		$rsvp    = new Rsvp( $this->create_event_with_attendee( 2 ) );
+		$user_id = $this->factory->user->create();
+
+		$rsvp->save( $user_id, Status::ATTENDING->value );
+
+		$this->assertNull(
+			Utility::invoke_hidden_method(
+				$rsvp,
+				'process_locked',
+				array(
+					new Intent(
+						new Data( new Identity( Identity_Type::WP_USER_ID, $user_id ), Status::NO_STATUS ),
+						Provider_Registry::get_instance()->get( 'user' )
+					),
+				)
+			),
+			'Failed to assert no state is returned when the RSVP is removed.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity when the lock is not granted.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity
+	 * @covers ::move_to_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_without_lock(): void {
+		$post_id    = $this->create_event_with_attendee( 5 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+
+		add_filter(
+			'query',
+			static fn( string $query ): string => str_starts_with( $query, 'SELECT GET_LOCK(' ) ? 'SELECT 0' : $query
+		);
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert the RSVP moves when the count cannot be checked.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert the RSVP waits rather than risk overbooking.'
+		);
+
+		$not_attending = $this->create_rsvp( $post_id, Status::NOT_ATTENDING, '1' );
+
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->enforce_capacity( $not_attending ),
+			'Failed to assert a not attending RSVP is left alone without the lock.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $not_attending, Status::TAXONOMY, Status::NOT_ATTENDING->value ),
+			'Failed to assert a not attending RSVP keeps its status.'
+		);
+	}
+
+	/**
+	 * Coverage for the fallback filling a free spot after it runs.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::fall_back_to_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_waiting_list_fills_free_spot(): void {
+		$post_id    = $this->create_event_with_attendee( 5 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		$denied     = false;
+
+		// Only the capacity check's lock is denied; the waiting list check gets one.
+		add_filter(
+			'query',
+			static function ( string $query ) use ( &$denied ): string {
+				if ( ! $denied && str_starts_with( $query, 'SELECT GET_LOCK(' ) ) {
+					$denied = true;
+
+					return 'SELECT 0';
+				}
+
+				return $query;
+			}
+		);
+
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->enforce_capacity( $comment_id ),
+			'Failed to assert the RSVP moved to the waiting list.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the waiting list check gives the free spot back.'
+		);
+	}
+
+	/**
+	 * Coverage for count_attendees counting anonymous RSVPs and guests for a visitor.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::count_attendees
+	 * @covers ::promote_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_count_attendees_includes_anonymous_rsvps(): void {
+		wp_set_current_user( 0 );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', 1 );
+
+		$anonymous = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		update_comment_meta( $anonymous, Rsvp::ANONYMOUS_META_KEY, 1 );
+		update_comment_meta( $anonymous, 'gatherpress_rsvp_guests', 1 );
+
+		$waiting = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1', $this->factory->user->create() );
+		$rsvp    = new Rsvp( $post_id );
+
+		$this->assertSame(
+			2,
+			Utility::invoke_hidden_method( $rsvp, 'count_attendees' ),
+			'Failed to assert an anonymous RSVP and its guest are counted.'
+		);
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $rsvp, 'promote_waiting_list' ),
+			'Failed to assert nobody is promoted into a seat an anonymous RSVP holds.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $waiting, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert the RSVP stays on the waiting list.'
+		);
+	}
+
+	/**
+	 * Coverage for promote_waiting_list skipping a party that does not fit.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::promote_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_promote_waiting_list_skips_party_that_does_not_fit(): void {
+		$post_id = $this->create_event_with_attendee( 2 );
+		$party   = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1', $this->factory->user->create() );
+		$single  = $this->create_rsvp( $post_id, Status::WAITING_LIST, '1', $this->factory->user->create() );
+
+		update_comment_meta( $party, 'gatherpress_rsvp_guests', 1 );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( new Rsvp( $post_id ), 'promote_waiting_list' ),
+			'Failed to assert only the RSVP that fits is promoted.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $party, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert a party of two does not take the last seat.'
+		);
+		$this->assertTrue(
+			is_object_in_term( $single, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert the RSVP behind it takes the seat.'
+		);
+	}
+
+	/**
+	 * Creates an event with a capacity and one approved attendee.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $capacity The event capacity.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_event_with_attendee( int $capacity ): int {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', $capacity );
+
+		$this->create_rsvp( $post_id, Status::ATTENDING, '1', $this->factory->user->create() );
+
+		return $post_id;
+	}
+
+	/**
+	 * Creates an RSVP comment.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int    $post_id  The event post ID.
+	 * @param Status $status   The RSVP status.
+	 * @param string $approved The comment approval value.
+	 * @param int    $user_id  The user ID, or 0 for someone without an account.
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function create_rsvp( int $post_id, Status $status, string $approved, int $user_id = 0 ): int {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'guest@example.org',
+				'user_id'              => $user_id,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, $status->value, Status::TAXONOMY );
+
+		return $comment_id;
 	}
 }

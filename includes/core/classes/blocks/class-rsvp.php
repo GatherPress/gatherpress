@@ -15,10 +15,12 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_HTML_Processor;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -41,6 +43,24 @@ final class Rsvp {
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp';
+
+	/**
+	 * Query arg the RSVP endpoint adds to its redirect when an RSVP sent without JavaScript fails.
+	 *
+	 * Its value is the event's post ID, so only that event's RSVP blocks show the error.
+	 *
+	 * @since 0.37.0
+	 * @var string
+	 */
+	const ERROR_QUERY_ARG = 'gatherpress_rsvp_error';
+
+	/**
+	 * RSVP blocks rendered so far in this request, counted per event.
+	 *
+	 * @since 0.37.0
+	 * @var array<int, int>
+	 */
+	private array $render_counts = array();
 
 	/**
 	 * Class constructor.
@@ -71,6 +91,8 @@ final class Rsvp {
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
 		// Priority 9 ensures this runs before transform_block_content to properly register form field hooks.
 		add_filter( $render_block_hook, array( $this, 'apply_guests_input_interactivity' ), 9 );
+		// Priority 12 so the RSVP buttons and fields already carry their interactivity attributes.
+		add_filter( $render_block_hook, array( $this, 'submit_rsvp_without_javascript' ), 12, 2 );
 
 		// Add hooks for conditional form field processing.
 		$general_block = General_Block::get_instance();
@@ -90,6 +112,7 @@ final class Rsvp {
 	 * - Adds `data-wp-interactive` attributes for interactivity.
 	 * - Dynamically renders and serializes inner blocks for each RSVP status.
 	 * - Ensures proper markup updates based on the RSVP status and event state.
+	 * - Marks the disabled buttons of the past and canceled templates as unavailable.
 	 *
 	 * @since 0.33.0
 	 *
@@ -150,7 +173,7 @@ final class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier( $post_id );
 			$user_data       = $rsvp->get( $user_identifier ) ?? array();
 
 			$filtered_data   = array_intersect_key(
@@ -159,10 +182,16 @@ final class Rsvp {
 			);
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
-			if ( $event->has_event_past() ) {
-				$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
+			if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
+				$inner_blocks_markup = $this->mark_disabled_buttons(
+					do_blocks( $serialized_inner_blocks['canceled'] ?? $this->get_default_canceled_template() )
+				);
+			} elseif ( $event->has_event_past() ) {
+				$inner_blocks_markup = $this->mark_disabled_buttons(
+					do_blocks( $serialized_inner_blocks['past'] ?? '' )
+				);
 			} else {
-				unset( $serialized_inner_blocks['past'] );
+				unset( $serialized_inner_blocks['past'], $serialized_inner_blocks['canceled'] );
 				// Render inner blocks for all statuses.
 				$inner_blocks_markup = '';
 
@@ -259,7 +288,9 @@ final class Rsvp {
 					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
-				$target_found = $is_actionable_element;
+				// A control marked unavailable by mark_disabled_buttons() stays
+				// out of the Tab order and takes no click handler.
+				$target_found = $is_actionable_element && 'true' !== $tag->get_attribute( 'aria-disabled' );
 
 				// Apply RSVP attributes if target was found.
 				if ( $target_found ) {
@@ -282,6 +313,276 @@ final class Rsvp {
 		}
 
 		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Marks the disabled buttons of a past or canceled event's RSVP template as unavailable.
+	 *
+	 * The default past and canceled templates hold a Button block with the
+	 * `gatherpress--is-disabled` class, which only changes the pointer. The
+	 * button inside still takes keyboard focus and announces itself as an
+	 * operable button that does nothing. This adds `aria-disabled="true"` and
+	 * `tabindex="-1"`, as the plugin does for its other disabled controls, so
+	 * a screen reader announces the button as unavailable and Tab skips it.
+	 * It runs on the rendered markup, so templates already saved in events
+	 * get it too.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string $markup The rendered inner blocks of the RSVP block.
+	 *
+	 * @return string The markup with its disabled buttons marked.
+	 */
+	private function mark_disabled_buttons( string $markup ): string {
+		$processor = WP_HTML_Processor::create_fragment( $markup );
+
+		$controls = array( 'A', 'BUTTON' );
+		// Depths of the disabled elements that enclose the current tag. The
+		// Button block puts the class on a wrapper, so a control can be any
+		// descendant of a disabled element, but never a tag after it.
+		$disabled_depths = array();
+
+		while ( $processor?->next_tag() ) {
+			$depth = $processor->get_current_depth();
+
+			while ( ! empty( $disabled_depths ) && end( $disabled_depths ) >= $depth ) {
+				array_pop( $disabled_depths );
+			}
+
+			$is_disabled = $processor->has_class( 'gatherpress--is-disabled' );
+			$is_control  = in_array( $processor->get_tag(), $controls, true );
+
+			if ( $is_control && ( $is_disabled || ! empty( $disabled_depths ) ) ) {
+				$processor->set_attribute( 'aria-disabled', 'true' );
+				$processor->set_attribute( 'tabindex', '-1' );
+			}
+
+			if ( $is_disabled ) {
+				$disabled_depths[] = $depth;
+			}
+		}
+
+		return $processor?->get_updated_html() ?? $markup;
+	}
+
+	/**
+	 * The canceled template for an RSVP block saved before it had one.
+	 *
+	 * Matches the editor's default canceled template, a disabled button.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @return string The serialized blocks.
+	 */
+	private function get_default_canceled_template(): string {
+		return sprintf(
+			'<!-- wp:buttons {"align":"center","layout":{"type":"flex","justifyContent":"center"}} -->'
+			. '<div class="wp-block-buttons aligncenter">'
+			. '<!-- wp:button {"tagName":"button","className":"gatherpress--is-disabled"} -->'
+			. '<div class="wp-block-button gatherpress--is-disabled">'
+			. '<button type="button" class="wp-block-button__link wp-element-button">%s</button>'
+			. '</div><!-- /wp:button --></div><!-- /wp:buttons -->',
+			esc_html_x( 'Canceled', 'Button label for canceled RSVP', 'gatherpress' )
+		);
+	}
+
+	/**
+	 * Lets the RSVP block save an RSVP when JavaScript is unavailable.
+	 *
+	 * The block gets a hidden POST form for the RSVP REST endpoint, and the
+	 * RSVP buttons and fields join it through their `form` attribute, so the
+	 * markup around them stays as it is. Each button submits the status it
+	 * would send with JavaScript. The endpoint redirects back to this block
+	 * (see `Event\Rest_Api::redirect_rsvp_form_submission()`), which then
+	 * renders the new status. With JavaScript, the click handlers cancel the
+	 * submission.
+	 *
+	 * Logged-out visitors get the Login modal instead, and a past or
+	 * canceled event takes no RSVPs, so none of them gets the form.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string               $block_content The RSVP block's HTML.
+	 * @param array<string, mixed> $block         The parsed block data.
+	 *
+	 * @return string The HTML, able to save an RSVP without JavaScript.
+	 */
+	public function submit_rsvp_without_javascript( string $block_content, array $block ): string {
+		$post_id         = Setup::get_instance()->get_post_id( $block );
+		$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier( $post_id );
+		$tag             = new WP_HTML_Tag_Processor( $block_content );
+		$has_wrapper     = $tag->next_tag();
+
+		if (
+			! $has_wrapper
+			|| ! Utility::is_page_request()
+			|| ! $user_identifier
+			|| ( new Event( $post_id ) )->has_event_past()
+			|| ( new Event_Status( $post_id ) )->is_canceled()
+		) {
+			return $block_content;
+		}
+
+		$this->render_counts[ $post_id ] = ( $this->render_counts[ $post_id ] ?? 0 ) + 1;
+
+		$suffix    = sprintf( '%d-%d', $post_id, $this->render_counts[ $post_id ] );
+		$form_id   = sprintf( 'gatherpress-rsvp-form-%s', $suffix );
+		$user_data = ( new Core_Rsvp( $post_id ) )->get( $user_identifier ) ?? array();
+		$status    = ! empty( $user_data['status'] ) ? (string) $user_data['status'] : 'no_status';
+		$anchor    = $tag->get_attribute( 'id' );
+
+		// A valueless attribute reads back as true.
+		if ( ! is_string( $anchor ) || '' === trim( $anchor ) ) {
+			$anchor = sprintf( 'gatherpress-rsvp-%s', $suffix );
+
+			$tag->set_attribute( 'id', $anchor );
+		}
+
+		$in_current_status = false;
+
+		// Every status container has its own copy of the fields, and a form submits
+		// hidden fields too, so only the shown container's elements join the form.
+		while ( $tag->next_tag() ) {
+			$container_status = $tag->get_attribute( 'data-rsvp-status' );
+
+			if ( is_string( $container_status ) ) {
+				$in_current_status = $status === $container_status;
+			} elseif ( $in_current_status ) {
+				$this->join_rsvp_form( $tag, $form_id, $status, $user_data );
+			}
+		}
+
+		$block_content = $tag->get_updated_html();
+		$markup        = $this->get_rsvp_form( $form_id, $post_id, $status, $anchor );
+
+		if ( Utility::get_http_input( INPUT_GET, self::ERROR_QUERY_ARG ) === (string) $post_id ) {
+			$markup .= sprintf(
+				'<p class="gatherpress-rsvp__notice" role="alert">%s</p>',
+				esc_html__( 'Your RSVP could not be saved. Please try again.', 'gatherpress' )
+			);
+		}
+
+		// The block's opening tag ends at its first `>`; the processor escapes any inside attribute values.
+		return substr_replace( $block_content, $markup, (int) strpos( $block_content, '>' ) + 1, 0 );
+	}
+
+	/**
+	 * Connects one element of the RSVP block to its no-JavaScript form.
+	 *
+	 * - An RSVP button submits the status its `data-set-status` names, or
+	 *   the one it toggles to: Attending from no status or Not Attending,
+	 *   otherwise Not Attending, as the view script does.
+	 * - A close button submits the current status, so a guest count or
+	 *   anonymity change is saved. With JavaScript those save as they are
+	 *   made. Before the visitor has an RSVP, closing saves nothing.
+	 * - The guest count and anonymity fields join the form, showing the
+	 *   saved values.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param WP_HTML_Tag_Processor $tag       Processor positioned on the element.
+	 * @param string                $form_id   The id of the RSVP block's form.
+	 * @param string                $status    The visitor's current RSVP status.
+	 * @param array<string, mixed>  $user_data The visitor's saved RSVP.
+	 *
+	 * @return void
+	 */
+	private function join_rsvp_form(
+		WP_HTML_Tag_Processor $tag,
+		string $form_id,
+		string $status,
+		array $user_data
+	): void {
+		$is_button  = 'BUTTON' === $tag->get_tag();
+		$field_name = $tag->get_attribute( 'name' );
+
+		if ( $is_button && 'actions.updateRsvp' === $tag->get_attribute( 'data-wp-on--click' ) ) {
+			$set_status = $tag->get_attribute( 'data-set-status' );
+			$is_out     = in_array( $status, array( 'no_status', 'not_attending' ), true );
+			$new_status = $is_out ? 'attending' : 'not_attending';
+
+			if ( is_string( $set_status ) && '' !== $set_status ) {
+				$new_status = $set_status;
+			}
+
+			$this->submit_rsvp_status( $tag, $form_id, $new_status );
+		} elseif ( $is_button && 'no_status' !== $status && null !== $tag->get_attribute( 'data-close-modal' ) ) {
+			$this->submit_rsvp_status( $tag, $form_id, $status );
+		} elseif ( 'gatherpress_rsvp_guests' === $field_name ) {
+			$tag->set_attribute( 'form', $form_id );
+			$tag->set_attribute( 'value', (string) intval( $user_data['guests'] ?? 0 ) );
+		} elseif ( 'gatherpress_rsvp_anonymous' === $field_name ) {
+			$tag->set_attribute( 'form', $form_id );
+			$tag->set_attribute( 'checked', ! empty( $user_data['anonymous'] ) );
+		}
+	}
+
+	/**
+	 * Makes a button submit the RSVP block's form with the given status.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param WP_HTML_Tag_Processor $tag     Processor positioned on the button.
+	 * @param string                $form_id The id of the RSVP block's form.
+	 * @param string                $status  The RSVP status to submit.
+	 *
+	 * @return void
+	 */
+	private function submit_rsvp_status( WP_HTML_Tag_Processor $tag, string $form_id, string $status ): void {
+		$tag->set_attribute( 'type', 'submit' );
+		$tag->set_attribute( 'form', $form_id );
+		$tag->set_attribute( 'name', 'status' );
+		$tag->set_attribute( 'value', $status );
+	}
+
+	/**
+	 * Builds the hidden form the RSVP block posts to the RSVP REST endpoint.
+	 *
+	 * The endpoint redirects back to the block's id, with the modal closed.
+	 * A logged-in visitor sends the REST nonce; a magic-link session is
+	 * authorized by its cookie, as it is with JavaScript.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string $form_id The form's id.
+	 * @param int    $post_id The event's post ID.
+	 * @param string $status  The visitor's current RSVP status.
+	 * @param string $anchor  The RSVP block's id.
+	 *
+	 * @return string The form's HTML.
+	 */
+	private function get_rsvp_form( string $form_id, int $post_id, string $status, string $anchor ): string {
+		$fields = array(
+			'post_id'              => (string) $post_id,
+			'gatherpress_redirect' => Utility::get_current_url(
+				array( Modal_Manager::OPEN_QUERY_ARG, self::ERROR_QUERY_ARG )
+			) . '#' . $anchor,
+		);
+
+		if ( is_user_logged_in() ) {
+			$fields['_wpnonce'] = wp_create_nonce( 'wp_rest' );
+		}
+
+		$html = '';
+
+		// Enter in the guest count submits the form's first button, which keeps the current status.
+		if ( 'no_status' !== $status ) {
+			$html .= sprintf(
+				'<button type="submit" name="status" value="%s" tabindex="-1"></button>',
+				esc_attr( $status )
+			);
+		}
+
+		foreach ( $fields as $name => $value ) {
+			$html .= sprintf( '<input type="hidden" name="%s" value="%s">', esc_attr( $name ), esc_attr( $value ) );
+		}
+
+		return sprintf(
+			'<form id="%s" method="post" action="%s" hidden>%s</form>',
+			esc_attr( $form_id ),
+			esc_url( rest_url( sprintf( '%s/event/rsvp', GATHERPRESS_REST_NAMESPACE ) ) ),
+			$html
+		);
 	}
 
 	/**
@@ -378,6 +679,10 @@ final class Rsvp {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
+					// The nonce is fetched on focus. The count is saved a moment after its last change,
+					// or at once when the field loses focus.
+					$tag->set_attribute( 'data-wp-on--focus', 'actions.prepareGuestCount' );
+					$tag->set_attribute( 'data-wp-on--blur', 'actions.saveGuestCount' );
 					$tag->set_attribute( 'max', (string) $guest_limit );
 				}
 			}

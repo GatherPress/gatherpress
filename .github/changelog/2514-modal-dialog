@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Modals now open as the browser's own dialog, so the browser keeps keyboard focus inside an open modal, hides the page behind it from assistive technology, and closes it on Escape.

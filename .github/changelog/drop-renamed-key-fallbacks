@@ -1,0 +1,4 @@
+Significance: minor
+Type: removed
+
+Remove the fallbacks that let the pre-0.36.0 setting and event meta names keep answering. A site that has not re-saved its settings since 0.36.0, or an event whose meta was never rewritten, should run GatherPress Alpha's migration before updating. The former meta names are also no longer registered, so a REST consumer still reading `gatherpress_max_attendance_limit` or `gatherpress_max_guest_limit` needs to move to `gatherpress_capacity` and `gatherpress_guest_limit`.

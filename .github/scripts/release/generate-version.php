@@ -14,7 +14,8 @@
  *
  * Requires a credits file for the target version at
  * .github/scripts/release/credits/<version>.json (add it there first — a
- * stable version's file is a copy of its latest pre-release file).
+ * stable version's file is a copy of its latest pre-release file). A patch
+ * version with no file starts from the previous patch's file.
  *
  * Unlike the old tooling, README.md and readme.txt are hand-edited files —
  * this script only patches the strings that change per release, in place:
@@ -27,6 +28,8 @@
  *   - SECURITY.md                 supported-versions table (core + alpha)
  *   - ../gatherpress-alpha/gatherpress-alpha.php  lockstep Version: header
  *                                 (skipped with a warning when not checked out)
+ *   - ../gatherpress-alpha/.github/changelog/sync-X-Y-Z  for a stable version,
+ *                                 when Alpha has no changelog entries
  *
  * @package GatherPress
  *
@@ -218,6 +221,38 @@ function fold_unreleased_credits( $entry, $credits_file, $version ) {
 }
 
 /**
+ * Start a patch version's credits file from the version before it.
+ *
+ * A patch's file is a copy of the previous release's (X.Y.0 for X.Y.1),
+ * with contributors folded in from credits/unreleased.json as for any bump.
+ * Other versions still need their file added by hand.
+ *
+ * @since TBD
+ *
+ * @param string $version      The plugin version.
+ * @param string $credits_file Absolute path to the version's credits file.
+ * @return void
+ */
+function copy_previous_patch_credits( $version, $credits_file ) {
+	if ( ! preg_match( '/^(\d+\.\d+)\.(\d+)$/', $version, $matches ) || 0 === (int) $matches[2] ) {
+		return;
+	}
+
+	$previous      = $matches[1] . '.' . ( (int) $matches[2] - 1 );
+	$previous_file = SCRIPT_ROOT . "/credits/{$previous}.json";
+
+	if ( ! file_exists( $previous_file ) ) {
+		return;
+	}
+
+	if ( ! copy( $previous_file, $credits_file ) ) {
+		fail( "Failed to copy credits/{$previous}.json to credits/{$version}.json." );
+	}
+
+	success( "Started credits/{$version}.json from credits/{$previous}.json." );
+}
+
+/**
  * Generate includes/data/credits.php from the source credits entry.
  *
  * @param string $version The plugin version.
@@ -227,6 +262,10 @@ function generate_credits( $version ) {
 	$credits_file = SCRIPT_ROOT . "/credits/{$version}.json";
 	$latest       = REPO_ROOT . '/includes/data/credits.php';
 	$data         = array();
+
+	if ( ! file_exists( $credits_file ) ) {
+		copy_previous_patch_credits( $version, $credits_file );
+	}
 
 	if ( ! file_exists( $credits_file ) ) {
 		fail( "No credits file for {$version} — add .github/scripts/release/credits/{$version}.json first." );
@@ -473,6 +512,51 @@ function patch_security_table( $file, $major_minor, $label ) {
 	);
 }
 
+/**
+ * Add GatherPress Alpha's sync changelog entry for a stable version.
+ *
+ * Alpha's release rolls up its changelog entries into the release notes, and
+ * fails when there are none. A core release with no Alpha changes leaves Alpha
+ * with no entries, so this adds the one entry that says Alpha tracks the
+ * release. A branch that already has entries is left alone, and so is a
+ * pre-release, which Alpha releases with whatever entries its develop has.
+ *
+ * @param string $alpha_dir Absolute path to the GatherPress Alpha checkout.
+ * @param string $version   The version being generated.
+ * @return void
+ */
+function add_alpha_sync_entry( $alpha_dir, $version ) {
+	if ( preg_match( '/-(alpha|beta)\./', $version ) ) {
+		return;
+	}
+
+	$changelog_dir = $alpha_dir . '/.github/changelog';
+
+	if ( ! is_dir( $changelog_dir ) ) {
+		warning( 'GatherPress Alpha has no .github/changelog directory; skipping its sync entry.' );
+
+		return;
+	}
+
+	// glob() skips dotfiles, so the directory's .gitkeep does not count.
+	if ( glob( $changelog_dir . '/*' ) ) {
+		success( 'GatherPress Alpha already has changelog entries; no sync entry needed.' );
+
+		return;
+	}
+
+	$kind = preg_match( '/^\d+\.\d+\.0$/', $version ) ? 'release' : 'patch release';
+	$file = $changelog_dir . '/sync-' . str_replace( '.', '-', $version );
+	$body = "Significance: patch\nType: changed\n\n"
+		. "Track the GatherPress {$version} {$kind}, which the plugin is version-locked to.\n";
+
+	if ( file_put_contents( $file, $body ) === false ) {
+		fail( "Could not write {$file}." );
+	}
+
+	success( 'Added the GatherPress Alpha sync changelog entry.' );
+}
+
 // ---------------------------------------------------------------------------
 // Main.
 // ---------------------------------------------------------------------------
@@ -546,6 +630,7 @@ if ( is_dir( $alpha_dir ) ) {
 		'GatherPress Alpha Version header'
 	);
 	patch_security_table( $alpha_dir . '/SECURITY.md', $major_minor, 'alpha' );
+	add_alpha_sync_entry( $alpha_dir, $version );
 } else {
 	warning(
 		'GatherPress Alpha plugin not found alongside core; skipping alpha version sync. '

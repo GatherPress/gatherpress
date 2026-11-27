@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+When the RSVP Form cannot get a security token from the site, it now submits the RSVP the regular way without first showing an error message.

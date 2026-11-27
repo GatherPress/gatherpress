@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The venue address field no longer drops the first characters you type or paste right after you click or tab into it. The field still keeps the browser from offering saved addresses when it gets focus.

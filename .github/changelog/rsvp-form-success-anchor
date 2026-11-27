@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+After an RSVP is submitted without JavaScript, the page now scrolls to the RSVP Form's success message instead of staying at the top.

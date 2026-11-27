@@ -45,7 +45,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:308](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L308)
+- [includes/core/classes/class-geocoding.php:318](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L318)
 ```php
 apply_filters(
 			'gatherpress_async_geocode_pre_enqueue_job',

@@ -39,10 +39,13 @@ hand-edited file — improve them like any other file, no regeneration step.
    `credits/X.Y.Z.json` is a copy of its latest pre-release file, with any
    roster corrections applied to the pre-release file first. Group order in
    the generated output is fixed (leads, team, contributors) regardless of
-   the file's key order.
+   the file's key order. A patch version can skip this step: with no file,
+   the bump starts one from the previous patch's file.
 2. Either run the **Version Bump** workflow (Actions → Version Bump → enter
    the version) — it bumps everything, refreshes the lockfile, and opens the
-   `version-X.Y.Z` PR against develop — or run locally:
+   `version-X.Y.Z` PR against develop; with the patch branch as the branch,
+   it commits onto that branch and opens its release PR to main — or run
+   locally:
 
     ```bash
     npm run version:bump -- --version=0.35.0

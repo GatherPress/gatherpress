@@ -18,12 +18,10 @@ use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
-use PasswordHash;
 use PMC\Unit_Test\Utility;
 use ReflectionClass;
 use WP_Error;
 use WP_Post;
-use WP_REST_Request;
 use WP_Term;
 
 /**
@@ -201,6 +199,34 @@ class Test_Event extends Base {
 		);
 
 		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * A start-only display has no end, and no time zone when the block turns it off.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts_start_only_without_timezone(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$parts = $event->get_display_datetime_parts( 'start', '', '', '', 'no' );
+
+		$this->assertNotEmpty( $parts['start'], 'Failed to assert the start is shown.' );
+		$this->assertFalse( $parts['end'], 'Failed to assert a start-only display has no end.' );
+		$this->assertFalse( $parts['separator'], 'Failed to assert there is no separator without an end.' );
+		$this->assertFalse( $parts['timezone'], 'Failed to assert the block can turn the time zone off.' );
 	}
 
 	/**
@@ -2338,65 +2364,6 @@ class Test_Event extends Base {
 
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 		$this->assertTrue( Event::can_read_rsvps( $post_id ), 'A viewer who can edit the event sees the roster.' );
-
-		wp_set_current_user( 0 );
-	}
-
-	/**
-	 * A post password keeps an event's details from a viewer until they have the
-	 * password, as a cookie or a REST argument, or can edit the event.
-	 *
-	 * @since 0.36.1
-	 *
-	 * @covers ::is_hidden_by_password
-	 *
-	 * @return void
-	 */
-	public function test_is_hidden_by_password(): void {
-		$protected = get_post(
-			$this->factory->post->create(
-				array(
-					'post_type'     => Event::POST_TYPE,
-					'post_password' => 'secret',
-				)
-			)
-		);
-		$open      = get_post( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
-		$request   = static function ( string $password ): WP_REST_Request {
-			$request = new WP_REST_Request( 'GET', '/wp/v2/gatherpress_events' );
-
-			$request->set_param( 'password', $password );
-
-			return $request;
-		};
-
-		wp_set_current_user( 0 );
-
-		$this->assertTrue( Event::is_hidden_by_password( $protected ), 'A protected event is hidden.' );
-		$this->assertTrue(
-			Event::is_hidden_by_password( $protected, $request( 'wrong' ) ),
-			'A wrong REST password keeps it hidden.'
-		);
-		$this->assertFalse(
-			Event::is_hidden_by_password( $protected, $request( 'secret' ) ),
-			'The REST password shows it.'
-		);
-		$this->assertFalse( Event::is_hidden_by_password( $open ), 'An open event is never hidden.' );
-
-		require_once ABSPATH . WPINC . '/class-phpass.php';
-
-		// The cookie WordPress sets once a viewer enters the post password.
-		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
-
-		$with_cookie = Event::is_hidden_by_password( $protected );
-
-		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
-
-		$this->assertFalse( $with_cookie, 'The password cookie shows it.' );
-
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
-
-		$this->assertFalse( Event::is_hidden_by_password( $protected ), 'An Editor sees it.' );
 
 		wp_set_current_user( 0 );
 	}

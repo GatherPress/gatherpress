@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The RSVP settings tab and the RSVP block placeholder now have their own translation contexts, so languages that use different words for them, such as French ("Réservations" for the tab, "Réserver" for the action), can translate each one correctly. The RSVP list table in the admin keeps its styles in every language.

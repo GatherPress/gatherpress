@@ -9,14 +9,19 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Check_In_Controls;
 use GatherPress\Core\Rsvp\Flag\Check_In;
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
+use GatherPress\Core\Rsvp\Flag\No_Show;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
+use GatherPress\Tests\Core\Rsvp\Flag\Test_Checked_In_Online;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 use WP_Screen;
 
 /**
@@ -96,6 +101,36 @@ class Test_List_Table extends Base {
 			$list_table,
 			'Failed to assert instance is List_Table.'
 		);
+	}
+
+	/**
+	 * The table's `plural` and `singular` arguments are untranslated slugs,
+	 * because `WP_List_Table` turns them into the table's CSS classes and the
+	 * bulk-action nonce: a translated "RSVPs" would lose the
+	 * `.wp-list-table.rsvps` admin styles in other languages (#2583).
+	 *
+	 * @since 0.37.0
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_uses_untranslated_slugs(): void {
+		$translate = static function ( string $translation, string $text, string $domain ): string {
+			if ( 'gatherpress' === $domain && in_array( $text, array( 'RSVP', 'RSVPs' ), true ) ) {
+				return 'Réservations';
+			}
+
+			return $translation;
+		};
+
+		add_filter( 'gettext', $translate, 10, 3 );
+
+		$args = Utility::get_hidden_property( new List_Table(), '_args' );
+
+		remove_filter( 'gettext', $translate, 10 );
+
+		$this->assertSame( 'rsvps', $args['plural'], 'Failed to assert the plural argument is the rsvps slug.' );
+		$this->assertSame( 'rsvp', $args['singular'], 'Failed to assert the singular argument is the rsvp slug.' );
 	}
 
 	/**
@@ -643,27 +678,11 @@ class Test_List_Table extends Base {
 			$attendee_col,
 			'Failed to assert attendee column does not contain Approve action for approved RSVP.'
 		);
-		$this->assertStringContainsString(
-			'>Check in<',
-			$attendee_col,
-			'Failed to assert attendee column contains Check in action for approved, not checked-in RSVP.'
-		);
-
-		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->add();
-		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
-
-		$this->assertStringContainsString(
-			'>Not Checked In<',
-			$attendee_col,
-			'Failed to assert attendee column contains Not Checked In action for approved, checked-in RSVP.'
-		);
 		$this->assertStringNotContainsString(
-			'>Check in<',
+			'check_in',
 			$attendee_col,
-			'Failed to assert attendee column does not contain Check in action for already checked-in RSVP.'
+			'Failed to assert check-in moved out of the row actions, to the Check-in column.'
 		);
-
-		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->remove();
 	}
 
 	/**
@@ -913,7 +932,7 @@ class Test_List_Table extends Base {
 	public function test_process_bulk_action_empty_ids(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		// Don't set any rsvp_ids - they'll be empty.
 
 		// Should not throw any errors.
@@ -926,26 +945,71 @@ class Test_List_Table extends Base {
 	}
 
 	/**
-	 * The checked-in column reports a dash until the RSVP has been checked in,
-	 * then the arrival time in the site's timezone.
+	 * The check-in column shows the state's icon and name. An approved RSVP's
+	 * cell is the dropdown's toggle and carries what the dropdown needs; another
+	 * shows its state read-only, or a dash without one.
 	 *
 	 * @covers ::column_default
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::render_cell
 	 *
 	 * @return void
 	 */
 	public function test_column_default_checked_in(): void {
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		$this->rsvp['comment_approved'] = '1';
+
+		$cell = $this->list_table->column_default( $this->rsvp, 'checked_in' );
+
+		$this->assertStringContainsString( sprintf( 'data-rsvp-id="%d"', $rsvp_id ), $cell );
+		$this->assertStringContainsString( 'data-state="not-recorded"', $cell );
+		$this->assertStringContainsString(
+			sprintf( 'data-attendee="%s"', esc_attr( $this->rsvp['comment_author'] ) ),
+			$cell,
+			'Failed to assert the dropdown is named for the attendee.'
+		);
+		$this->assertStringContainsString(
+			'class="components-button is-compact is-tertiary has-text has-icon">' .
+			'<span class="dashicon dashicons dashicons-minus" aria-hidden="true"></span>Not recorded</button>',
+			$cell,
+			'Failed to assert the toggle shows the icon and name, as the dropdown renders it.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'aria-label="Check-in for %s: Not recorded"', esc_attr( $this->rsvp['comment_author'] ) ),
+			$cell,
+			'Failed to assert the toggle is named for the attendee.'
+		);
+
+		( new No_Show( $rsvp_id ) )->add();
+
+		$this->assertStringContainsString(
+			'No-show</button>',
+			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
+			'Failed to assert the column shows No-show.'
+		);
+
+		$this->rsvp['comment_approved'] = '0';
+
+		$cell = $this->list_table->column_default( $this->rsvp, 'checked_in' );
+
+		$this->assertStringContainsString(
+			'<span class="dashicon dashicons dashicons-no-alt" aria-hidden="true"></span><span>No-show</span>',
+			$cell,
+			'Failed to assert a pending RSVP shows its state.'
+		);
+		$this->assertStringNotContainsString( '<button', $cell, 'Failed to assert a pending RSVP gets no toggle.' );
+		$this->assertStringNotContainsString(
+			'data-rsvp-id',
+			$cell,
+			'Failed to assert a pending RSVP gets no dropdown.'
+		);
+
+		Check_In_Registry::get_instance()->clear( $rsvp_id );
+
 		$this->assertSame(
 			'-',
 			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
-			'Failed to assert checked-in column shows a dash before check-in.'
-		);
-
-		( new Check_In( (int) $this->rsvp['comment_ID'] ) )->add();
-
-		$this->assertSame(
-			__( 'Yes', 'gatherpress' ),
-			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
-			'Failed to assert checked-in column shows Yes after check-in.'
+			'Failed to assert a pending RSVP without a record shows a dash.'
 		);
 	}
 
@@ -953,6 +1017,7 @@ class Test_List_Table extends Base {
 	 * The check-in bulk actions are offered alongside the moderation ones.
 	 *
 	 * @covers ::get_bulk_actions
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_actions
 	 *
 	 * @return void
 	 */
@@ -961,52 +1026,126 @@ class Test_List_Table extends Base {
 
 		$actions = $this->list_table->get_bulk_actions();
 
-		$this->assertArrayHasKey(
-			'check_in',
-			$actions,
-			'Failed to assert bulk actions contain check_in.'
-		);
-		$this->assertArrayHasKey(
-			'uncheck_in',
-			$actions,
-			'Failed to assert bulk actions contain uncheck_in.'
-		);
+		$this->assertSame( 'Check in', $actions['check_in-checked-in'] ?? null );
+		$this->assertSame( 'Mark as no-show', $actions['check_in-no-show'] ?? null );
+		$this->assertSame( 'Clear check-in', $actions['clear_check_in'] ?? null );
 	}
 
 	/**
-	 * The check-in bulk actions record and remove an arrival.
+	 * A check-in state a plugin registers shows in the column, actions and filter.
 	 *
-	 * @covers ::process_bulk_action
+	 * @covers ::column_default
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::render_cell
+	 * @covers ::get_bulk_actions
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_actions
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
 	 *
 	 * @return void
 	 */
-	public function test_process_bulk_action_check_in_and_uncheck_in(): void {
+	public function test_a_registered_check_in_state_reaches_the_screen(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$rsvp_id  = (int) $this->rsvp['comment_ID'];
-		$check_in = new Check_In( $rsvp_id );
+		$registry   = Check_In_Registry::get_instance();
+		$registered = $registry->get_all();
+		$rsvp_id    = (int) $this->rsvp['comment_ID'];
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$registry->register( Test_Checked_In_Online::class );
+
+		$this->rsvp['comment_approved'] = '1';
+
+		$this->assertSame(
+			'Check in online',
+			$this->list_table->get_bulk_actions()['check_in-checked-in-online'] ?? null,
+			'Failed to assert the state has a bulk action.'
+		);
+		$this->assertContains(
+			'checked-in-online',
+			wp_list_pluck( $registry->get_options(), 'value' ),
+			'Failed to assert the filter and dropdown offer the state.'
+		);
+
+		Check_In_Controls::apply_action( $rsvp_id, 'check_in-checked-in-online' );
+
+		$this->assertStringContainsString(
+			'dashicons-laptoponclickalert1" aria-hidden="true"></span>Checked in online</button>',
+			$this->list_table->column_default( $this->rsvp, 'checked_in' ),
+			'Failed to assert the column shows the state.'
+		);
+
+		$registry->clear( $rsvp_id );
+		Utility::set_and_get_hidden_property( $registry, 'states', $registered );
+	}
+
+	/**
+	 * The check-in bulk actions skip an RSVP that is not approved, as the route does.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_skips_check_in_for_unapproved_rsvps(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'hold' );
+
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
-		$_REQUEST['action']              = 'check_in';
+		$_REQUEST['action']              = 'check_in-no-show';
 
 		$this->list_table->process_bulk_action();
 
-		$this->assertTrue(
-			$check_in->has(),
-			'Failed to assert the check_in bulk action records an arrival.'
+		$this->assertNull(
+			Check_In_Registry::get_instance()->get_state( $rsvp_id ),
+			'Failed to assert a pending RSVP is not marked as a no-show.'
 		);
 
-		$_REQUEST['action'] = 'uncheck_in';
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
 
-		$this->list_table->process_bulk_action();
+	/**
+	 * The check-in bulk actions set each check-in state.
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_actions
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_sets_the_check_in_state(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$this->assertFalse(
-			$check_in->has(),
-			'Failed to assert the uncheck_in bulk action removes the arrival.'
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+
+		$expected = array(
+			'check_in-checked-in' => 'checked-in',
+			'check_in-no-show'    => 'no-show',
+			'check_in-unknown'    => 'no-show',
+			'clear_check_in'      => null,
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+		foreach ( $expected as $action => $slug ) {
+			$_REQUEST['action'] = $action;
+
+			$this->list_table->process_bulk_action();
+
+			$state = Check_In_Registry::get_instance()->get_state( $rsvp_id );
+
+			$this->assertSame(
+				$slug,
+				null === $state ? null : $state::SLUG,
+				sprintf( 'Failed to assert the %s bulk action sets its state.', $action )
+			);
+		}
+
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1028,8 +1167,8 @@ class Test_List_Table extends Base {
 
 		// Derive the bulk nonce the same way process_bulk_action() does, so the
 		// test stays honest if the list table's plural arg ever changes.
-		$plural                          = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
-		$_REQUEST['_wpnonce']            = wp_create_nonce( sprintf( 'bulk-%s', $plural ) );
+		$plural = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( sprintf( 'bulk-%s', $plural ) ) ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 		$_REQUEST['action']              = 'unapprove';
 
@@ -1041,7 +1180,7 @@ class Test_List_Table extends Base {
 			'Failed to assert the core bulk nonce authorizes a bulk action.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1058,7 +1197,7 @@ class Test_List_Table extends Base {
 
 		wp_set_comment_status( $rsvp_id, 'approve' );
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( 'something-else' );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( 'something-else' ) ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 		$_REQUEST['action']              = 'unapprove';
 
@@ -1070,7 +1209,7 @@ class Test_List_Table extends Base {
 			'Failed to assert an unrelated nonce is refused.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1081,7 +1220,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 
 		$views = $this->list_table->get_views();
 
@@ -1250,7 +1389,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'approve';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1263,7 +1402,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was approved.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1284,7 +1423,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'unapprove';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1297,7 +1436,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was unapproved.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1318,7 +1457,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'spam';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1331,7 +1470,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was marked as spam.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1352,7 +1491,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'unspam';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1365,7 +1504,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was unmarked as spam.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1386,7 +1525,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( 'gatherpress_rsvp_action' );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( 'gatherpress_rsvp_action' ) ) );
 		$_REQUEST['action']              = 'delete';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1398,7 +1537,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was deleted.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1419,7 +1558,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'approve';
 		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_id;
 
@@ -1432,7 +1571,7 @@ class Test_List_Table extends Base {
 			'Failed to assert single RSVP ID was processed.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1453,7 +1592,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
 		$_REQUEST['action']              = 'approve';
 		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
 
@@ -1466,7 +1605,7 @@ class Test_List_Table extends Base {
 			'Failed to assert RSVP was not processed without capability.'
 		);
 
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
 	}
 
 	/**
@@ -1476,8 +1615,12 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_with_post_id(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['post_id']  = $this->post_id;
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'post_id'  => $this->post_id,
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
@@ -1490,8 +1633,6 @@ class Test_List_Table extends Base {
 			$views,
 			'Failed to assert views contain all with post_id filter.'
 		);
-
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -1504,8 +1645,12 @@ class Test_List_Table extends Base {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['user_id']  = $user_id;
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'user_id'  => $user_id,
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
@@ -1518,8 +1663,6 @@ class Test_List_Table extends Base {
 			$views,
 			'Failed to assert views contain all with user_id filter.'
 		);
-
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['user_id'] );
 	}
 
 	/**
@@ -1549,14 +1692,16 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_with_status_filter(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['status']   = 'attending';
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'status'   => 'attending',
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
 		$this->assertIsArray( $views, 'Failed to assert get_views returns an array with status filter.' );
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1568,9 +1713,9 @@ class Test_List_Table extends Base {
 	public function test_process_bulk_action_delete_with_invalid_nonce(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
+		$this->set_url_params( array( '_wpnonce' => 'invalid_nonce' ) );
 		$_REQUEST['gatherpress_rsvp_id'] = array( $this->rsvp['comment_ID'] );
 		$_REQUEST['action']              = 'delete';
-		$_REQUEST['_wpnonce']            = 'invalid_nonce';
 
 		$this->list_table->process_bulk_action();
 
@@ -1578,7 +1723,7 @@ class Test_List_Table extends Base {
 		$comment = get_comment( $this->rsvp['comment_ID'] );
 		$this->assertNotNull( $comment, 'Failed to assert comment still exists after delete with invalid nonce.' );
 
-		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'], $_REQUEST['_wpnonce'] );
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
 	}
 
 	/**
@@ -1592,7 +1737,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['s'] = 'Test';
+		$this->set_url_params( array( 's' => 'Test' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1600,8 +1745,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with search.'
 		);
-
-		unset( $_REQUEST['s'] );
 	}
 
 	/**
@@ -1615,7 +1758,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['s'] = '192.168.1.1';
+		$this->set_url_params( array( 's' => '192.168.1.1' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1623,8 +1766,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with IP search.'
 		);
-
-		unset( $_REQUEST['s'] );
 	}
 
 	/**
@@ -1639,7 +1780,7 @@ class Test_List_Table extends Base {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$_REQUEST['user_id'] = $user_id;
+		$this->set_url_params( array( 'user_id' => $user_id ) );
 
 		$this->list_table->prepare_items();
 
@@ -1647,8 +1788,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with user_id filter.'
 		);
-
-		unset( $_REQUEST['user_id'] );
 	}
 
 	/**
@@ -1662,7 +1801,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['post_id'] = $this->event_id;
+		$this->set_url_params( array( 'post_id' => $this->event_id ) );
 
 		$this->list_table->prepare_items();
 
@@ -1670,8 +1809,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with post_id filter.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -1685,7 +1822,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['status'] = 'approved';
+		$this->set_url_params( array( 'status' => 'approved' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1693,8 +1830,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with approved status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1708,7 +1843,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['status'] = 'pending';
+		$this->set_url_params( array( 'status' => 'pending' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1716,8 +1851,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with pending status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1731,7 +1864,7 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['status'] = 'spam';
+		$this->set_url_params( array( 'status' => 'spam' ) );
 
 		$this->list_table->prepare_items();
 
@@ -1739,8 +1872,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with spam status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1754,8 +1885,12 @@ class Test_List_Table extends Base {
 		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		$_REQUEST['orderby'] = 'comment_author';
-		$_REQUEST['order']   = 'ASC';
+		$this->set_url_params(
+			array(
+				'orderby' => 'comment_author',
+				'order'   => 'ASC',
+			)
+		);
 
 		$this->list_table->prepare_items();
 
@@ -1763,8 +1898,6 @@ class Test_List_Table extends Base {
 			$this->list_table->items,
 			'Failed to assert items is an array after prepare_items with custom order.'
 		);
-
-		unset( $_REQUEST['orderby'], $_REQUEST['order'] );
 	}
 
 	/**
@@ -1822,7 +1955,7 @@ class Test_List_Table extends Base {
 	public function test_get_rsvp_count_with_user_id_filter(): void {
 		$user_id = $this->factory->user->create();
 
-		$_REQUEST['user_id'] = $user_id;
+		$this->set_url_params( array( 'user_id' => $user_id ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1833,8 +1966,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with user_id filter.'
 		);
-
-		unset( $_REQUEST['user_id'] );
 	}
 
 	/**
@@ -1844,7 +1975,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_search(): void {
-		$_REQUEST['s'] = 'test search';
+		$this->set_url_params( array( 's' => 'test search' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1855,8 +1986,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with search.'
 		);
-
-		unset( $_REQUEST['s'] );
 	}
 
 	/**
@@ -1866,7 +1995,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_post_id_filter(): void {
-		$_REQUEST['post_id'] = $this->event_id;
+		$this->set_url_params( array( 'post_id' => $this->event_id ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1877,8 +2006,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with post_id filter.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -1888,7 +2015,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_approved_status(): void {
-		$_REQUEST['status'] = 'approved';
+		$this->set_url_params( array( 'status' => 'approved' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1899,8 +2026,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with approved status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1910,7 +2035,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_spam_status(): void {
-		$_REQUEST['status'] = 'spam';
+		$this->set_url_params( array( 'status' => 'spam' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1921,8 +2046,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with spam status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1934,7 +2057,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvp_count_with_pending_status(): void {
-		$_REQUEST['status'] = 'pending';
+		$this->set_url_params( array( 'status' => 'pending' ) );
 
 		$count = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1945,8 +2068,6 @@ class Test_List_Table extends Base {
 			$count,
 			'Failed to assert get_rsvp_count returns an integer with pending status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -1958,8 +2079,12 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_with_valid_post_id_filter(): void {
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
-		$_REQUEST['post_id']  = $this->event_id;
+		$this->set_url_params(
+			array(
+				'_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ),
+				'post_id'  => $this->event_id,
+			)
+		);
 
 		$views = $this->list_table->get_views();
 
@@ -1974,8 +2099,6 @@ class Test_List_Table extends Base {
 			$views['all'],
 			'Failed to assert all view contains post_id parameter.'
 		);
-
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -1987,7 +2110,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_rsvps_with_pending_status(): void {
-		$_REQUEST['status'] = 'pending';
+		$this->set_url_params( array( 'status' => 'pending' ) );
 
 		$result = Utility::invoke_hidden_method(
 			$this->list_table,
@@ -1999,8 +2122,6 @@ class Test_List_Table extends Base {
 			$result,
 			'Failed to assert get_rsvps returns an array with pending status filter.'
 		);
-
-		unset( $_REQUEST['status'] );
 	}
 
 	/**
@@ -2229,15 +2350,13 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_post_id_reads_post_id(): void {
-		$_REQUEST['post_id'] = (string) $this->event_id;
+		$this->set_url_params( array( 'post_id' => (string) $this->event_id ) );
 
 		$this->assertSame(
 			$this->event_id,
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_post_id' ),
 			'Failed to assert the requested event is read from post_id.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -2267,16 +2386,14 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_responses_ignores_a_non_string(): void {
-		// `response[]=attending` arrives as an array, which explode() rejects.
-		$_REQUEST['response'] = array( Status::ATTENDING->value );
+		// `response[]=attending` arrives as an array, which filter_input() reads as false.
+		$this->set_url_params( array( 'response' => false ) );
 
 		$this->assertSame(
 			array(),
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
 			'Failed to assert an array response parameter is ignored.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2289,10 +2406,14 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_responses_reads_a_list(): void {
-		$_REQUEST['response'] = sprintf(
-			'%s,%s',
-			Status::ATTENDING->value,
-			Status::WAITING_LIST->value
+		$this->set_url_params(
+			array(
+				'response' => sprintf(
+					'%s,%s',
+					Status::ATTENDING->value,
+					Status::WAITING_LIST->value
+				),
+			)
 		);
 
 		$this->assertSame(
@@ -2300,8 +2421,6 @@ class Test_List_Table extends Base {
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
 			'Failed to assert every requested response is read.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2315,15 +2434,13 @@ class Test_List_Table extends Base {
 	 */
 	public function test_get_filtered_responses_drops_unknown_values(): void {
 		// Otherwise a hand-edited URL could widen the filter to any term.
-		$_REQUEST['response'] = sprintf( '%s,made-up', Status::ATTENDING->value );
+		$this->set_url_params( array( 'response' => sprintf( '%s,made-up', Status::ATTENDING->value ) ) );
 
 		$this->assertSame(
 			array( Status::ATTENDING->value ),
 			Utility::invoke_hidden_method( $this->list_table, 'get_filtered_responses' ),
 			'Failed to assert an unknown status is dropped.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2359,10 +2476,14 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_add_response_filter_adds_a_tax_query(): void {
-		$_REQUEST['response'] = sprintf(
-			'%s,%s',
-			Status::ATTENDING->value,
-			Status::WAITING_LIST->value
+		$this->set_url_params(
+			array(
+				'response' => sprintf(
+					'%s,%s',
+					Status::ATTENDING->value,
+					Status::WAITING_LIST->value
+				),
+			)
 		);
 
 		$args = Utility::invoke_hidden_method(
@@ -2388,8 +2509,122 @@ class Test_List_Table extends Base {
 			$args['number'],
 			'Failed to assert the existing arguments survive the filter.'
 		);
+	}
 
-		unset( $_REQUEST['response'] );
+	/**
+	 * Each check-in state narrows the comment query, and joins a response
+	 * filter rather than replacing it.
+	 *
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::filter_query
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_filtered
+	 *
+	 * @return void
+	 */
+	public function test_check_in_filter_query(): void {
+		$args = array( 'number' => 20 );
+
+		$this->assertSame(
+			$args,
+			Check_In_Controls::filter_query( $args ),
+			'Failed to assert an unfiltered request adds no taxonomy query.'
+		);
+
+		$_REQUEST['check_in'] = 'unknown';
+
+		$this->assertSame(
+			$args,
+			Check_In_Controls::filter_query( $args ),
+			'Failed to assert an unknown state adds no taxonomy query.'
+		);
+
+		$_REQUEST['check_in'] = 'no-show';
+
+		$this->assertSame(
+			array(
+				array(
+					'taxonomy' => '_gatherpress_rsvp_flag',
+					'field'    => 'slug',
+					'terms'    => 'no-show',
+				),
+				'relation' => 'AND',
+			),
+			Check_In_Controls::filter_query( $args )['tax_query'],
+			'Failed to assert a flag state matches its flag.'
+		);
+
+		$_REQUEST['check_in'] = Check_In_Registry::NOT_RECORDED;
+		$this->set_url_params( array( 'response' => Status::ATTENDING->value ) );
+
+		$filtered = Check_In_Controls::filter_query(
+			Utility::invoke_hidden_method( $this->list_table, 'add_response_filter', array( $args ) )
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'taxonomy' => Status::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( Status::ATTENDING->value ),
+				),
+				array(
+					'taxonomy' => '_gatherpress_rsvp_flag',
+					'field'    => 'slug',
+					'terms'    => array( 'checked-in', 'no-show' ),
+					'operator' => 'NOT IN',
+				),
+				'relation' => 'AND',
+			),
+			$filtered['tax_query'],
+			'Failed to assert Not recorded excludes both flags and keeps the response filter.'
+		);
+
+		unset( $_REQUEST['check_in'] );
+	}
+
+	/**
+	 * The check-in filter finds the RSVPs in each state.
+	 *
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::filter_query
+	 *
+	 * @return void
+	 */
+	public function test_check_in_filter_finds_rsvps(): void {
+		$rsvp_ids = array();
+		$states   = array( Check_In::SLUG, No_Show::SLUG, Check_In_Registry::NOT_RECORDED );
+
+		foreach ( $states as $state ) {
+			$rsvp_ids[ $state ] = $this->factory->comment->create(
+				array(
+					'comment_post_ID' => $this->event_id,
+					'comment_type'    => Rsvp::COMMENT_TYPE,
+				)
+			);
+		}
+
+		( new Check_In( $rsvp_ids[ Check_In::SLUG ] ) )->add();
+		( new No_Show( $rsvp_ids[ No_Show::SLUG ] ) )->add();
+
+		foreach ( $states as $state ) {
+			$_REQUEST['check_in'] = $state;
+
+			$found = Rsvp\Query::get_instance()->get_rsvps(
+				Check_In_Controls::filter_query(
+					array(
+						'post_id' => $this->event_id,
+						'fields'  => 'ids',
+					)
+				)
+			);
+
+			$this->assertContains( $rsvp_ids[ $state ], array_map( 'intval', $found ) );
+			$this->assertCount(
+				Check_In_Registry::NOT_RECORDED === $state ? 2 : 1,
+				$found,
+				sprintf( 'Failed to assert the %s filter finds only its RSVPs.', $state )
+			);
+		}
+
+		unset( $_REQUEST['check_in'] );
 	}
 
 	/**
@@ -2403,10 +2638,13 @@ class Test_List_Table extends Base {
 	 * @covers ::extra_tablenav
 	 * @covers ::render_event_field
 	 * @covers ::render_response_toggle
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::render_filter
 	 *
 	 * @return void
 	 */
 	public function test_extra_tablenav_writes_the_controls(): void {
+		$_REQUEST['check_in'] = 'no-show';
+
 		$output = Utility::buffer_and_return(
 			static function (): void {
 				Utility::invoke_hidden_method(
@@ -2440,6 +2678,26 @@ class Test_List_Table extends Base {
 			$output,
 			'Failed to assert the selectable responses reach the script.'
 		);
+
+		$this->assertStringContainsString(
+			'class="gatherpress-rsvp-filters__check-in"',
+			$output,
+			'Failed to assert the check-in field is written out.'
+		);
+
+		$this->assertStringContainsString(
+			'<option value="no-show" selected=\'selected\'>No-show</option>',
+			$output,
+			'Failed to assert the requested check-in state is selected.'
+		);
+
+		$this->assertStringContainsString(
+			'data-check-in="no-show"',
+			$output,
+			'Failed to assert the requested check-in state reaches the script.'
+		);
+
+		unset( $_REQUEST['check_in'] );
 	}
 
 	/**
@@ -2549,8 +2807,12 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_extra_tablenav_carries_the_current_filters(): void {
-		$_REQUEST['post_id']  = (string) $this->event_id;
-		$_REQUEST['response'] = Status::ATTENDING->value;
+		$this->set_url_params(
+			array(
+				'post_id'  => (string) $this->event_id,
+				'response' => Status::ATTENDING->value,
+			)
+		);
 
 		$list_table = $this->list_table;
 		$output     = Utility::buffer_and_return(
@@ -2570,8 +2832,6 @@ class Test_List_Table extends Base {
 			$output,
 			'Failed to assert the filtered responses reach the mount.'
 		);
-
-		unset( $_REQUEST['post_id'], $_REQUEST['response'] );
 	}
 
 	/**
@@ -2584,7 +2844,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_views_preserves_the_response_filter(): void {
-		$_REQUEST['response'] = Status::ATTENDING->value;
+		$this->set_url_params( array( 'response' => Status::ATTENDING->value ) );
 
 		$views = $this->list_table->get_views();
 
@@ -2593,8 +2853,37 @@ class Test_List_Table extends Base {
 			implode( '', $views ),
 			'Failed to assert the view links carry the response filter.'
 		);
+	}
 
-		unset( $_REQUEST['response'] );
+	/**
+	 * Switching view keeps the check-in filter, and its counts follow it.
+	 *
+	 * @covers ::get_views
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::get_filtered
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::filter_query
+	 *
+	 * @return void
+	 */
+	public function test_get_views_preserves_the_check_in_filter(): void {
+		( new No_Show( (int) $this->rsvp['comment_ID'] ) )->add();
+
+		$_REQUEST['check_in'] = No_Show::SLUG;
+
+		$views = $this->list_table->get_views();
+
+		$this->assertStringContainsString(
+			'check_in=no-show',
+			$views['all'],
+			'Failed to assert the view links carry the check-in filter.'
+		);
+		$this->assertStringContainsString(
+			'<span class="count">(1)</span>',
+			$views['all'],
+			'Failed to assert the view counts follow the check-in filter.'
+		);
+
+		unset( $_REQUEST['check_in'] );
+		Check_In_Registry::get_instance()->clear( (int) $this->rsvp['comment_ID'] );
 	}
 
 	/**
@@ -2623,7 +2912,7 @@ class Test_List_Table extends Base {
 			)
 		);
 
-		$_REQUEST['post_id'] = (string) $this->event_id;
+		$this->set_url_params( array( 'post_id' => (string) $this->event_id ) );
 
 		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
 		$posts = array_unique( array_column( $rsvps, 'comment_post_ID' ) );
@@ -2639,8 +2928,6 @@ class Test_List_Table extends Base {
 			Utility::invoke_hidden_method( $this->list_table, 'get_rsvp_count' ),
 			'Failed to assert the count agrees with the filtered rows.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -2665,7 +2952,7 @@ class Test_List_Table extends Base {
 		wp_set_object_terms( $attending, Status::ATTENDING->value, Status::TAXONOMY );
 		wp_set_object_terms( $declined, Status::NOT_ATTENDING->value, Status::TAXONOMY );
 
-		$_REQUEST['response'] = Status::ATTENDING->value;
+		$this->set_url_params( array( 'response' => Status::ATTENDING->value ) );
 
 		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
 		$ids   = array_map( 'intval', array_column( $rsvps, 'comment_ID' ) );
@@ -2687,8 +2974,6 @@ class Test_List_Table extends Base {
 			Utility::invoke_hidden_method( $this->list_table, 'get_rsvp_count' ),
 			'Failed to assert the count agrees with the filtered rows.'
 		);
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2712,10 +2997,14 @@ class Test_List_Table extends Base {
 		wp_set_object_terms( $attending, Status::ATTENDING->value, Status::TAXONOMY );
 		wp_set_object_terms( $waiting, Status::WAITING_LIST->value, Status::TAXONOMY );
 
-		$_REQUEST['response'] = sprintf(
-			'%s,%s',
-			Status::ATTENDING->value,
-			Status::WAITING_LIST->value
+		$this->set_url_params(
+			array(
+				'response' => sprintf(
+					'%s,%s',
+					Status::ATTENDING->value,
+					Status::WAITING_LIST->value
+				),
+			)
 		);
 
 		$rsvps = Utility::invoke_hidden_method( $this->list_table, 'get_rsvps', array( 20, 1 ) );
@@ -2723,8 +3012,6 @@ class Test_List_Table extends Base {
 
 		$this->assertContains( $attending, $ids, 'Failed to assert the first response is returned.' );
 		$this->assertContains( $waiting, $ids, 'Failed to assert the second response is returned.' );
-
-		unset( $_REQUEST['response'] );
 	}
 
 	/**
@@ -2737,17 +3024,15 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_post_id_ignores_a_non_scalar(): void {
-		// `post_id[]=9` casts to 1, which would filter the screen to whichever
-		// post holds that ID.
-		$_REQUEST['post_id'] = array( '9' );
+		// `post_id[]=9` would cast to 1 and filter the screen to whichever post
+		// holds that ID. filter_input() reads the array as false.
+		$this->set_url_params( array( 'post_id' => false ) );
 
 		$this->assertSame(
 			0,
 			$this->list_table->get_filtered_post_id(),
 			'Failed to assert an array event parameter is ignored.'
 		);
-
-		unset( $_REQUEST['post_id'] );
 	}
 
 	/**
@@ -2760,14 +3045,572 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_get_filtered_post_id_ignores_a_negative(): void {
-		$_REQUEST['post_id'] = '-5';
+		$this->set_url_params( array( 'post_id' => '-5' ) );
 
 		$this->assertSame(
 			5,
 			$this->list_table->get_filtered_post_id(),
 			'Failed to assert a negative event parameter is made absolute.'
 		);
+	}
 
-		unset( $_REQUEST['post_id'] );
+	/**
+	 * Creates RSVPs for the test event with one approval status.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int    $count    How many RSVPs to create.
+	 * @param string $approved The comment_approved value: '1', '0' or 'spam'.
+	 *
+	 * @return int[] The RSVP comment IDs.
+	 */
+	private function create_rsvps( int $count, string $approved ): array {
+		return $this->factory->comment->create_many(
+			$count,
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->event_id,
+				'comment_approved' => $approved,
+			)
+		);
+	}
+
+	/**
+	 * Runs one action as the admin screen would, with the comment-type nonce.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string $action   The action.
+	 * @param int[]  $rsvp_ids The RSVP comment IDs.
+	 *
+	 * @return array<string, int> What process_bulk_action() returned.
+	 */
+	private function run_action( string $action, array $rsvp_ids ): array {
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
+		$_REQUEST['action']              = $action;
+		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_ids;
+
+		$result = $this->list_table->process_bulk_action();
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+
+		return $result;
+	}
+
+	/**
+	 * Each action returns how many RSVPs it covered, under its result arg.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_returns_the_count_of_each_action(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$expected = array(
+			'approve'   => array( '0', array( 'approved' => 2 ), '1' ),
+			'unapprove' => array( '1', array( 'unapproved' => 2 ), '0' ),
+			'spam'      => array( '1', array( 'spammed' => 2 ), 'spam' ),
+			'unspam'    => array( 'spam', array( 'unspammed' => 2 ), '1' ),
+		);
+
+		foreach ( $expected as $action => list( $before, $result, $after ) ) {
+			$rsvp_ids = $this->create_rsvps( 2, $before );
+
+			$this->assertSame(
+				$result,
+				$this->run_action( $action, $rsvp_ids ),
+				sprintf( 'Failed to assert the %s result.', $action )
+			);
+			$this->assertSame(
+				$after,
+				get_comment( $rsvp_ids[0] )->comment_approved,
+				sprintf( 'Failed to assert the %s action ran.', $action )
+			);
+		}
+
+		$rsvp_ids = $this->create_rsvps( 2, '1' );
+
+		$this->assertSame(
+			array( 'deleted' => 2 ),
+			$this->run_action( 'delete', $rsvp_ids ),
+			'Failed to assert the delete result.'
+		);
+		$this->assertNull( get_comment( $rsvp_ids[0] ), 'Failed to assert the delete action ran.' );
+	}
+
+	/**
+	 * A check-in action counts the RSVPs it updated and the ones it skipped.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_counts_check_ins_and_skipped_rsvps(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$approved = $this->create_rsvps( 2, '1' );
+		$pending  = $this->create_rsvps( 1, '0' );
+
+		$this->assertSame(
+			array(
+				'check_in_updated' => 2,
+				'skipped'          => 1,
+			),
+			$this->run_action( 'check_in-checked-in', array_merge( $approved, $pending ) ),
+			'Failed to assert a check-in action counts updated and skipped RSVPs.'
+		);
+		$this->assertSame(
+			'checked-in',
+			Check_In_Registry::get_instance()->get_state( $approved[0] )::SLUG,
+			'Failed to assert the check-in action ran.'
+		);
+	}
+
+	/**
+	 * Apply_action() says whether it saved the state, failed, or skipped the RSVP.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_apply_action_returns_whether_it_applied(): void {
+		$approved = $this->create_rsvps( 2, '1' );
+		$deleted  = $this->create_rsvps( 1, '1' )[0];
+
+		wp_delete_comment( $deleted, true );
+
+		$this->assertTrue(
+			Check_In_Controls::apply_action( $approved[0], 'check_in-no-show' ),
+			'Failed to assert an approved RSVP is checked in.'
+		);
+		$this->assertNull(
+			Check_In_Controls::apply_action( $this->create_rsvps( 1, '0' )[0], 'check_in-no-show' ),
+			'Failed to assert a pending RSVP is skipped.'
+		);
+		$this->assertFalse(
+			Check_In_Controls::apply_action( $deleted, 'check_in-no-show' ),
+			'Failed to assert a missing RSVP fails.'
+		);
+		$this->assertFalse(
+			Check_In_Controls::apply_action( $approved[1], 'check_in-not-a-state' ),
+			'Failed to assert a state that cannot be saved fails.'
+		);
+	}
+
+	/**
+	 * An RSVP the action could not change counts as failed, not as done.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_counts_failed_rsvps(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$approved = $this->create_rsvps( 1, '1' );
+		$pending  = $this->create_rsvps( 1, '0' );
+		$gone     = $this->create_rsvps( 3, '1' );
+
+		foreach ( $gone as $rsvp_id ) {
+			wp_delete_comment( $rsvp_id, true );
+		}
+
+		$this->assertSame(
+			array(
+				'approved' => 2,
+				'failed'   => 1,
+			),
+			$this->run_action( 'approve', array( $approved[0], $pending[0], $gone[0] ) ),
+			'Failed to assert an RSVP that already had the status counts, and a missing one fails.'
+		);
+		$this->assertSame(
+			array(
+				'deleted' => 0,
+				'failed'  => 1,
+			),
+			$this->run_action( 'delete', array( $gone[1] ) ),
+			'Failed to assert a missing RSVP is not counted as deleted.'
+		);
+		$this->assertSame(
+			array(
+				'check_in_updated' => 0,
+				'skipped'          => 0,
+				'failed'           => 1,
+			),
+			$this->run_action( 'check_in-checked-in', array( $gone[2] ) ),
+			'Failed to assert a missing RSVP is not counted as skipped.'
+		);
+	}
+
+	/**
+	 * An approved RSVP whose check-in cannot be saved counts as failed.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_counts_a_failed_check_in_write(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$approved = $this->create_rsvps( 1, '1' );
+		$refuse   = static function (): WP_Error {
+			return new WP_Error( 'gatherpress_test_refused', 'Refused.' );
+		};
+
+		add_filter( 'pre_insert_term', $refuse );
+
+		$result = $this->run_action( 'check_in-checked-in', array( $approved[0] ) );
+
+		remove_filter( 'pre_insert_term', $refuse );
+
+		$this->assertSame(
+			array(
+				'check_in_updated' => 0,
+				'skipped'          => 0,
+				'failed'           => 1,
+			),
+			$result,
+			'Failed to assert a check-in that could not be saved counts as failed.'
+		);
+		$this->assertNull(
+			Check_In_Registry::get_instance()->get_state( $approved[0] ),
+			'Failed to assert the RSVP has no check-in state.'
+		);
+	}
+
+	/**
+	 * Failed RSVPs have their own line, and make the notice a warning.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_action_notice
+	 * @covers ::get_result_message
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_warns_when_an_rsvp_failed(): void {
+		$this->set_url_params(
+			array(
+				'approved' => '2',
+				'failed'   => '1',
+			)
+		);
+
+		$notice = $this->list_table->get_action_notice();
+
+		$this->assertStringContainsString(
+			"2 RSVPs approved.<br />\n1 RSVP could not be changed.",
+			$notice,
+			'Failed to assert the failed message.'
+		);
+		$this->assertStringContainsString(
+			'notice-warning',
+			$notice,
+			'Failed to assert a failure gives a warning.'
+		);
+	}
+
+	/**
+	 * A request that still carries an action shows no result from an earlier one.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_action_notice
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_is_empty_during_an_action_request(): void {
+		$this->set_url_params( array( 'approved' => '1' ) );
+		$_REQUEST['action'] = 'approve';
+
+		$notice = $this->list_table->get_action_notice();
+
+		unset( $_REQUEST['action'] );
+
+		$this->assertSame( '', $notice, 'Failed to assert a rejected action shows no earlier result.' );
+	}
+
+	/**
+	 * The row action links leave out the counts of the last action.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::column_attendee
+	 *
+	 * @return void
+	 */
+	public function test_column_attendee_links_drop_the_result_args(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		$_SERVER['REQUEST_URI'] = '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp'
+			. '&approved=1&failed=2&status=pending';
+
+		$attendee_col = $this->list_table->column_attendee( $this->rsvp );
+
+		$_SERVER['REQUEST_URI'] = $request_uri;
+
+		$this->assertStringContainsString(
+			'status=pending',
+			$attendee_col,
+			'Failed to assert the links keep the filters.'
+		);
+		$this->assertStringNotContainsString(
+			'approved=1',
+			$attendee_col,
+			'Failed to assert the links drop the approved count.'
+		);
+		$this->assertStringNotContainsString(
+			'failed=2',
+			$attendee_col,
+			'Failed to assert the links drop the failed count.'
+		);
+	}
+
+	/**
+	 * A refused or empty request returns no result, so the screen does not redirect.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_returns_no_result_when_nothing_ran(): void {
+		$rsvp_ids = $this->create_rsvps( 1, '0' );
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame(
+			array(),
+			$this->run_action( 'approve', $rsvp_ids ),
+			'Failed to assert no capability gives no result.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame(
+			array(),
+			$this->run_action( 'approve', array() ),
+			'Failed to assert no RSVPs give no result.'
+		);
+		$this->assertSame(
+			array(),
+			$this->run_action( '-1', $rsvp_ids ),
+			'Failed to assert no action gives no result.'
+		);
+
+		// No nonce at all, as from a hand-typed URL.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_ids;
+
+		$this->assertSame(
+			array(),
+			$this->list_table->process_bulk_action(),
+			'Failed to assert a missing nonce gives no result.'
+		);
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_ids[0] )->comment_approved,
+			'Failed to assert nothing ran.'
+		);
+	}
+
+	/**
+	 * Rendering the list no longer runs an action from the URL.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::prepare_items
+	 *
+	 * @return void
+	 */
+	public function test_prepare_items_does_not_run_an_action(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_ids = $this->create_rsvps( 1, '0' );
+
+		$this->set_url_params( array( '_wpnonce' => wp_create_nonce( Rsvp::COMMENT_TYPE ) ) );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_ids;
+
+		$this->list_table->prepare_items();
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_ids[0] )->comment_approved,
+			'Failed to assert rendering the list does not approve an RSVP.'
+		);
+	}
+
+	/**
+	 * The redirect URL keeps the screen and its filters and drops the action.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_action_redirect_url
+	 *
+	 * @return void
+	 */
+	public function test_get_action_redirect_url_drops_the_action_and_keeps_the_filters(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		$_SERVER['REQUEST_URI'] = '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp&post_id=5'
+			. '&paged=2&action=approve&action2=-1&gatherpress_rsvp_id%5B0%5D=11&_wpnonce=abc123'
+			. '&_wp_http_referer=%2Fwp-admin%2F&deleted=4';
+
+		$this->assertSame(
+			'/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp&post_id=5&paged=2&approved=3',
+			$this->list_table->get_action_redirect_url( array( 'approved' => 3 ) ),
+			'Failed to assert the redirect drops the action, its IDs, its nonce and an old result.'
+		);
+
+		unset( $_SERVER['REQUEST_URI'] );
+
+		$this->assertSame(
+			'?approved=3',
+			$this->list_table->get_action_redirect_url( array( 'approved' => 3 ) ),
+			'Failed to assert a missing request URI still carries the result.'
+		);
+
+		$_SERVER['REQUEST_URI'] = $request_uri;
+	}
+
+	/**
+	 * The notice says what each result did, in the singular and the plural.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_action_notice
+	 * @covers ::get_result_message
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_reports_each_result(): void {
+		$expected = array(
+			'approved'         => array( '1 RSVP approved.', '2 RSVPs approved.' ),
+			'unapproved'       => array( '1 RSVP unapproved.', '2 RSVPs unapproved.' ),
+			'spammed'          => array( '1 RSVP marked as spam.', '2 RSVPs marked as spam.' ),
+			'unspammed'        => array( '1 RSVP marked as not spam.', '2 RSVPs marked as not spam.' ),
+			'deleted'          => array( '1 RSVP permanently deleted.', '2 RSVPs permanently deleted.' ),
+			'check_in_updated' => array( 'Check-in updated for 1 RSVP.', 'Check-in updated for 2 RSVPs.' ),
+		);
+
+		$this->assertSame(
+			array_merge( array_keys( $expected ), array( 'skipped', 'failed' ) ),
+			List_Table::RESULT_ARGS,
+			'Failed to assert every result arg is tested.'
+		);
+
+		foreach ( $expected as $result_arg => $messages ) {
+			foreach ( $messages as $index => $message ) {
+				remove_all_filters( 'gatherpress_pre_get_http_input' );
+				$this->set_url_params( array( $result_arg => (string) ( $index + 1 ) ) );
+
+				$notice = $this->list_table->get_action_notice();
+
+				$this->assertStringContainsString(
+					'<div id="moderated" class="notice notice-success is-dismissible"><p>' . $message . '</p></div>',
+					$notice,
+					sprintf( 'Failed to assert the %s notice.', $result_arg )
+				);
+			}
+		}
+	}
+
+	/**
+	 * Skipped RSVPs alone give a warning; with a change they join a success.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_action_notice
+	 * @covers ::get_result_message
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_warns_when_every_rsvp_was_skipped(): void {
+		$this->set_url_params( array( 'skipped' => '2' ) );
+
+		$notice = $this->list_table->get_action_notice();
+
+		$this->assertStringContainsString(
+			'2 RSVPs skipped, because only an approved RSVP has a check-in.',
+			$notice,
+			'Failed to assert the skipped message.'
+		);
+		$this->assertStringContainsString(
+			'notice-warning',
+			$notice,
+			'Failed to assert only skipped RSVPs give a warning.'
+		);
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		$this->set_url_params(
+			array(
+				'check_in_updated' => '1',
+				'skipped'          => '1',
+			)
+		);
+
+		$notice = $this->list_table->get_action_notice();
+
+		$this->assertStringContainsString(
+			"Check-in updated for 1 RSVP.<br />\n1 RSVP skipped, because only an approved RSVP has a check-in.",
+			$notice,
+			'Failed to assert one line per result.'
+		);
+		$this->assertStringContainsString(
+			'notice-success',
+			$notice,
+			'Failed to assert a change with skips is a success.'
+		);
+	}
+
+	/**
+	 * No result, or a count that is not a positive number, shows no notice.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_action_notice
+	 *
+	 * @return void
+	 */
+	public function test_get_action_notice_is_empty_without_a_result(): void {
+		$this->assertSame(
+			'',
+			$this->list_table->get_action_notice(),
+			'Failed to assert no result gives no notice.'
+		);
+
+		$this->set_url_params(
+			array(
+				'approved' => '0',
+				'deleted'  => 'abc',
+			)
+		);
+
+		$this->assertSame(
+			'',
+			$this->list_table->get_action_notice(),
+			'Failed to assert a zero or non-numeric count gives no notice.'
+		);
 	}
 }

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+When an RSVP Form is submitted without JavaScript and an answer is refused, or the email address has already responded, the page now reloads with the form showing what was typed and the same messages the form shows with JavaScript, instead of an error page.

@@ -18,9 +18,9 @@ namespace GatherPress\Core\Venue;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Traits\Has_Capabilities;
 use GatherPress\Core\Utility;
 use WP_Post;
-use WP_REST_Request;
 use WP_Term;
 
 /**
@@ -32,6 +32,11 @@ use WP_Term;
  * @since 0.34.0
  */
 final class Venue {
+
+	/**
+	 * Gives the class its read and edit capabilities.
+	 */
+	use Has_Capabilities;
 
 	/**
 	 * Default venue post type slug.
@@ -104,30 +109,6 @@ final class Venue {
 		if ( post_type_supports( (string) get_post_type( $post_id ), self::SUPPORT ) ) {
 			$this->venue = get_post( $post_id );
 		}
-	}
-
-	/**
-	 * Whether a post password keeps a venue's details from the current viewer.
-	 *
-	 * The viewer still needs the password and cannot edit the venue. A REST
-	 * request that passes the right `password` argument counts as having it.
-	 * The same rule as `Event::is_hidden_by_password()`.
-	 *
-	 * @since 0.36.1
-	 *
-	 * @param WP_Post              $post    The venue post.
-	 * @param WP_REST_Request|null $request Optional. The REST request, for its `password` argument.
-	 * @phpstan-param WP_REST_Request<array<string, mixed>>|null $request
-	 *
-	 * @return bool True when the venue's details stay hidden.
-	 */
-	public static function is_hidden_by_password( WP_Post $post, ?WP_REST_Request $request = null ): bool {
-		return post_password_required( $post )
-			&& ! current_user_can( 'edit_post', $post->ID )
-			&& (
-				null === $request
-				|| ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
-			);
 	}
 
 	/**

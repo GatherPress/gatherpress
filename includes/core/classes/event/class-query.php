@@ -117,7 +117,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
 	public function get_upcoming_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'upcoming', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -132,7 +137,12 @@ final class Query {
 	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
 	public function get_past_events( int $number = 5 ): WP_Query {
-		return $this->get_events_list( 'past', $number );
+		return $this->get_events_list(
+			array(
+				'event_list_type' => 'past',
+				'number'          => $number,
+			)
+		);
 	}
 
 	/**
@@ -143,23 +153,31 @@ final class Query {
 	 * a WordPress query object.
 	 *
 	 * @since 0.34.0
+	 * @since 0.37.0 Takes an args array instead of positional parameters.
 	 *
-	 * @param string    $event_list_type Type of event list: 'upcoming' or 'past'.
-	 * @param int       $number          Maximum number of events to retrieve.
-	 * @param string[]  $topics          Array of topic slugs for additional filtering.
-	 * @param string[]  $venues          Array of venue slugs for additional filtering.
-	 * @param bool|null $has_password    Optional. False to leave out password-protected events,
-	 *                                   true to get only them. Default null, both.
+	 * @param array<string, mixed> $args {
+	 *     Event query arguments.
+	 *
+	 *     @type string   $event_list_type Type of event list: 'upcoming' or 'past'.
+	 *     @type int      $number          Maximum number of events to retrieve. Default 5.
+	 *     @type string[] $topics          Topic slugs for additional filtering.
+	 *     @type string[] $venues          Venue slugs for additional filtering.
+	 *     @type bool     $has_password    Optional. False to leave out password-protected
+	 *                                     events, true to get only them. Default both.
+	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
-	public function get_events_list(
-		string $event_list_type = '',
-		int $number = 5,
-		array $topics = array(),
-		array $venues = array(),
-		?bool $has_password = null
-	): WP_Query {
+	public function get_events_list( array $args = array() ): WP_Query {
+		$event_list_type = isset( $args['event_list_type'] ) && is_string( $args['event_list_type'] )
+			? $args['event_list_type']
+			: '';
+		$number          = isset( $args['number'] ) && is_numeric( $args['number'] )
+			? (int) $args['number']
+			: 5;
+		$topics          = $this->normalize_slug_list( $args['topics'] ?? array() );
+		$venues          = $this->normalize_slug_list( $args['venues'] ?? array() );
+
 		// Past events should be ordered DESC (most recent first),
 		// upcoming events should be ordered ASC (soonest first).
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
@@ -167,7 +185,7 @@ final class Query {
 		// Without an explicit `datetime` orderby, adjust_event_sql() keeps
 		// WordPress's publish-date order, so `$number` would pick the events
 		// published first rather than the soonest.
-		$args = array(
+		$query_args = array(
 			'post_type'             => get_post_types_by_support( Event::SUPPORT ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
@@ -199,13 +217,13 @@ final class Query {
 			$tax_query[] = $this->build_venue_tax_query( $venues );
 		}
 
-		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-		if ( null !== $has_password ) {
-			$args['has_password'] = $has_password;
+		if ( isset( $args['has_password'] ) && is_bool( $args['has_password'] ) ) {
+			$query_args['has_password'] = $args['has_password'];
 		}
 
-		return new WP_Query( $args );
+		return new WP_Query( $query_args );
 	}
 
 	/**
@@ -318,20 +336,59 @@ final class Query {
 			}
 		}
 
+		$this->apply_event_activity_filter( $query );
+
+		if ( in_array( $events_query, array( 'upcoming', 'past' ), true ) ) {
+			/**
+			 * Filters the query vars of a query that lists upcoming or past events.
+			 *
+			 * Lets a plugin narrow or reorder event lists, for example by
+			 * location, without replacing the queries that build them. It runs
+			 * on `pre_get_posts` for every such list: the Event Query block,
+			 * event archives and feeds, the iCal feed, `get_events_list()`, and
+			 * the admin's Upcoming and Past views. GatherPress applies the upcoming
+			 * or past date range afterwards, so a constraint added here narrows
+			 * the list rather than replacing it. Check `$query` to act on only
+			 * some lists.
+			 *
+			 * @since 0.37.0
+			 *
+			 * @param array<string, mixed> $query_vars The query's vars, as `WP_Query` reads them.
+			 * @param string               $type       The list type: `upcoming` or `past`.
+			 * @param WP_Query             $query      The query being prepared.
+			 *
+			 * @return array<string, mixed> The query vars to use.
+			 */
+			$query_vars = apply_filters(
+				'gatherpress_event_query_vars',
+				$query->query_vars,
+				$events_query,
+				$query
+			);
+
+			// A callback that forgets to return would wipe the query, whatever the docblock promises.
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPStan annotation.
+			// @phpstan-ignore function.alreadyNarrowedType
+			if ( is_array( $query_vars ) ) {
+				$query->query_vars = $query_vars;
+			}
+		}
+
+		// After the filter, so a `date_query` a plugin adds there is read
+		// against event dates too.
 		$this->intercept_date_query( $query );
 
-		switch ( $events_query ) {
-			case 'upcoming':
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ), 10, 2 );
-				break;
-			case 'past':
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ), 10, 2 );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
-				break;
-			default:
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		$sorting = match ( $events_query ) {
+			'upcoming' => 'adjust_sorting_for_upcoming_events',
+			'past'     => 'adjust_sorting_for_past_events',
+			default    => '',
+		};
+
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+
+		if ( '' !== $sorting ) {
+			add_filter( 'posts_clauses', array( $this, $sorting ), 10, 2 );
 		}
 	}
 
@@ -673,6 +730,51 @@ final class Query {
 	}
 
 	/**
+	 * Limit a shadow-source query to sources with upcoming or past events.
+	 *
+	 * Runs when the query's `gatherpress_has_events_filter` is on. A `post__in` the query
+	 * already has is intersected rather than replaced, so the filter only
+	 * narrows it, and a filter that matches nothing returns no posts.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param WP_Query $query The query being prepared.
+	 *
+	 * @return void
+	 */
+	protected function apply_event_activity_filter( WP_Query $query ): void {
+		$post_type = $query->get( 'post_type' );
+
+		if (
+			1 !== (int) $query->get( 'gatherpress_has_events_filter' )
+			|| ! is_string( $post_type )
+			|| ! post_type_supports( $post_type, Shadow_Source::SUPPORT )
+		) {
+			return;
+		}
+
+		// Blocks store 0 or 1, while AQL can pass 'upcoming' or 'past'.
+		$upcoming   = $query->get( 'gatherpress_upcoming_events_only', 1 );
+		$source_ids = Shadow_Source::get_instance()->get_source_post_ids_by_event_activity(
+			$post_type,
+			'upcoming' === $upcoming || 1 === (int) $upcoming
+		);
+
+		// Null means the source's taxonomy is not on any event post type.
+		if ( null === $source_ids ) {
+			return;
+		}
+
+		$post_in = $query->get( 'post__in' );
+
+		if ( is_array( $post_in ) && ! empty( $post_in ) ) {
+			$source_ids = array_values( array_intersect( array_map( 'intval', $post_in ), $source_ids ) );
+		}
+
+		$query->set( 'post__in', ! empty( $source_ids ) ? $source_ids : array( 0 ) );
+	}
+
+	/**
 	 * Point a `date_query` at event dates rather than publish dates.
 	 *
 	 * WordPress reads `date_query` against `post_date`, which for an event is
@@ -815,6 +917,30 @@ final class Query {
 	}
 
 	/**
+	 * Normalize a list of taxonomy slugs to strings.
+	 *
+	 * Companion plugins pass the values through the args array, so anything can
+	 * arrive here. Non-scalar members are dropped rather than cast, because
+	 * `strval()` on an array raises a warning and on an object throws.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param mixed $slugs Candidate slug list.
+	 *
+	 * @return string[] Filtered list of slugs.
+	 */
+	private function normalize_slug_list( mixed $slugs ): array {
+		if ( ! is_array( $slugs ) ) {
+			return array();
+		}
+
+		return array_map(
+			'strval',
+			array_filter( $slugs, 'is_scalar' )
+		);
+	}
+
+	/**
 	 * Determine which db column to compare against,
 	 * based on the type of event query (either upcoming or past)
 	 * and if started but unfinished events should be included.
@@ -839,6 +965,89 @@ final class Query {
 		// - Upcoming events, without running events.
 		// - Past events, that are still running.
 		return 'datetime_start_gmt';
+	}
+
+	/**
+	 * Return the shadow term slugs that sit on an upcoming or a past event.
+	 *
+	 * Checks each shadow term with a one-row event query, so the work grows
+	 * with the number of source posts rather than the number of events. The
+	 * event queries use the same upcoming and past rules, status checks and
+	 * filters as any other event list.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string $taxonomy Shadow taxonomy to read term slugs from.
+	 * @param bool   $upcoming Whether to match upcoming events rather than past ones.
+	 *
+	 * @return string[] Shadow term slugs, empty when nothing matched.
+	 */
+	public function get_active_shadow_term_slugs( string $taxonomy, bool $upcoming ): array {
+		$event_post_types = get_post_types_by_support( Event::SUPPORT );
+
+		if ( empty( $event_post_types ) ) {
+			return array();
+		}
+
+		// Term counts only include published posts, so empty terms stay in to
+		// catch sources whose only events are private.
+		$slugs = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'fields'     => 'slugs',
+			)
+		);
+
+		return array_values(
+			array_filter(
+				is_array( $slugs ) ? $slugs : array(),
+				fn( string $slug ): bool => str_starts_with( $slug, '_' )
+					&& $this->has_event_with_term( $taxonomy, $slug, $upcoming, $event_post_types )
+			)
+		);
+	}
+
+	/**
+	 * Whether a shadow term sits on at least one upcoming or past event.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string   $taxonomy         Shadow taxonomy.
+	 * @param string   $slug             Shadow term slug.
+	 * @param bool     $upcoming         Whether to match upcoming events rather than past ones.
+	 * @param string[] $event_post_types Event post type slugs.
+	 *
+	 * @return bool True when a matching event exists.
+	 */
+	protected function has_event_with_term(
+		string $taxonomy,
+		string $slug,
+		bool $upcoming,
+		array $event_post_types
+	): bool {
+		$query = new WP_Query(
+			array(
+				'post_type'              => $event_post_types,
+				self::EVENT_QUERY_PARAM  => $upcoming ? 'upcoming' : 'past',
+				'has_password'           => false,
+				'fields'                 => 'ids',
+				'posts_per_page'         => 1,
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query'              => array(
+					array(
+						'taxonomy' => $taxonomy,
+						'field'    => 'slug',
+						'terms'    => $slug,
+					),
+				),
+			)
+		);
+
+		return ! empty( $query->posts );
 	}
 
 	/**

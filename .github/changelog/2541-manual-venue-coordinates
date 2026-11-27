@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+A venue can set its latitude and longitude by hand again, for a place without a street address like a park entrance or a trailhead. Turn on Set coordinates manually in the venue settings, and the address no longer moves the map pin.
