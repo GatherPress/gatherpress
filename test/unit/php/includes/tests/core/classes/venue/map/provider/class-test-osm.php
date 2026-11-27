@@ -361,6 +361,7 @@ class Test_OSM extends Base {
 			'border'  => '#ABCDEF',
 			'fill'    => 'red',
 			'outline' => 123,
+			'center'  => '#ABC',
 		);
 
 		add_filter( 'gatherpress_static_map_marker_colors', $callback );
@@ -370,10 +371,10 @@ class Test_OSM extends Base {
 				'border'  => '#abcdef',
 				'fill'    => '#dc3545',
 				'outline' => '#1e1e1e',
-				'center'  => '#ffffff',
+				'center'  => '#aabbcc',
 			),
 			$osm->get_marker_colors(),
-			'Failed to assert invalid and missing colors keep their default.'
+			'Failed to assert invalid colors keep their default and short colors expand.'
 		);
 
 		remove_filter( 'gatherpress_static_map_marker_colors', $callback );
@@ -386,10 +387,22 @@ class Test_OSM extends Base {
 		);
 
 		remove_filter( 'gatherpress_static_map_marker_colors', '__return_false' );
+
+		$object = static fn(): object => (object) array( 'fill' => '#0000ff' );
+
+		add_filter( 'gatherpress_static_map_marker_colors', $object );
+
+		$this->assertSame(
+			OSM::DEFAULT_MARKER_COLORS,
+			$osm->get_marker_colors(),
+			'Failed to assert an object keeps the defaults.'
+		);
+
+		remove_filter( 'gatherpress_static_map_marker_colors', $object );
 	}
 
 	/**
-	 * Six-digit and three-digit hex colors allocate the same RGB color.
+	 * A six-digit hex color allocates its RGB color.
 	 *
 	 * @since TBD
 	 *
@@ -405,11 +418,9 @@ class Test_OSM extends Base {
 		$canvas = imagecreatetruecolor( 1, 1 );
 		$osm    = new OSM();
 
-		$long  = Utility::invoke_hidden_method( $osm, 'allocate_hex_color', array( $canvas, '#dc3545' ) );
-		$short = Utility::invoke_hidden_method( $osm, 'allocate_hex_color', array( $canvas, '#abc' ) );
+		$color = Utility::invoke_hidden_method( $osm, 'allocate_hex_color', array( $canvas, '#dc3545' ) );
 
-		$this->assertSame( 0xdc3545, $long );
-		$this->assertSame( 0xaabbcc, $short );
+		$this->assertSame( 0xdc3545, $color );
 	}
 
 	/**
@@ -867,6 +878,18 @@ class Test_OSM extends Base {
 		$default = $osm->get_cache_source();
 
 		$this->assertStringNotContainsString( '|marker=', $default );
+
+		$short = static fn(): array => array( 'border' => '#FFF' );
+
+		add_filter( 'gatherpress_static_map_marker_colors', $short );
+
+		$this->assertSame(
+			$default,
+			$osm->get_cache_source(),
+			'Failed to assert a short default color keeps the source.'
+		);
+
+		remove_filter( 'gatherpress_static_map_marker_colors', $short );
 
 		$callback = static fn(): array => array( 'fill' => '#0000ff' );
 

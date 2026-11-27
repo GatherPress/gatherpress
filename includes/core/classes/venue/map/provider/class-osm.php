@@ -443,7 +443,7 @@ final class OSM extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @return array<string, string> Lowercase hex colors keyed like `DEFAULT_MARKER_COLORS`.
+	 * @return array<string, string> Lowercase six-digit hex colors keyed like `DEFAULT_MARKER_COLORS`.
 	 */
 	public function get_marker_colors(): array {
 		/**
@@ -463,33 +463,37 @@ final class OSM extends Base {
 		 *     @type string $center  Dot in the middle. Default `#ffffff`.
 		 * }
 		 */
-		$filtered = (array) apply_filters( 'gatherpress_static_map_marker_colors', self::DEFAULT_MARKER_COLORS );
+		$filtered = apply_filters( 'gatherpress_static_map_marker_colors', self::DEFAULT_MARKER_COLORS );
 		$colors   = array();
 
+		if ( ! is_array( $filtered ) ) {
+			$filtered = self::DEFAULT_MARKER_COLORS;
+		}
+
 		foreach ( self::DEFAULT_MARKER_COLORS as $key => $default ) {
-			$color          = is_string( $filtered[ $key ] ?? null ) ? sanitize_hex_color( $filtered[ $key ] ) : '';
-			$colors[ $key ] = $color ? strtolower( $color ) : $default;
+			$color = is_string( $filtered[ $key ] ?? null ) ? (string) sanitize_hex_color( $filtered[ $key ] ) : '';
+
+			// Expand `#fff` to `#ffffff`, so a short default still matches the default.
+			$colors[ $key ] = $color
+				? strtolower( (string) preg_replace( '/^#(.)(.)(.)$/', '#$1$1$2$2$3$3', $color ) )
+				: $default;
 		}
 
 		return $colors;
 	}
 
 	/**
-	 * Allocate a hex color such as `#dc3545` or `#fff` on a canvas.
+	 * Allocate a hex color such as `#dc3545` on a canvas.
 	 *
 	 * @since TBD
 	 *
 	 * @param GdImage $canvas Destination canvas.
-	 * @param string  $hex    Valid hex color, from `get_marker_colors()`.
+	 * @param string  $hex    Six-digit hex color, from `get_marker_colors()`.
 	 *
 	 * @return int GD color identifier.
 	 */
 	private function allocate_hex_color( $canvas, string $hex ): int {
 		$hex = ltrim( $hex, '#' );
-
-		if ( 3 === strlen( $hex ) ) {
-			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-		}
 
 		/**
 		 * Red, green, and blue channels. Two hex digits each, so 0 to 255.
