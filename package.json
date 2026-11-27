@@ -96,6 +96,7 @@
 		"markdown-it": "^14.2.0",
 		"proxy-addr": "^2.0.8",
 		"cssnano": "^7.1.9",
+		"isomorphic-git": "^1.38.6",
 		"lighthouse": {
 			"@sentry/node": "^10.76.1"
 		}
