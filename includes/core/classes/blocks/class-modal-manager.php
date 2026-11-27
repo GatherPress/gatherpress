@@ -185,7 +185,7 @@ final class Modal_Manager {
 	 * @since 0.33.0
 	 * @since 0.36.0 Links acting as buttons also close the modal on Space. Links without an
 	 *            `href` get `tabindex`.
-	 * @since 0.37.0    The modal closes on Escape and on an overlay click.
+	 * @since 0.37.0 The modal closes on Escape and on an overlay click.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *

@@ -538,7 +538,7 @@ function getTopMostOpenElement() {
  *
  * @since 0.32.0
  * @since 0.36.0 `Escape` closes only the top-most open element.
- * @since 0.37.0    `Escape` is cancelled once handled, so a modal `<dialog>` around the element stays open.
+ * @since 0.37.0 `Escape` is cancelled once handled, so a modal `<dialog>` around the element stays open.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
  * @param {string}   contentSelector - Selector for the inner content element.

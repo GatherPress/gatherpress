@@ -1095,7 +1095,7 @@ final class Setup {
 	 * Check if any post type is registered with a taxonomy.
 	 *
 	 * @since 0.34.0
-	 * @since 0.37.0    Public, for `Feed_Placeholder`.
+	 * @since 0.37.0 Public, for `Feed_Placeholder`.
 	 *
 	 * @param string $taxonomy   Taxonomy slug.
 	 *
@@ -1119,7 +1119,7 @@ final class Setup {
 	 * and if its taxonomy is one that is related to any 'gatherpress-event-date' supporting post type.
 	 *
 	 * @since 0.34.0
-	 * @since 0.37.0    Public, for `Feed_Placeholder`.
+	 * @since 0.37.0 Public, for `Feed_Placeholder`.
 	 *
 	 * @param  string $post_type  The post_type to check.
 	 *

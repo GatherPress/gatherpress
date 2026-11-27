@@ -500,7 +500,7 @@ final class External {
 		 * params.
 		 *
 		 * @since 0.34.0
-		 * @since 0.37.0    Renamed from `gatherpress_calendar_url`.
+		 * @since 0.37.0 Renamed from `gatherpress_calendar_url`.
 		 *
 		 * @param string   $endpoint_url The full calendar URL.
 		 * @param \WP_Post $post         The corresponding event post.

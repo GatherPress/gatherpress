@@ -202,7 +202,7 @@ final class Event_Query {
 			 * Loop lists, on the front end and in the editor preview.
 			 *
 			 * @since 0.33.0
-			 * @since 0.37.0    Renamed from `gatherpress_query_vars`. Also runs for Query
+			 * @since 0.37.0 Renamed from `gatherpress_query_vars`. Also runs for Query
 			 *               Loops of shadow-source posts, such as venues, where
 			 *               `$query_args` can carry `gatherpress_has_events_filter` and
 			 *               `gatherpress_upcoming_events_only`.
