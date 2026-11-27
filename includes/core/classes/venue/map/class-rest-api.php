@@ -363,6 +363,14 @@ final class Rest_Api {
 			);
 		}
 
+		if ( ! $result['success'] ) {
+			return new WP_Error(
+				'gatherpress_cleanup_failed',
+				__( 'The static maps directory could not be read.', 'gatherpress' ),
+				array( 'status' => 500 )
+			);
+		}
+
 		return new WP_REST_Response( $result );
 	}
 }

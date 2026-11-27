@@ -23,12 +23,12 @@ use WP_CLI;
 final class Venue_Map_Cli extends WP_CLI {
 
 	/**
-	 * Garbage collect unused venue static-map images.
+	 * Delete static-map images that no venue uses anymore.
 	 *
 	 * ## OPTIONS
 	 *
-	 * [--execute]
-	 * : Actually delete orphaned static map images. Defaults to dry-run.
+	 * [--apply]
+	 * : Delete the orphaned images. Without this flag, the command only reports them.
 	 *
 	 * [--verbose]
 	 * : Output each candidate file being inspected or deleted.
@@ -42,13 +42,13 @@ final class Venue_Map_Cli extends WP_CLI {
 	 * ## EXAMPLES
 	 *
 	 *    # Dry run: list orphaned static map files without deleting.
-	 *    $ wp gatherpress venue-map gc
+	 *    $ wp gatherpress venue-map cleanup
 	 *
 	 *    # Delete orphaned static map images.
-	 *    $ wp gatherpress venue-map gc --execute
+	 *    $ wp gatherpress venue-map cleanup --apply
 	 *
 	 *    # Delete with verbose candidate output.
-	 *    $ wp gatherpress venue-map gc --execute --verbose
+	 *    $ wp gatherpress venue-map cleanup --apply --verbose
 	 *
 	 * @since TBD
 	 *
@@ -59,18 +59,36 @@ final class Venue_Map_Cli extends WP_CLI {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	public function gc( array $args = array(), array $assoc_args = array() ): void {
-		$execute = ! empty( $assoc_args['execute'] );
-		$verbose = ! empty( $assoc_args['verbose'] );
-		$force   = ! empty( $assoc_args['force'] );
-		$limit   = ! empty( $assoc_args['limit'] ) ? (int) $assoc_args['limit'] : Cleanup::DEFAULT_LIMIT;
+	public function cleanup( array $args = array(), array $assoc_args = array() ): void {
+		$apply   = filter_var( $assoc_args['apply'] ?? false, FILTER_VALIDATE_BOOLEAN );
+		$verbose = filter_var( $assoc_args['verbose'] ?? false, FILTER_VALIDATE_BOOLEAN );
+		$force   = filter_var( $assoc_args['force'] ?? false, FILTER_VALIDATE_BOOLEAN );
+		$limit   = Cleanup::DEFAULT_LIMIT;
 
-		$dry_run = ! $execute;
+		if ( isset( $assoc_args['limit'] ) ) {
+			$raw_limit = (string) $assoc_args['limit'];
+
+			if ( ! ctype_digit( $raw_limit ) || 0 === (int) $raw_limit ) {
+				self::error( __( 'The --limit value must be a positive whole number.', 'gatherpress' ) );
+
+				return; // @phpstan-ignore deadCode.unreachable
+			}
+
+			$limit = (int) $raw_limit;
+		}
+
+		$dry_run = ! $apply;
 		$cleanup = Cleanup::get_instance();
-		$result  = $cleanup->sweep( $dry_run, $limit, (bool) $force );
+		$result  = $cleanup->sweep( $dry_run, $limit, $force );
 
 		if ( $result['locked'] ) {
 			self::error( __( 'A cleanup sweep is currently in progress. Use --force to override.', 'gatherpress' ) );
+
+			return; // @phpstan-ignore deadCode.unreachable
+		}
+
+		if ( ! $result['success'] ) {
+			self::error( __( 'The static maps directory could not be read.', 'gatherpress' ) );
 
 			return; // @phpstan-ignore deadCode.unreachable
 		}
@@ -90,7 +108,7 @@ final class Venue_Map_Cli extends WP_CLI {
 				sprintf(
 					/* translators: 1: Number of files, 2: Formatted reclaimed byte size. */
 					__(
-						'Dry run complete. Found %1$d orphaned file(s) (%2$s). Run with --execute to delete.',
+						'Dry run complete. Found %1$d orphaned file(s) (%2$s). Run with --apply to delete.',
 						'gatherpress'
 					),
 					$result['orphans'],
@@ -108,9 +126,21 @@ final class Venue_Map_Cli extends WP_CLI {
 			);
 		}
 
+		if ( $result['failed'] ) {
+			self::warning(
+				sprintf(
+					/* translators: %d: Number of files that could not be deleted. */
+					__( 'Could not delete %d file(s).', 'gatherpress' ),
+					$result['failed']
+				)
+			);
+		}
+
 		if ( $result['hit_limit'] ) {
 			self::warning(
-				__( 'Reached per-run deletion limit. Run the command again to continue sweeping.', 'gatherpress' )
+				$dry_run
+					? __( 'Stopped at the --limit value, so more orphaned files may exist.', 'gatherpress' )
+					: __( 'Reached per-run deletion limit. Run the command again to continue sweeping.', 'gatherpress' )
 			);
 		}
 	}

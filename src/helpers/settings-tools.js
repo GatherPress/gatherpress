@@ -415,11 +415,13 @@ export async function cleanupMaps( { cleanupButton, cleanupStatus } ) {
 		} );
 
 		const deleted = result?.deleted ?? 0;
+		const failed = result?.failed ?? 0;
 		const bytesReclaimed = result?.bytes_reclaimed ?? 0;
+		const messages = [];
 
-		const message =
-			0 < deleted
-				? sprintf(
+		if ( 0 < deleted ) {
+			messages.push(
+				sprintf(
 					/* translators: 1: Number of files deleted, 2: Formatted byte size reclaimed. */
 					_n(
 						'Cleanup complete: removed %1$d file (%2$s reclaimed).',
@@ -429,10 +431,30 @@ export async function cleanupMaps( { cleanupButton, cleanupStatus } ) {
 					),
 					deleted,
 					formatBytes( bytesReclaimed ),
-				)
-				: __( 'No unused static-map images found.', 'gatherpress' );
+				),
+			);
+		}
 
-		showStatus( cleanupStatus, message, false );
+		if ( 0 < failed ) {
+			messages.push(
+				sprintf(
+					/* translators: %d: Number of files that could not be removed. */
+					_n(
+						'Could not remove %d unused file.',
+						'Could not remove %d unused files.',
+						failed,
+						'gatherpress',
+					),
+					failed,
+				),
+			);
+		}
+
+		if ( ! messages.length ) {
+			messages.push( __( 'No unused static-map images found.', 'gatherpress' ) );
+		}
+
+		showStatus( cleanupStatus, messages.join( ' ' ), false );
 	} catch ( apiError ) {
 		showStatus(
 			cleanupStatus,

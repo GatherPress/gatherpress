@@ -470,6 +470,15 @@ describe( 'initSettingsTools', () => {
 		);
 	} );
 
+	it( 'skips the cleanup controls when the page has none', () => {
+		const root = renderTools();
+
+		root.querySelector( '.gatherpress-settings-tools__cleanup-maps' ).remove();
+
+		expect( () => initSettingsTools() ).not.toThrow();
+		expect( apiFetch ).not.toHaveBeenCalled();
+	} );
+
 	describe( 'formatBytes', () => {
 		it( 'formats 0 bytes correctly', () => {
 			expect( formatBytes( 0 ) ).toBe( '0 B' );
@@ -566,6 +575,59 @@ describe( 'initSettingsTools', () => {
 			).textContent;
 
 			expect( cleanupText ).toBe( 'Network error' );
+			expect( cleanupButton.getAttribute( 'aria-disabled' ) ).toBeNull();
+		} );
+
+		it( 'reports files that could not be removed', async () => {
+			const cleanupButton = document.createElement( 'button' );
+			const cleanupStatus = document.createElement( 'output' );
+			cleanupStatus.innerHTML =
+				'<span class="spinner"></span><span class="gatherpress-settings-tools__cleanup-status-text"></span>';
+
+			apiFetch.mockResolvedValue( {
+				deleted: 1,
+				failed: 2,
+				bytes_reclaimed: 1024,
+			} );
+
+			await cleanupMaps( { cleanupButton, cleanupStatus } );
+
+			const cleanupText = cleanupStatus.querySelector(
+				'.gatherpress-settings-tools__cleanup-status-text',
+			).textContent;
+
+			expect( cleanupText ).toBe(
+				'Cleanup complete: removed 1 file (1.0 KB reclaimed). Could not remove 2 unused files.',
+			);
+		} );
+
+		it( 'tolerates a status element without a spinner or text', async () => {
+			const cleanupButton = document.createElement( 'button' );
+			const cleanupStatus = document.createElement( 'output' );
+
+			apiFetch.mockResolvedValue( { deleted: 0 } );
+
+			await expect(
+				cleanupMaps( { cleanupButton, cleanupStatus } ),
+			).resolves.toBeUndefined();
+			expect( cleanupStatus.textContent ).toBe( '' );
+		} );
+
+		it( 'falls back to a generic message when the error has none', async () => {
+			const cleanupButton = document.createElement( 'button' );
+			const cleanupStatus = document.createElement( 'output' );
+			cleanupStatus.innerHTML =
+				'<span class="spinner"></span><span class="gatherpress-settings-tools__cleanup-status-text"></span>';
+
+			apiFetch.mockRejectedValue( {} );
+
+			await cleanupMaps( { cleanupButton, cleanupStatus } );
+
+			const cleanupText = cleanupStatus.querySelector(
+				'.gatherpress-settings-tools__cleanup-status-text',
+			).textContent;
+
+			expect( cleanupText ).toBe( 'Cleanup failed.' );
 			expect( cleanupButton.getAttribute( 'aria-disabled' ) ).toBeNull();
 		} );
 	} );

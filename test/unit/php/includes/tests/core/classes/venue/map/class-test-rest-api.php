@@ -665,4 +665,81 @@ class Test_Rest_Api extends Base {
 
 		$this->assertSame( 409, $response->get_status() );
 	}
+
+	/**
+	 * Tests rest_gc forwards execute and limit to the sweep.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_forwards_execute_and_limit(): void {
+		Rest_Api::get_instance()->register_endpoints();
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$dir = \GatherPress\Core\Venue\Map\Cleanup::get_instance()->get_uploads_dir();
+		wp_mkdir_p( $dir );
+		$paths = array();
+
+		$names = array( 'rest-forward-1-osm-roadmap-15-800-400.png', 'rest-forward-2-osm-roadmap-15-800-400.png' );
+
+		foreach ( $names as $name ) {
+			$paths[] = $dir . '/' . $name;
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( end( $paths ), 'png' );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_touch
+			touch( end( $paths ), time() - 600 );
+		}
+
+		try {
+			$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+			$request->set_param( 'execute', false );
+			$data = rest_do_request( $request )->get_data();
+
+			$this->assertSame( 0, $data['deleted'] );
+			$this->assertFileExists( $paths[0] );
+			$this->assertFileExists( $paths[1] );
+
+			$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+			$request->set_param( 'execute', true );
+			$request->set_param( 'limit', 1 );
+			$data = rest_do_request( $request )->get_data();
+
+			$this->assertSame( 1, $data['deleted'] );
+			$this->assertTrue( $data['hit_limit'] );
+		} finally {
+			foreach ( $paths as $path ) {
+				wp_delete_file( $path );
+			}
+		}
+	}
+
+	/**
+	 * Tests rest_gc returns an error when the uploads directory cannot be read.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rest_gc
+	 *
+	 * @return void
+	 */
+	public function test_rest_gc_returns_500_when_sweep_fails(): void {
+		Rest_Api::get_instance()->register_endpoints();
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$filter = static function ( array $dirs ): array {
+			$dirs['error'] = 'Simulated upload dir failure.';
+
+			return $dirs;
+		};
+		add_filter( 'upload_dir', $filter );
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$response = rest_do_request( $request );
+		remove_filter( 'upload_dir', $filter );
+
+		$this->assertSame( 500, $response->get_status() );
+		$this->assertSame( 'gatherpress_cleanup_failed', $response->get_data()['code'] );
+	}
 }

@@ -451,6 +451,7 @@ class Test_Cleanup extends Base {
 		$result = $cleanup->sweep();
 		remove_filter( 'upload_dir', $filter );
 
+		$this->assertFalse( $result['success'], 'An uploads error should fail the sweep.' );
 		$this->assertSame( 0, $result['scanned'] );
 		$this->assertSame( 0, $result['orphans'] );
 	}
@@ -539,7 +540,10 @@ class Test_Cleanup extends Base {
 	}
 
 	/**
-	 * Tests sweep returns early when directory handle cannot be opened.
+	 * Tests sweep fails when the directory exists but cannot be opened.
+	 *
+	 * Uses a stream wrapper that reports a directory and refuses to open it, because
+	 * file permissions do not stop a test suite running as root.
 	 *
 	 * @since TBD
 	 *
@@ -547,23 +551,76 @@ class Test_Cleanup extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_sweep_returns_early_when_dir_unreadable(): void {
-		$cleanup = Cleanup::get_instance();
-		$dir     = $cleanup->get_uploads_dir();
+	public function test_sweep_fails_when_dir_cannot_be_opened(): void {
+		$wrapper = new class() {
+			/**
+			 * Stream context, set by PHP.
+			 *
+			 * @var resource|null
+			 */
+			public $context;
 
-		if ( ! is_dir( $dir ) ) {
-			wp_mkdir_p( $dir );
-		}
+			/**
+			 * Reports every path as a directory.
+			 *
+			 * @return array<string, int>
+			 */
+			public function url_stat(): array {
+				return array( 'mode' => 040755 );
+			}
 
+			/**
+			 * Refuses to open any directory.
+			 *
+			 * @return bool
+			 */
+			public function dir_opendir(): bool {
+				return false;
+			}
+		};
+		$filter  = static function ( array $dirs ): array {
+			$dirs['basedir'] = 'gpunreadable://uploads';
+
+			return $dirs;
+		};
+
+		stream_wrapper_register( 'gpunreadable', get_class( $wrapper ) );
+		add_filter( 'upload_dir', $filter );
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler
 		set_error_handler( static fn() => true );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
-		chmod( $dir, 0000 );
-		$result = $cleanup->sweep();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
-		chmod( $dir, 0755 );
-		restore_error_handler();
 
+		try {
+			$result = Cleanup::get_instance()->sweep();
+		} finally {
+			restore_error_handler();
+			remove_filter( 'upload_dir', $filter );
+			stream_wrapper_unregister( 'gpunreadable' );
+		}
+
+		$this->assertFalse( $result['success'] );
+		$this->assertSame( 0, $result['scanned'] );
+	}
+
+	/**
+	 * Tests a missing static-maps directory is a clean, successful sweep.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_succeeds_when_dir_is_missing(): void {
+		$filter = static function ( array $dirs ): array {
+			$dirs['basedir'] = $dirs['basedir'] . '/gatherpress-missing-' . wp_generate_password( 8, false );
+
+			return $dirs;
+		};
+		add_filter( 'upload_dir', $filter );
+		$result = Cleanup::get_instance()->sweep();
+		remove_filter( 'upload_dir', $filter );
+
+		$this->assertTrue( $result['success'] );
 		$this->assertSame( 0, $result['scanned'] );
 	}
 
@@ -579,14 +636,21 @@ class Test_Cleanup extends Base {
 	public function test_sweep_skips_subdirectories(): void {
 		$cleanup = Cleanup::get_instance();
 		$dir     = $cleanup->get_uploads_dir();
-		$subdir  = $dir . '/test-subdir';
+		$subdir  = $dir . '/dir-15-800-400.png';
 
 		wp_mkdir_p( $subdir );
-		$result = $cleanup->sweep();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
-		rmdir( $subdir );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_touch
+		touch( $subdir, time() - 600 );
 
-		$this->assertNotContains( 'test-subdir', $result['files'] );
+		try {
+			$result = $cleanup->sweep();
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+			rmdir( $subdir );
+		}
+
+		$this->assertSame( 0, $result['scanned'] );
+		$this->assertSame( 0, $result['orphans'] );
 	}
 
 	/**
@@ -605,10 +669,13 @@ class Test_Cleanup extends Base {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 		file_put_contents( $file, 'test' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_touch
+		touch( $file, time() - 600 );
 		$result = $cleanup->sweep( true );
 		wp_delete_file( $file );
 
-		$this->assertNotContains( 'invalid-file.txt', $result['files'] );
+		$this->assertSame( 0, $result['scanned'] );
+		$this->assertSame( 0, $result['orphans'] );
 	}
 
 	/**
@@ -629,5 +696,28 @@ class Test_Cleanup extends Base {
 
 		$this->assertTrue( $result['hit_limit'] );
 		$this->assertCount( 1, $result['files'] );
+	}
+
+	/**
+	 * Tests a file that cannot be deleted is counted as failed, not deleted.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_counts_failed_deletions(): void {
+		$path = $this->create_map_file( 'undeletable-osm-roadmap-15-800-400.png', time() - 600 );
+
+		add_filter( 'wp_delete_file', '__return_empty_string' );
+		$result = Cleanup::get_instance()->sweep( false );
+		remove_filter( 'wp_delete_file', '__return_empty_string' );
+
+		$this->assertFileExists( $path );
+		$this->assertSame( 1, $result['orphans'] );
+		$this->assertSame( 1, $result['failed'] );
+		$this->assertSame( 0, $result['deleted'] );
+		$this->assertSame( array(), $result['files'], 'A file that was not deleted is not listed.' );
 	}
 }

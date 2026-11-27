@@ -211,7 +211,7 @@ class Cleanup {
 	public function is_candidate( string $entry, string $dir, array $in_use, int $now ): bool {
 		$full_path = trailingslashit( $dir ) . $entry;
 
-		if ( isset( $in_use[ $entry ] ) ) {
+		if ( isset( $in_use[ $entry ] ) || ! is_file( $full_path ) ) {
 			return false;
 		}
 
@@ -250,6 +250,7 @@ class Cleanup {
 	 *     scanned: int,
 	 *     orphans: int,
 	 *     deleted: int,
+	 *     failed: int,
 	 *     bytes_reclaimed: int,
 	 *     files: string[],
 	 *     hit_limit: bool
@@ -264,6 +265,7 @@ class Cleanup {
 			'scanned'         => 0,
 			'orphans'         => 0,
 			'deleted'         => 0,
+			'failed'          => 0,
 			'bytes_reclaimed' => 0,
 			'files'           => array(),
 			'hit_limit'       => false,
@@ -281,7 +283,14 @@ class Cleanup {
 		try {
 			$dir = $this->get_uploads_dir();
 
-			if ( null === $dir || ! is_dir( $dir ) ) {
+			if ( null === $dir ) {
+				$result['success'] = false;
+
+				return $result;
+			}
+
+			// No directory yet means no maps have been saved, which is a clean state.
+			if ( ! is_dir( $dir ) ) {
 				return $result;
 			}
 
@@ -289,6 +298,8 @@ class Cleanup {
 			$handle = opendir( $dir );
 
 			if ( false === $handle ) {
+				$result['success'] = false;
+
 				return $result;
 			}
 
@@ -318,21 +329,25 @@ class Cleanup {
 					continue;
 				}
 
-				$size = (int) filesize( $full_path );
+				$size = wp_filesize( $full_path );
 				++$result['orphans'];
-				$result['files'][] = $entry;
 
 				if ( ! $dry_run ) {
-					if ( $this->unlink_file( $full_path ) ) {
-						++$result['deleted'];
-						$result['bytes_reclaimed'] += $size;
+					if ( ! $this->unlink_file( $full_path ) ) {
+						++$result['failed'];
+						continue;
+					}
 
-						if ( $result['deleted'] >= $limit ) {
-							$result['hit_limit'] = true;
-							break;
-						}
+					++$result['deleted'];
+					$result['files'][]          = $entry;
+					$result['bytes_reclaimed'] += $size;
+
+					if ( $result['deleted'] >= $limit ) {
+						$result['hit_limit'] = true;
+						break;
 					}
 				} else {
+					$result['files'][]          = $entry;
 					$result['bytes_reclaimed'] += $size;
 
 					if ( count( $result['files'] ) >= $limit ) {
