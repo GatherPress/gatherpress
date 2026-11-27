@@ -42,7 +42,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-query.php:362](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-query.php#L362)
+- [includes/core/classes/event/class-query.php:377](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-query.php#L377)
 ```php
 apply_filters(
 				'gatherpress_event_query_vars',
