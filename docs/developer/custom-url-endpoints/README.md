@@ -210,7 +210,7 @@ Typical use cases: routing calendar downloads through a CDN, swapping the host f
 
 ## Resources
 
-- [Recurring events in iCal output](recurring-events.md) describes how a recurring series should appear in these downloads and feeds once [#80](https://github.com/GatherPress/gatherpress/issues/80) lands.
+- [Recurring events in iCal output](recurring-events.md) describes how recurring events are being built in core, and how a recurring series should appear in these downloads and feeds once [#80](https://github.com/GatherPress/gatherpress/issues/80) lands.
 
 - Full, working code from the Office 365 example is part of **GatherPress Awesome**.
 
