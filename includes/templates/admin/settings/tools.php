@@ -88,11 +88,14 @@ $gatherpress_scope = isset( $scope ) && 'network' === $scope ? 'network' : 'blog
 
 		<h2><?php esc_html_e( 'Venue Maps', 'gatherpress' ); ?></h2>
 		<p class="description">
-			<?php esc_html_e( 'Remove cached static-map images that are no longer referenced by any venue.', 'gatherpress' ); ?>
+			<?php esc_html_e( 'GatherPress saves an image of each venue\'s map in your uploads folder. When a venue is deleted or its address changes, the old image is left behind. This removes those leftover images to free up space.', 'gatherpress' ); ?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Maps that a venue still uses, and any saved in the last five minutes, are kept.', 'gatherpress' ); ?>
 		</p>
 		<p>
 			<button type="button" class="button button-primary gatherpress-settings-tools__cleanup-maps">
-				<?php esc_html_e( 'Clean up unused venue-map images', 'gatherpress' ); ?>
+				<?php esc_html_e( 'Remove Unused Maps', 'gatherpress' ); ?>
 			</button>
 		</p>
 		<output class="gatherpress-settings-tools__status gatherpress-settings-tools__cleanup-status">

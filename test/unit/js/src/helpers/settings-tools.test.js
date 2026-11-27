@@ -58,7 +58,7 @@ function renderTools( scope = 'blog' ) {
 				<span class="spinner"></span>
 				<span class="gatherpress-settings-tools__status-text"></span>
 			</output>
-			<button type="button" class="gatherpress-settings-tools__cleanup-maps">Clean up unused venue-map images</button>
+			<button type="button" class="gatherpress-settings-tools__cleanup-maps">Remove Unused Maps</button>
 			<output class="gatherpress-settings-tools__cleanup-status">
 				<span class="spinner"></span>
 				<span class="gatherpress-settings-tools__cleanup-status-text"></span>
