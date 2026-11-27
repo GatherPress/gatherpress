@@ -407,10 +407,10 @@ export async function cleanupMaps( { cleanupButton, cleanupStatus } ) {
 
 	try {
 		const result = await apiFetch( {
-			path: `/${ REST_NAMESPACE }/venue-map/gc`,
+			path: `/${ REST_NAMESPACE }/venue-map/cleanup`,
 			method: 'POST',
 			data: {
-				execute: true,
+				apply: true,
 			},
 		} );
 

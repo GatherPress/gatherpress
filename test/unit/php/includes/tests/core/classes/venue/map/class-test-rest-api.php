@@ -544,43 +544,43 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests rest_gc requires manage_options capability.
+	 * Tests rest_cleanup requires manage_options capability.
 	 *
 	 * @since TBD
 	 *
 	 * @covers ::register_endpoints
-	 * @covers ::rest_gc
+	 * @covers ::rest_cleanup
 	 *
 	 * @return void
 	 */
-	public function test_rest_gc_requires_manage_options(): void {
+	public function test_rest_cleanup_requires_manage_options(): void {
 		Rest_Api::get_instance()->register_endpoints();
 
 		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $subscriber_id );
 
-		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
 		$response = rest_do_request( $request );
 
 		$this->assertSame( 403, $response->get_status() );
 	}
 
 	/**
-	 * Tests rest_gc runs successfully for administrator.
+	 * Tests rest_cleanup runs successfully for administrator.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::rest_gc
+	 * @covers ::rest_cleanup
 	 *
 	 * @return void
 	 */
-	public function test_rest_gc_succeeds_for_admin(): void {
+	public function test_rest_cleanup_succeeds_for_admin(): void {
 		Rest_Api::get_instance()->register_endpoints();
 
 		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_id );
 
-		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
 		$response = rest_do_request( $request );
 
 		$this->assertSame( 200, $response->get_status() );
@@ -591,23 +591,23 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests rest_gc with custom limit and execute flags.
+	 * Tests rest_cleanup with custom limit and apply flags.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::rest_gc
+	 * @covers ::rest_cleanup
 	 *
 	 * @return void
 	 */
-	public function test_rest_gc_with_custom_limit_and_execute(): void {
+	public function test_rest_cleanup_with_custom_limit_and_apply(): void {
 		Rest_Api::get_instance()->register_endpoints();
 
 		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_id );
 
-		$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
 		$request->set_param( 'limit', 10 );
-		$request->set_param( 'execute', true );
+		$request->set_param( 'apply', true );
 
 		$response = rest_do_request( $request );
 
@@ -617,21 +617,21 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests rest_gc falls back to default limit when limit parameter is empty.
+	 * Tests rest_cleanup falls back to default limit when limit parameter is empty.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::rest_gc
+	 * @covers ::rest_cleanup
 	 *
 	 * @return void
 	 */
-	public function test_rest_gc_falls_back_to_default_limit_when_empty(): void {
+	public function test_rest_cleanup_falls_back_to_default_limit_when_empty(): void {
 		Rest_Api::get_instance()->register_endpoints();
 
 		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_id );
 
-		$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
 		$request->set_param( 'limit', 0 );
 
 		$response = rest_do_request( $request );
@@ -642,15 +642,15 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests rest_gc returns 409 conflict when locked.
+	 * Tests rest_cleanup returns 409 conflict when locked.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::rest_gc
+	 * @covers ::rest_cleanup
 	 *
 	 * @return void
 	 */
-	public function test_rest_gc_returns_409_when_locked(): void {
+	public function test_rest_cleanup_returns_409_when_locked(): void {
 		Rest_Api::get_instance()->register_endpoints();
 
 		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
@@ -658,7 +658,7 @@ class Test_Rest_Api extends Base {
 
 		set_transient( \GatherPress\Core\Venue\Map\Cleanup::LOCK_TRANSIENT, time(), 60 );
 
-		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
 		$response = rest_do_request( $request );
 
 		delete_transient( \GatherPress\Core\Venue\Map\Cleanup::LOCK_TRANSIENT );
@@ -667,15 +667,15 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests rest_gc forwards execute and limit to the sweep.
+	 * Tests rest_cleanup forwards apply and limit to the sweep.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::rest_gc
+	 * @covers ::rest_cleanup
 	 *
 	 * @return void
 	 */
-	public function test_rest_gc_forwards_execute_and_limit(): void {
+	public function test_rest_cleanup_forwards_apply_and_limit(): void {
 		Rest_Api::get_instance()->register_endpoints();
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
@@ -694,16 +694,16 @@ class Test_Rest_Api extends Base {
 		}
 
 		try {
-			$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
-			$request->set_param( 'execute', false );
+			$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
+			$request->set_param( 'apply', false );
 			$data = rest_do_request( $request )->get_data();
 
 			$this->assertSame( 0, $data['deleted'] );
 			$this->assertFileExists( $paths[0] );
 			$this->assertFileExists( $paths[1] );
 
-			$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
-			$request->set_param( 'execute', true );
+			$request = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
+			$request->set_param( 'apply', true );
 			$request->set_param( 'limit', 1 );
 			$data = rest_do_request( $request )->get_data();
 
@@ -717,15 +717,15 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests rest_gc returns an error when the uploads directory cannot be read.
+	 * Tests rest_cleanup returns an error when the uploads directory cannot be read.
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::rest_gc
+	 * @covers ::rest_cleanup
 	 *
 	 * @return void
 	 */
-	public function test_rest_gc_returns_500_when_sweep_fails(): void {
+	public function test_rest_cleanup_returns_500_when_sweep_fails(): void {
 		Rest_Api::get_instance()->register_endpoints();
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
@@ -735,7 +735,7 @@ class Test_Rest_Api extends Base {
 			return $dirs;
 		};
 		add_filter( 'upload_dir', $filter );
-		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/gc', GATHERPRESS_REST_NAMESPACE ) );
+		$request  = new \WP_REST_Request( 'POST', sprintf( '/%s/venue-map/cleanup', GATHERPRESS_REST_NAMESPACE ) );
 		$response = rest_do_request( $request );
 		remove_filter( 'upload_dir', $filter );
 

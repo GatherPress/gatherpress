@@ -132,20 +132,20 @@ final class Rest_Api {
 
 		register_rest_route(
 			GATHERPRESS_REST_NAMESPACE,
-			'/venue-map/gc',
+			'/venue-map/cleanup',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'rest_gc' ),
+				'callback'            => array( $this, 'rest_cleanup' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'manage_options' );
 				},
 				'args'                => array(
-					'execute' => array(
+					'apply' => array(
 						'type'        => 'boolean',
-						'default'     => true,
-						'description' => __( 'Whether to unlink orphaned files.', 'gatherpress' ),
+						'default'     => false,
+						'description' => __( 'Whether to delete orphaned files. Defaults to a dry run.', 'gatherpress' ),
 					),
-					'limit'   => array(
+					'limit' => array(
 						'type'        => 'integer',
 						'default'     => Cleanup::DEFAULT_LIMIT,
 						'description' => __( 'Maximum number of files to unlink in one run.', 'gatherpress' ),
@@ -339,21 +339,21 @@ final class Rest_Api {
 	}
 
 	/**
-	 * Run garbage collection on unused venue static-map images from a REST request.
+	 * Clean up unused venue static-map images from a REST request.
 	 *
 	 * @since TBD
 	 *
 	 * @param WP_REST_Request $request The REST request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return WP_REST_Response|WP_Error Garbage collection summary or error.
+	 * @return WP_REST_Response|WP_Error Cleanup summary or error.
 	 */
-	public function rest_gc( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$execute   = (bool) $request->get_param( 'execute' );
+	public function rest_cleanup( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$apply     = (bool) $request->get_param( 'apply' );
 		$raw_limit = $request->get_param( 'limit' );
 		$limit     = ! empty( $raw_limit ) ? (int) $raw_limit : Cleanup::DEFAULT_LIMIT;
 
-		$result = Cleanup::get_instance()->sweep( ! $execute, $limit );
+		$result = Cleanup::get_instance()->sweep( ! $apply, $limit );
 
 		if ( $result['locked'] ) {
 			return new WP_Error(

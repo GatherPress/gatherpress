@@ -465,7 +465,7 @@ describe( 'initSettingsTools', () => {
 
 		expect( apiFetch ).toHaveBeenLastCalledWith(
 			expect.objectContaining( {
-				path: '/gatherpress/v1/venue-map/gc',
+				path: '/gatherpress/v1/venue-map/cleanup',
 			} ),
 		);
 	} );
@@ -526,9 +526,9 @@ describe( 'initSettingsTools', () => {
 			await cleanupMaps( { cleanupButton, cleanupStatus } );
 
 			expect( apiFetch ).toHaveBeenCalledWith( {
-				path: '/gatherpress/v1/venue-map/gc',
+				path: '/gatherpress/v1/venue-map/cleanup',
 				method: 'POST',
-				data: { execute: true },
+				data: { apply: true },
 			} );
 
 			const cleanupText = cleanupStatus.querySelector(
