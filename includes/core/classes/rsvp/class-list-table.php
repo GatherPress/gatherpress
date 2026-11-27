@@ -59,7 +59,7 @@ final class List_Table extends WP_List_Table {
 	 * `Setup::prepare_rsvp_admin_page()` makes the ones core does not already
 	 * remove from the address bar removable too.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string[]
 	 */
@@ -1065,7 +1065,7 @@ final class List_Table extends WP_List_Table {
 	 * can redirect to `get_action_redirect_url()` with the result.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Returns the result, and no longer runs while the screen renders.
+	 * @since 0.37.0 Returns the result, and no longer runs while the screen renders.
 	 *
 	 * @return array<string, int> How many RSVPs each result covers, keyed by one of `RESULT_ARGS`.
 	 *                            Empty when no action was processed.
@@ -1207,7 +1207,7 @@ final class List_Table extends WP_List_Table {
 	 * and drops the action, its IDs and its nonce, so a reload cannot repeat
 	 * it. The counts go on as query args for `get_action_notice()`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, int> $result Counts from `process_bulk_action()`, keyed by result arg.
 	 *
@@ -1234,7 +1234,7 @@ final class List_Table extends WP_List_Table {
 	 * Reads the counts that `get_action_redirect_url()` put on the URL, and
 	 * says what happened in one line per result, as edit-comments.php does.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The notice markup, or an empty string when there is no result to show.
 	 */
@@ -1283,7 +1283,7 @@ final class List_Table extends WP_List_Table {
 	/**
 	 * Gets the message format for one result of an action.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $result_arg One of `RESULT_ARGS`.
 	 * @param int    $count      How many RSVPs the result covers.

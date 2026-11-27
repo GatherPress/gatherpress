@@ -1,6 +1,6 @@
 {
 	"name": "gatherpress",
-	"version": "0.37.0-alpha.2",
+	"version": "0.38.0-alpha.0",
 	"description": "Powering Communities with WordPress",
 	"author": "",
 	"license": "GPL-2.0-or-later",
@@ -96,6 +96,7 @@
 		"markdown-it": "^14.2.0",
 		"proxy-addr": "^2.0.8",
 		"cssnano": "^7.1.9",
+		"isomorphic-git": "^1.38.6",
 		"lighthouse": {
 			"@sentry/node": "^10.76.1"
 		}

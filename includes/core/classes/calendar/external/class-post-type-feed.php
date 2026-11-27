@@ -71,7 +71,7 @@ final class Post_Type_Feed extends Endpoint {
 	 * that `get_post_type_archive_feed_link()` returns: a string
 	 * `has_archive` replaces the rewrite slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The archive slug.
 	 */

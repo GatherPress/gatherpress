@@ -117,7 +117,7 @@ class Event {
 	 * public taxonomy space, and a status is read and written through
 	 * Event\Status rather than as terms.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const TAXONOMY_STATUS = '_gatherpress_event_status';

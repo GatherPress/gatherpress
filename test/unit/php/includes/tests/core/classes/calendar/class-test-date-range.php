@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Calendar\Date_Range.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Calendar;

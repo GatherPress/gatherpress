@@ -3,7 +3,7 @@
  * Test fixture for a check-in state that a companion plugin adds.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp\Flag;
@@ -16,14 +16,14 @@ use GatherPress\Core\Rsvp\Flag\Check_In_State;
  * A check-in state for people who joined online, as a companion plugin
  * would register it.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Test_Checked_In_Online extends Check_In_State {
 
 	/**
 	 * The flag slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -32,7 +32,7 @@ final class Test_Checked_In_Online extends Check_In_State {
 	/**
 	 * Gets the name of the state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The name.
 	 */
@@ -43,7 +43,7 @@ final class Test_Checked_In_Online extends Check_In_State {
 	/**
 	 * Gets the name of the action that sets the state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The action name.
 	 */
@@ -54,7 +54,7 @@ final class Test_Checked_In_Online extends Check_In_State {
 	/**
 	 * Whether the state means the person attended.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True.
 	 */
@@ -65,7 +65,7 @@ final class Test_Checked_In_Online extends Check_In_State {
 	/**
 	 * Gets the icon of the state, with characters the sanitizing must remove.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The Dashicon name.
 	 */

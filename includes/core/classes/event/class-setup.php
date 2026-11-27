@@ -141,7 +141,7 @@ final class Setup {
 	 * Event\Rest_Api, so there is exactly one write path and no term-id round
 	 * trip in the block editor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -184,7 +184,7 @@ final class Setup {
 	 * it here makes status classes available across query loops, archives,
 	 * and singular views.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $classes     An array of post class names.
 	 * @param string[] $css_classes An array of additional class names added to the post.
@@ -334,6 +334,8 @@ final class Setup {
 				// The archive page itself is handled by handle_event_archive_redirect() which
 				// returns a 404 or redirects to a page with the same slug.
 				'has_archive'   => true,
+				// Keep events out of WordPress's /random/ redirect.
+				'randomable'    => false,
 				'rewrite'       => array(
 					'slug'       => $rewrite_slug,
 					'with_front' => false,
@@ -856,7 +858,7 @@ final class Setup {
 	 * the term name at retrieval and render time ensures each visitor and editor reads
 	 * the label translated in their own locale without mutating database records.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Term|mixed $term     The term object.
 	 * @param string        $taxonomy The taxonomy slug.

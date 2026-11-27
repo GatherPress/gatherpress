@@ -77,7 +77,7 @@ final class Dropdown_Item {
 	 * feed is left alone, so it does not become a button that does nothing.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Skips an unresolved calendar feed placeholder.
+	 * @since 0.37.0 Skips an unresolved calendar feed placeholder.
 	 *
 	 * @param string $block_content The original block content.
 	 *

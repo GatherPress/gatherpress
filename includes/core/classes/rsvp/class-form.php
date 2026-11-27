@@ -51,7 +51,7 @@ final class Form {
 	/**
 	 * Query arg carrying the token of a rejected submission back to its form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const RETURN_QUERY_ARG = 'gatherpress_rsvp_form_error';
@@ -59,7 +59,7 @@ final class Form {
 	/**
 	 * Prefix of the transient holding a rejected submission's errors and values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const RETURN_TRANSIENT_PREFIX = 'gatherpress_rsvp_form_return_';
@@ -67,7 +67,7 @@ final class Form {
 	/**
 	 * Seconds a rejected submission waits for its form to load again.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const RETURN_EXPIRATION = 10 * MINUTE_IN_SECONDS;
@@ -77,7 +77,7 @@ final class Form {
 	 *
 	 * Matches the default length limit of a text field.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const RETURN_VALUE_MAX_LENGTH = 1000;
@@ -85,7 +85,7 @@ final class Form {
 	/**
 	 * The rejected submission this request returned to its form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var ReturnedSubmission|null
 	 */
 	private ?array $returned_submission = null;
@@ -93,7 +93,7 @@ final class Form {
 	/**
 	 * Whether the token in the URL has been looked up yet.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	private bool $returned_submission_read = false;
@@ -383,6 +383,9 @@ final class Form {
 			// Process all fields.
 			$this->process_fields( $comment_id, $data );
 
+			// A logged-in RSVP can be approved on creation, which fires no status change.
+			( new Rsvp( (int) get_comment( $comment_id )?->comment_post_ID ) )->enforce_capacity( $comment_id );
+
 			// The email creates the token when it goes out.
 			Email::get_instance()->queue_confirmation( $comment_id );
 		}
@@ -435,7 +438,7 @@ final class Form {
 	 * Returns without redirecting when the page the form was on is unknown,
 	 * so the caller can fall back to an error page.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int                   $post_id      The event post ID.
 	 * @param array<string, string> $field_errors Error messages keyed by field name.
@@ -467,7 +470,7 @@ final class Form {
 	 * token, and only the token goes in the URL, so a name or email address
 	 * never ends up in browser history or server logs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int                   $post_id      The event post ID.
 	 * @param array<string, string> $field_errors Error messages keyed by field name.
@@ -514,7 +517,7 @@ final class Form {
 	 * schema. Each value is cut to its field's length limit, 1000 characters
 	 * unless the field allows more, so a refused submission stays small.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id        The event post ID.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -560,7 +563,7 @@ final class Form {
 	 * Looked up once per request, since the headers need it before the form
 	 * renders and deletes its transient.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return ReturnedSubmission|null The submission, or null when there is none.
 	 */
@@ -576,7 +579,7 @@ final class Form {
 	/**
 	 * Reads the rejected submission whose token is in the URL.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return ReturnedSubmission|null The submission, or null when the token is missing, malformed or expired.
 	 */
@@ -606,7 +609,7 @@ final class Form {
 	 * It is shown once, so a later visit to the same URL, from history or a
 	 * shared link, finds nothing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -623,7 +626,7 @@ final class Form {
 	 * included, so no cache may keep a copy of it. Page cache plugins
 	 * look for `DONOTCACHEPAGE` rather than the headers.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, string|false> $headers The headers about to be sent.
 	 *

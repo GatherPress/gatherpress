@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Rsvp\Flag\Rest_Api.
  *
  * @package GatherPress\Core\Rsvp\Flag
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp\Flag;

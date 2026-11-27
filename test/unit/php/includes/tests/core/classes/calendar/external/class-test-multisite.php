@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Calendar\External in multisite mode.
  *
  * @package GatherPress\Core\Calendar\External
- * @since   TBD
+ * @since   0.37.0
  */
 
 namespace GatherPress\Tests\Core\Calendar\External;

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Rsvp_Form\Visibility.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Blocks\Rsvp_Form;
@@ -21,7 +21,7 @@ class Test_Visibility extends Base {
 	/**
 	 * A rule that is not a JSON object changes nothing, and neither does an empty one.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::__construct
 	 * @covers ::should_show
@@ -38,7 +38,7 @@ class Test_Visibility extends Base {
 	/**
 	 * A whenPast rule decides once the event has passed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::should_show
 	 *
@@ -54,7 +54,7 @@ class Test_Visibility extends Base {
 	/**
 	 * A block with only a whenPast rule is the inverse before the event has passed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::should_show
 	 *
@@ -73,7 +73,7 @@ class Test_Visibility extends Base {
 	/**
 	 * An onSuccess rule follows whether the form was just submitted.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::should_show
 	 *
@@ -92,7 +92,7 @@ class Test_Visibility extends Base {
 	/**
 	 * A canceled event shows what whenCanceled asks for and hides the RSVP flow.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::should_show
 	 * @covers ::should_show_when_canceled
@@ -115,7 +115,7 @@ class Test_Visibility extends Base {
 	/**
 	 * A canceled notice is found at any depth, unless a parent hides it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::has_canceled_notice
 	 * @covers ::should_show_when_canceled

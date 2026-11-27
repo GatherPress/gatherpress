@@ -20,7 +20,7 @@ import {
 /**
  * How long the guest count waits after its last change before it is saved, in milliseconds.
  *
- * @since TBD
+ * @since 0.37.0
  */
 const GUEST_COUNT_SAVE_DELAY = 500;
 
@@ -29,21 +29,21 @@ const GUEST_COUNT_SAVE_DELAY = 500;
  *
  * Each value holds the delay's `timer` and a `save( restoreFocus )` function.
  *
- * @since TBD
+ * @since 0.37.0
  */
 const pendingGuestCounts = {};
 
 /**
  * Post IDs whose guest count save is on its way to the server.
  *
- * @since TBD
+ * @since 0.37.0
  */
 const guestCountsInFlight = new Set();
 
 /**
  * Stops a guest count save that waits for the delay, without saving.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {number|string} postId The event's post ID.
  *
@@ -71,7 +71,7 @@ function cancelGuestCount( postId ) {
  * newer count waits for it and goes next, so a slow earlier request cannot
  * reach the server last and overwrite the newer count.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {number|string} postId               The event's post ID.
  * @param {boolean}       [restoreFocus=false] Whether to focus the field again after the save.

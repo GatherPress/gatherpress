@@ -110,7 +110,7 @@ final class Tools extends Base {
 	/**
 	 * Register the REST routes the Tools tab imports and exports through.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -174,7 +174,7 @@ final class Tools extends Base {
 	/**
 	 * Export the settings from a REST request.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
@@ -193,7 +193,7 @@ final class Tools extends Base {
 	 * Values are sanitized as they are imported, so the file only has to
 	 * decode to an object.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request

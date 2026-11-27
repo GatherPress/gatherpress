@@ -17,7 +17,7 @@ import { getRibbonRowsStyle } from '../blocks/calendar/utils/ribbon-rows';
  * template inner blocks. Clicking any day activates it, making that week
  * (and that day) the live/editable one.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props                     Component props.
  * @param {Array}    props.week                This week's day data entries.

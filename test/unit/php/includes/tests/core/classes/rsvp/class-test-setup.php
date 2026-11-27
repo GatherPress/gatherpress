@@ -139,6 +139,12 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'transition_comment_status',
+				'priority' => 10,
+				'callback' => array( $instance, 'enforce_capacity_on_approval' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_set_rsvp_meta_default' ),
@@ -1172,7 +1178,7 @@ class Test_Setup extends Base {
 	/**
 	 * Searching from a check-in filtered screen keeps the filter.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::render_rsvp_admin_page
 	 *
@@ -1627,7 +1633,7 @@ class Test_Setup extends Base {
 	/**
 	 * Requests a row action on the RSVP screen, as its Approve link does.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -1654,7 +1660,7 @@ class Test_Setup extends Base {
 	/**
 	 * Creates a pending RSVP on a new event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int The RSVP comment ID.
 	 */
@@ -1673,7 +1679,7 @@ class Test_Setup extends Base {
 	 *
 	 * A reload of the URL it lands on cannot repeat the action.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::prepare_rsvp_admin_page
 	 * @covers ::redirect_after_action
@@ -1720,7 +1726,7 @@ class Test_Setup extends Base {
 	/**
 	 * A cancelled redirect leaves the screen to load as before.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::prepare_rsvp_admin_page
 	 * @covers ::redirect_after_action
@@ -1749,7 +1755,7 @@ class Test_Setup extends Base {
 	/**
 	 * Without an action there is no redirect, and the result args are removable.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::prepare_rsvp_admin_page
 	 * @covers ::redirect_after_action
@@ -1788,7 +1794,7 @@ class Test_Setup extends Base {
 	/**
 	 * The action result args are added to the query args core removes, once each.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::add_removable_result_args
 	 *
@@ -1812,7 +1818,7 @@ class Test_Setup extends Base {
 	/**
 	 * The screen shows the result of the last action as a notice.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::render_rsvp_admin_page
 	 *
@@ -1828,10 +1834,113 @@ class Test_Setup extends Base {
 		$output = ob_get_clean();
 
 		$this->assertMatchesRegularExpression(
-			'#<hr class="wp-header-end">\s*<div id="moderated" class="notice notice-success is-dismissible">'
-				. '<p>1 RSVP approved\.</p></div>#',
+			// WordPress 7.2 prints the notice's class before its id.
+			'#<hr class="wp-header-end">\s*<div (?=[^>]*id="moderated")'
+				. '(?=[^>]*class="notice notice-success is-dismissible")[^>]*><p>1 RSVP approved\.</p></div>#',
 			$output,
 			'Failed to assert the notice follows the header.'
 		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity_on_approval on approval.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity_on_approval
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_on_approval(): void {
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '0' );
+
+		wp_set_comment_status( $comment_id, 'approve' );
+
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert an RSVP approved on a full event moves to the waiting list.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity_on_approval ignoring other transitions.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity_on_approval
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_on_approval_skips(): void {
+		$instance   = Setup::get_instance();
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		$comment    = get_comment( $comment_id );
+
+		$instance->enforce_capacity_on_approval( 'unapproved', 'approved', $comment );
+		$instance->enforce_capacity_on_approval( 'approved', 'approved', $comment );
+
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert other transitions leave the RSVP alone.'
+		);
+
+		$other_id = $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) );
+
+		wp_set_object_terms( $other_id, Status::ATTENDING->value, Status::TAXONOMY );
+		$instance->enforce_capacity_on_approval( 'approved', 'unapproved', get_comment( $other_id ) );
+
+		$this->assertTrue(
+			is_object_in_term( $other_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert a regular comment is left alone.'
+		);
+	}
+
+	/**
+	 * Creates an event with a capacity and one approved attendee.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $capacity The event capacity.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_event_with_attendee( int $capacity ): int {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', $capacity );
+
+		$this->create_rsvp( $post_id, Status::ATTENDING, '1', $this->factory->user->create() );
+
+		return $post_id;
+	}
+
+	/**
+	 * Creates an RSVP comment.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int    $post_id  The event post ID.
+	 * @param Status $status   The RSVP status.
+	 * @param string $approved The comment approval value.
+	 * @param int    $user_id  The user ID, or 0 for someone without an account.
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function create_rsvp( int $post_id, Status $status, string $approved, int $user_id = 0 ): int {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'guest@example.org',
+				'user_id'              => $user_id,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, $status->value, Status::TAXONOMY );
+
+		return $comment_id;
 	}
 }

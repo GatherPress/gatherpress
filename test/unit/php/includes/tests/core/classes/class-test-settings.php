@@ -2824,7 +2824,7 @@ class Test_Settings extends Base {
 	/**
 	 * Inherited fields render core's escaped `disabled` or `readonly` attribute.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::render_field
 	 *

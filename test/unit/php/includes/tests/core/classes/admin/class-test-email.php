@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Admin\Email.
  *
  * @package GatherPress\Core\Admin
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Admin;

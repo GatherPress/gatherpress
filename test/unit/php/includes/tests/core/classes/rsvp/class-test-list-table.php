@@ -109,7 +109,7 @@ class Test_List_Table extends Base {
 	 * bulk-action nonce: a translated "RSVPs" would lose the
 	 * `.wp-list-table.rsvps` admin styles in other languages (#2583).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::__construct
 	 *
 	 * @return void
@@ -1079,7 +1079,7 @@ class Test_List_Table extends Base {
 	/**
 	 * The check-in bulk actions skip an RSVP that is not approved, as the route does.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::process_bulk_action
 	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
@@ -3057,7 +3057,7 @@ class Test_List_Table extends Base {
 	/**
 	 * Creates RSVPs for the test event with one approval status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $count    How many RSVPs to create.
 	 * @param string $approved The comment_approved value: '1', '0' or 'spam'.
@@ -3078,7 +3078,7 @@ class Test_List_Table extends Base {
 	/**
 	 * Runs one action as the admin screen would, with the comment-type nonce.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $action   The action.
 	 * @param int[]  $rsvp_ids The RSVP comment IDs.
@@ -3100,7 +3100,7 @@ class Test_List_Table extends Base {
 	/**
 	 * Each action returns how many RSVPs it covered, under its result arg.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::process_bulk_action
 	 *
@@ -3144,7 +3144,7 @@ class Test_List_Table extends Base {
 	/**
 	 * A check-in action counts the RSVPs it updated and the ones it skipped.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::process_bulk_action
 	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
@@ -3175,7 +3175,7 @@ class Test_List_Table extends Base {
 	/**
 	 * Apply_action() says whether it saved the state, failed, or skipped the RSVP.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
 	 *
@@ -3208,7 +3208,7 @@ class Test_List_Table extends Base {
 	/**
 	 * An RSVP the action could not change counts as failed, not as done.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::process_bulk_action
 	 *
@@ -3255,7 +3255,7 @@ class Test_List_Table extends Base {
 	/**
 	 * An approved RSVP whose check-in cannot be saved counts as failed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::process_bulk_action
 	 * @covers \GatherPress\Core\Rsvp\Check_In_Controls::apply_action
@@ -3294,7 +3294,7 @@ class Test_List_Table extends Base {
 	/**
 	 * Failed RSVPs have their own line, and make the notice a warning.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_action_notice
 	 * @covers ::get_result_message
@@ -3326,7 +3326,7 @@ class Test_List_Table extends Base {
 	/**
 	 * A request that still carries an action shows no result from an earlier one.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_action_notice
 	 *
@@ -3346,7 +3346,7 @@ class Test_List_Table extends Base {
 	/**
 	 * The row action links leave out the counts of the last action.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::column_attendee
 	 *
@@ -3383,7 +3383,7 @@ class Test_List_Table extends Base {
 	/**
 	 * A refused or empty request returns no result, so the screen does not redirect.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::process_bulk_action
 	 *
@@ -3434,7 +3434,7 @@ class Test_List_Table extends Base {
 	/**
 	 * Rendering the list no longer runs an action from the URL.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::prepare_items
 	 *
@@ -3463,7 +3463,7 @@ class Test_List_Table extends Base {
 	/**
 	 * The redirect URL keeps the screen and its filters and drops the action.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_action_redirect_url
 	 *
@@ -3497,7 +3497,7 @@ class Test_List_Table extends Base {
 	/**
 	 * The notice says what each result did, in the singular and the plural.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_action_notice
 	 * @covers ::get_result_message
@@ -3539,7 +3539,7 @@ class Test_List_Table extends Base {
 	/**
 	 * Skipped RSVPs alone give a warning; with a change they join a success.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_action_notice
 	 * @covers ::get_result_message
@@ -3587,7 +3587,7 @@ class Test_List_Table extends Base {
 	/**
 	 * No result, or a count that is not a positive number, shows no notice.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_action_notice
 	 *

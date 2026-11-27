@@ -2,7 +2,7 @@
  * Calendar Week Block Editor Component
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { useMemo, memo } from '@wordpress/element';

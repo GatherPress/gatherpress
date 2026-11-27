@@ -105,7 +105,7 @@ final class Rest_Api {
 	 * callback runs, so this runs on `rest_post_dispatch`, after every
 	 * outcome. A URL on another host is ignored.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTTP_Response $response The response to send.
 	 * @param WP_REST_Server   $server   The REST server.
@@ -150,7 +150,7 @@ final class Rest_Api {
 	 * status panel stays a SelectControl and the taxonomy stays an
 	 * implementation detail with a single write path through Event\Status::set().
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -1079,7 +1079,7 @@ final class Rest_Api {
 	 * A magic-link token supplies an email address; every other path supplies a user ID,
 	 * so each identifier is checked against the one thing it can be.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string|int|null $identifier The user ID or email address.
 	 *

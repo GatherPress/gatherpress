@@ -192,7 +192,7 @@ class Test_User extends Base {
 	/**
 	 * Check that every post type that takes RSVPs is named, not only the first.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_rsvp_post_type_plural
 	 *
@@ -217,7 +217,7 @@ class Test_User extends Base {
 	/**
 	 * Check that a post type with an empty plural label is left out of the list.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_rsvp_post_type_plural
 	 *

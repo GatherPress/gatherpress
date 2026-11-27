@@ -94,7 +94,7 @@ final class Assets {
 	/**
 	 * Flag indicating whether tooltip frontend assets have been enqueued.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	protected bool $tooltip_assets_enqueued = false;
@@ -174,7 +174,7 @@ final class Assets {
 	 * an IANA zone in Settings → General.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Enqueues the built shim instead of inlining a file from `includes/`.
+	 * @since 0.37.0 Enqueues the built shim instead of inlining a file from `includes/`.
 	 *
 	 * @return void
 	 */
@@ -493,7 +493,7 @@ final class Assets {
 	 * Runs on every per-site settings tab, and from the network settings
 	 * page's `load-` action, since that page's hook isn't a settings tab's.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */

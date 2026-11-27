@@ -47,6 +47,9 @@ jest.mock( '@wordpress/components', () => ( {
  */
 jest.mock( '@src/helpers/geocoding', () => ( {
 	GEOCODE_LOCK_NAME: 'gatherpress/venue-geocoding',
+	GEOCODE_NOTICE_ID: 'gatherpress_geocode_failed',
+	geocodeFailedMessage: ( unavailable ) =>
+		unavailable ? 'Geocode unavailable.' : 'Geocode failed.',
 	geocodeAddress: jest.fn( () =>
 		Promise.resolve( { latitude: '1', longitude: '2' } ),
 	),
@@ -82,6 +85,16 @@ const venueStore = {
 	updateVenueLongitude: jest.fn(),
 };
 
+const notices = {
+	createErrorNotice: jest.fn(),
+};
+
+const stores = {
+	'core/editor': editor,
+	'core/notices': notices,
+	'gatherpress/venue': venueStore,
+};
+
 let meta = {};
 
 beforeEach( () => {
@@ -89,9 +102,7 @@ beforeEach( () => {
 	meta = {};
 
 	useDebounce.mockImplementation( ( callback ) => callback );
-	useDispatch.mockImplementation( ( store ) =>
-		'core/editor' === store ? editor : venueStore,
-	);
+	useDispatch.mockImplementation( ( store ) => stores[ store ] );
 	useSelect.mockImplementation( ( selector ) =>
 		selector( () => ( {
 			getEditedPostAttribute: () => meta,
@@ -316,4 +327,140 @@ test( 'skips a lookup that finishes after the address changes', async () => {
 	expect( editor.editPost ).not.toHaveBeenCalledWith( {
 		meta: { gatherpress_latitude: '3', gatherpress_longitude: '4' },
 	} );
+} );
+
+test( 'does not geocode a saved address that has coordinates when the editor opens', async () => {
+	meta = {
+		gatherpress_address: '1 Main St',
+		gatherpress_latitude: '52.37',
+		gatherpress_longitude: '4.89',
+	};
+
+	await renderVenueInformation();
+
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+	expect( editor.lockPostSaving ).not.toHaveBeenCalled();
+	expect( editor.editPost ).not.toHaveBeenCalled();
+	expect( venueStore.updateVenueLatitude ).toHaveBeenCalledWith( '52.37' );
+} );
+
+test( 'geocodes a changed address, and again when it changes back', async () => {
+	meta = {
+		gatherpress_address: '1 Main St',
+		gatherpress_latitude: '52.37',
+		gatherpress_longitude: '4.89',
+	};
+
+	const { rerender } = await renderVenueInformation();
+
+	meta = { ...meta, gatherpress_address: '2 Main St' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	expect( geocodeAddress ).toHaveBeenCalledWith( '2 Main St' );
+
+	meta = { ...meta, gatherpress_address: '1 Main St' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	expect( geocodeAddress ).toHaveBeenCalledWith( '1 Main St' );
+} );
+
+test( 'keeps the coordinates and shows a notice when the lookup fails', async () => {
+	geocodeAddress.mockResolvedValueOnce( {
+		latitude: '',
+		longitude: '',
+		error: 'Geocoding request failed.',
+	} );
+	meta = { gatherpress_address: '1 Main St' };
+
+	await renderVenueInformation();
+
+	expect( venueStore.updateVenueLatitude ).not.toHaveBeenCalled();
+	expect( editor.editPost ).not.toHaveBeenCalled();
+	expect( notices.createErrorNotice ).toHaveBeenCalledWith( 'Geocode failed.', {
+		id: 'gatherpress_geocode_failed',
+		type: 'snackbar',
+	} );
+	expect( editor.unlockPostSaving ).toHaveBeenCalledWith( 'gatherpress/venue-geocoding' );
+} );
+
+test( 'shows the outage notice when the location service is unavailable', async () => {
+	geocodeAddress.mockResolvedValueOnce( {
+		latitude: '',
+		longitude: '',
+		error: 'Geocoding request failed.',
+		unavailable: true,
+	} );
+	meta = { gatherpress_address: '1 Main St' };
+
+	await renderVenueInformation();
+
+	expect( editor.editPost ).not.toHaveBeenCalled();
+	expect( notices.createErrorNotice ).toHaveBeenCalledWith( 'Geocode unavailable.', {
+		id: 'gatherpress_geocode_failed',
+		type: 'snackbar',
+	} );
+} );
+
+test( 'clears the coordinates once when the address is emptied', async () => {
+	meta = {
+		gatherpress_address: '1 Main St',
+		gatherpress_latitude: '52.37',
+		gatherpress_longitude: '4.89',
+	};
+
+	const { rerender } = await renderVenueInformation();
+
+	meta = { gatherpress_address: '' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	expect( editor.editPost ).toHaveBeenCalledWith( {
+		meta: { gatherpress_latitude: '', gatherpress_longitude: '' },
+	} );
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+} );
+
+test( 'skips a scheduled lookup once the address is back to the geocoded one', async () => {
+	let pendingGeocode = null;
+
+	useDebounce.mockImplementation( ( callback ) => {
+		pendingGeocode = callback;
+
+		return () => {};
+	} );
+	meta = {
+		gatherpress_address: '1 Main St',
+		gatherpress_latitude: '52.37',
+		gatherpress_longitude: '4.89',
+	};
+
+	const { rerender } = await renderVenueInformation();
+
+	meta = { ...meta, gatherpress_address: '2 Main St' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	meta = { ...meta, gatherpress_address: '1 Main St' };
+
+	await act( async () => {
+		rerender( <VenueInformation /> );
+	} );
+
+	await act( async () => {
+		await pendingGeocode();
+	} );
+
+	expect( geocodeAddress ).not.toHaveBeenCalled();
+	expect( editor.editPost ).not.toHaveBeenCalled();
+	expect( editor.unlockPostSaving ).toHaveBeenCalledWith( 'gatherpress/venue-geocoding' );
 } );

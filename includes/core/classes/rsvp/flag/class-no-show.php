@@ -7,7 +7,7 @@
  * honest when an organizer did not record every attendee.
  *
  * @package GatherPress\Core\Rsvp\Flag
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Rsvp\Flag;
@@ -20,14 +20,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * The `no-show` flag: the person had an RSVP but did not come.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class No_Show extends Check_In_State {
 
 	/**
 	 * The no-show flag slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -36,7 +36,7 @@ final class No_Show extends Check_In_State {
 	/**
 	 * Gets the name of the state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The translated name.
 	 */
@@ -47,7 +47,7 @@ final class No_Show extends Check_In_State {
 	/**
 	 * Gets the name of the action that sets the state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The translated action name.
 	 */
@@ -58,7 +58,7 @@ final class No_Show extends Check_In_State {
 	/**
 	 * Whether the state means the person attended.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool False: a no-show did not attend.
 	 */
@@ -71,7 +71,7 @@ final class No_Show extends Check_In_State {
 	 *
 	 * A cross.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The Dashicon name.
 	 */

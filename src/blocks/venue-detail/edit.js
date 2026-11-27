@@ -59,6 +59,7 @@ const Edit = ( {
 		fieldValue,
 		updateVenueField,
 		! isEditingCurrentPost && ! venueMeta.gatherpress_manual_coordinates,
+		Boolean( venueMeta.gatherpress_latitude && venueMeta.gatherpress_longitude ),
 	);
 
 	// Handle Enter key block insertion.

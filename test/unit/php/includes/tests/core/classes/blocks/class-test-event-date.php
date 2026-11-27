@@ -375,7 +375,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * A scheduled event's date carries no status class.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -395,7 +395,7 @@ class Test_Event_Date extends Base {
 	 * A date whose event is no longer going ahead says so on the wrapper, so
 	 * a stylesheet can strike it through without the block knowing why.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -474,8 +474,9 @@ class Test_Event_Date extends Base {
 			)
 		);
 
-		$this->assertStringContainsString( esc_html( $separator ), $render );
-		$this->assertStringNotContainsString( 'href="https://attacker.example"', $render );
+		// WordPress 7.2 writes quotes in text as plain characters, so only check the brackets.
+		$this->assertStringContainsString( '&lt;a href=', $render );
+		$this->assertStringNotContainsString( '<a href="https://attacker.example"', $render );
 	}
 
 	/**
@@ -658,7 +659,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Render the block for an event fixed at 18:00 to 20:00 New York time.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $title               Post title, so each test gets its own event.
 	 * @param array  $attributes          Block attributes to render with.
@@ -704,7 +705,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Read back the Interactivity API context the block wrapper carries.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $output Rendered block.
 	 *
@@ -722,7 +723,7 @@ class Test_Event_Date extends Base {
 	 * The showViewerTime attribute emits the tooltip markup and context for the
 	 * view module, carrying the event's GMT datetimes and its own timezone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -786,7 +787,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * The rangeFormat honors custom separator attributes and the gatherpress_datetime_separator filter.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -832,7 +833,7 @@ class Test_Event_Date extends Base {
 	 * A block showing only the start says only the start in local time too,
 	 * rather than announcing a range the block itself never displays.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -867,7 +868,7 @@ class Test_Event_Date extends Base {
 	 * viewer needs converting. Mirrors get_display_datetime(), which shows the
 	 * end alone for this display type rather than showing nothing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -905,7 +906,7 @@ class Test_Event_Date extends Base {
 	 * No tooltip without the attribute, so nothing changes for the blocks
 	 * already out there.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -933,7 +934,7 @@ class Test_Event_Date extends Base {
 	 * Disabling the global setting suppresses the tooltip context even when
 	 * the block-level attribute is enabled.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -965,7 +966,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Turning off timezone appending suppresses the tooltip.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -990,7 +991,7 @@ class Test_Event_Date extends Base {
 	 * When isLink is enabled alongside showViewerTime, the tooltip bindings
 	 * attach directly to the anchor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -1014,7 +1015,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * All-day events do not display viewer time tooltips.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -1056,7 +1057,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * A viewer with a saved timezone gets no tooltip: the main line is already in that timezone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -1084,7 +1085,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * The event's own timezone preference wins over the block's "Append time zone".
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -1124,7 +1125,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * An empty display type converts both the start and the end, as the block shows both.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -1147,7 +1148,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * An event without dates has no time to convert.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
 	 *
 	 * @return void
@@ -1178,7 +1179,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * A date without an ISO 8601 datetime is shown as plain text.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer::render_time
 	 *
 	 * @return void
@@ -1199,7 +1200,7 @@ class Test_Event_Date extends Base {
 	/**
 	 * Clean up tooltip assets after tests.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Scheduler.
  *
  * @package GatherPress\Core\Event
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Event;

@@ -120,6 +120,7 @@ final class Setup {
 		// Priority 11 ensures post types are already registered (priority 10) before removing RSVP support.
 		add_action( 'init', array( $this, 'maybe_disable_rsvp' ), 11 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
+		add_action( 'transition_comment_status', array( $this, 'enforce_capacity_on_approval' ), 10, 3 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_set_rsvp_meta_default' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
 		add_filter( 'allowed_block_types_all', array( $this, 'filter_rsvp_block_types' ) );
@@ -257,7 +258,7 @@ final class Setup {
 	 * the event's RSVP session cookie if the magic link was clicked.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Reads the session cookie for `$post_id` instead of the URL token.
+	 * @since 0.37.0 Reads the session cookie for `$post_id` instead of the URL token.
 	 *
 	 * @param int $post_id The event's post ID. Defaults to the current post.
 	 *
@@ -294,6 +295,32 @@ final class Setup {
 		$comment_count = get_comment_count( $post_id );
 
 		return $comment_count['approved'];
+	}
+
+	/**
+	 * Keeps a newly approved RSVP within the event's capacity.
+	 *
+	 * Covers every way a pending RSVP gets approved: the email link, the
+	 * comments screen, and code or REST requests that approve comments.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string     $new_status The new comment status.
+	 * @param string     $old_status The old comment status.
+	 * @param WP_Comment $comment    The comment.
+	 *
+	 * @return void
+	 */
+	public function enforce_capacity_on_approval(
+		string $new_status,
+		string $old_status,
+		WP_Comment $comment
+	): void {
+		if ( 'approved' !== $new_status || 'approved' === $old_status || ! Rsvp::is_comment_type( $comment ) ) {
+			return;
+		}
+
+		( new Rsvp( (int) $comment->comment_post_ID ) )->enforce_capacity( (int) $comment->comment_ID );
 	}
 
 	/**
@@ -415,7 +442,7 @@ final class Setup {
 	 * Core then takes them out of the address bar and out of the table's
 	 * paging and sorting links.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $args Query args core removes.
 	 *
@@ -436,7 +463,7 @@ final class Setup {
 	 * The result args are also made removable, so core takes them out of the
 	 * address bar and out of the table's paging and sorting links.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param List_Table $list_table The list table for the current screen.
 	 *
@@ -711,7 +738,7 @@ final class Setup {
 	 * onto `send_headers`, since the page shows that person's RSVP (#1626).
 	 *
 	 * @since 0.34.0
-	 * @since TBD Starts a session cookie and redirects to the event without the token.
+	 * @since 0.37.0 Starts a session cookie and redirects to the event without the token.
 	 *
 	 * @return void
 	 */

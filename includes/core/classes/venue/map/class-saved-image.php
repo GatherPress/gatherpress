@@ -27,7 +27,7 @@ final class Saved_Image {
 	/**
 	 * Cron action that deletes replaced PNG files no venue uses any longer.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const DELETE_CRON_ACTION = 'gatherpress_static_map_delete_unused_run';
@@ -38,7 +38,7 @@ final class Saved_Image {
 	 * A page cache or CDN can still serve HTML that points at the old file,
 	 * so the file stays until that cached HTML has most likely expired.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const DEFAULT_DELETE_DELAY = WEEK_IN_SECONDS;
@@ -440,7 +440,7 @@ final class Saved_Image {
 	 * event checks again that no venue uses each file before it deletes it.
 	 *
 	 * @since 0.36.2
-	 * @since TBD Deletes the files later, after the delete delay.
+	 * @since 0.37.0 Deletes the files later, after the delete delay.
 	 *
 	 * @param string[] $urls PNG URLs.
 	 * @param string[] $keep URLs to keep without a lookup.
@@ -472,7 +472,7 @@ final class Saved_Image {
 		 * A page cache or CDN can still serve HTML that points at the old
 		 * file. Return 0 to delete the files at once.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int $delay Seconds before the files are deleted.
 		 *
@@ -498,7 +498,7 @@ final class Saved_Image {
 	/**
 	 * Get the PNG URLs that queued delete events hold.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string[] URLs without a query string.
 	 */
@@ -524,7 +524,7 @@ final class Saved_Image {
 	 * delete event also holds is left to that event, so the file stays for
 	 * the full delay after it was last replaced.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param mixed $urls PNG URLs.
 	 *

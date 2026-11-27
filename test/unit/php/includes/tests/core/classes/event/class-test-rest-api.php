@@ -195,7 +195,7 @@ class Test_Rest_Api extends Base {
 	 * An RSVP posted without JavaScript is answered with a 303 back to its
 	 * page, flagged when it failed; anything else is left alone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::redirect_rsvp_form_submission
 	 *
 	 * @return void
@@ -272,7 +272,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * A form posted without JavaScript sends guests and anonymity under the RSVP block's field names.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::update_rsvp
 	 *
 	 * @return void
@@ -1263,7 +1263,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Coverage for handle_rsvp_form_submission with canceled event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::handle_rsvp_form_submission
 	 *
@@ -1991,7 +1991,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Coverage for update_rsvp with canceled event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::update_rsvp
 	 *
@@ -3255,7 +3255,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests update_rsvp leaves site membership alone for a canceled event in multisite.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @group multisite
 	 * @covers ::update_rsvp
@@ -3636,7 +3636,7 @@ class Test_Rest_Api extends Base {
 	 * value, return it, and refuse anything outside the vocabulary. Calling
 	 * the callbacks by hand skips all of that.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::register_status_field
 	 *
@@ -3704,7 +3704,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * Tests RSVP identifier validation logic.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::is_valid_rsvp_identifier
 	 *

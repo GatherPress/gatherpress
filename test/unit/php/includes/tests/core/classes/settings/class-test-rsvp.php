@@ -52,7 +52,7 @@ class Test_Rsvp extends Base {
 	 * different words for the tab and for other uses of "RSVP" can translate
 	 * it on its own (#2583).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_name
 	 *
 	 * @return void
@@ -117,7 +117,7 @@ class Test_Rsvp extends Base {
 	 * Invoked directly because xdebug does not trace same-class helpers
 	 * called from inside get_sections().
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_reminder_timing_options
 	 *

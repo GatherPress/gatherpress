@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Rsvp\Flag\Check_In_State.
  *
  * @package GatherPress\Core\Rsvp\Flag
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp\Flag;
@@ -101,7 +101,7 @@ class Test_Check_In_State extends Base_Unit_Test {
 	/**
 	 * Listeners of the added action read the new state, not the one it replaced.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::add
 	 *
@@ -128,7 +128,7 @@ class Test_Check_In_State extends Base_Unit_Test {
 	/**
 	 * A state registered by a differently written class name keeps its own flag.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::add
 	 *

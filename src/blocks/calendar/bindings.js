@@ -2,7 +2,7 @@
  * Calendar Block Bindings and Editor Filters
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { registerBlockBindingsSource } from '@wordpress/blocks';

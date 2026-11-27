@@ -97,7 +97,7 @@ final class Rsvp_Form {
 	 * Set before the form's fields render and cleared once the form itself
 	 * has, so its fields can read their values and errors from it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var ReturnedSubmission|null
 	 */
 	private ?array $returned_form = null;
@@ -108,7 +108,7 @@ final class Rsvp_Form {
 	 * Identical forms for one event share a schema, so only the first is
 	 * given the submission, rather than every copy showing its errors.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	private bool $returned_form_taken = false;
@@ -116,7 +116,7 @@ final class Rsvp_Form {
 	/**
 	 * Field names whose error a field of the returned form has shown.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<string, true>
 	 */
 	private array $shown_errors = array();
@@ -124,7 +124,7 @@ final class Rsvp_Form {
 	/**
 	 * Whether a field of the returned form has taken its autofocus.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	private bool $autofocus_claimed = false;
@@ -132,7 +132,7 @@ final class Rsvp_Form {
 	/**
 	 * Form ids given out on this page, so a repeated form gets its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<string, true>
 	 */
 	private array $form_ids = array();
@@ -183,7 +183,7 @@ final class Rsvp_Form {
 	 * names the form "RSVP" for assistive technology.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Names the form.
+	 * @since 0.37.0 Names the form.
 	 *
 	 * @param string               $block_content The original block content.
 	 * @param array<string, mixed> $block         The block instance array, used to determine the event.
@@ -303,7 +303,7 @@ final class Rsvp_Form {
 	 * value and error. Only the form the submission came from matches: the
 	 * same event and the same form schema, and the first such form on the page.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $parsed_block The block about to render.
 	 *
@@ -342,7 +342,7 @@ final class Rsvp_Form {
 	 * The first field with an error also takes the form's autofocus, since
 	 * without JavaScript nothing else can move focus to it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $field_name The field's name.
 	 *
@@ -373,7 +373,7 @@ final class Rsvp_Form {
 	 * uses the markup form-errors.js gives the same message, and takes the
 	 * autofocus when no field did.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $html     The form's markup.
 	 * @param array<string, mixed> $returned The submission the form came back with.
@@ -599,7 +599,7 @@ final class Rsvp_Form {
 	/**
 	 * The default notice for a canceled event, rendered as a paragraph block.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event post ID.
 	 *
@@ -949,7 +949,7 @@ final class Rsvp_Form {
 	 * id, with a numbered suffix when the form repeats on the page.
 	 *
 	 * @since 0.33.0
-	 * @since TBD Built from the event and form schema id rather than uniqid().
+	 * @since 0.37.0 Built from the event and form schema id rather than uniqid().
 	 *
 	 * @param int    $post_id        The event post ID.
 	 * @param string $form_schema_id The form's schema id.

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Reminder.
  *
  * @package GatherPress\Core\Event
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -576,7 +576,7 @@ class Test_Reminder extends Base {
 	/**
 	 * Check that a canceled event is not reminded, whether it was canceled before or after queuing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::queue_reminder
 	 *

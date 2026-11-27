@@ -199,6 +199,10 @@ class Test_Setup extends Base {
 		$instance->register_post_type();
 
 		$this->assertTrue( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type exists.' );
+		$this->assertFalse(
+			get_post_type_object( Venue::POST_TYPE )->randomable,
+			'Failed to assert venues are kept out of the random redirect.'
+		);
 	}
 
 
@@ -1371,7 +1375,7 @@ class Test_Setup extends Base {
 	/**
 	 * Tests get_venue_meta leaves out a venue a password hides.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_meta
 	 *

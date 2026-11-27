@@ -209,7 +209,7 @@ class Endpoint {
 	 * With `with_front`, the slug follows the permalink front, so the rule
 	 * matches the links WordPress generates for the post type or taxonomy.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The rewrite base.
 	 */
@@ -241,7 +241,7 @@ class Endpoint {
 	/**
 	 * Gets the rewrite slug of the post type or taxonomy.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The rewrite slug.
 	 */

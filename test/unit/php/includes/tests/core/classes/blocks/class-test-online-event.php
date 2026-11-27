@@ -907,7 +907,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests remove_tooltips turns the template's tooltip into a plain element.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::remove_tooltips
 	 *
 	 * @return void
@@ -931,7 +931,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests remove_tooltips leaves link text without a tooltip unchanged.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::remove_tooltips
 	 *
 	 * @return void
@@ -952,7 +952,7 @@ class Test_Online_Event extends Base {
 	 * Uses the link text the online-event template saves, so content saved
 	 * in existing events gets the fix.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::remove_tooltips
 	 *
 	 * @return void

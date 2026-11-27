@@ -601,7 +601,7 @@ class Test_Dropdown extends Base {
 	 * `role="region"` is no landmark, so the panel gets no role, and the
 	 * trigger gets no menu semantics.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void

@@ -433,7 +433,7 @@ class Test_Event_Query extends Base {
 	 * (hand-written template markup, say) used to warn on the missing keys
 	 * and pass null for them.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::pre_render_block
 	 *
 	 * @return void
@@ -1303,7 +1303,7 @@ class Test_Event_Query extends Base {
 	 * otherwise stay unscoped. `rest_collection_params()` declares both
 	 * context params for event post types.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -1408,7 +1408,7 @@ class Test_Event_Query extends Base {
 	 * A venue-only fixture exercises the shadow branch instead, so this pins
 	 * the event-side copy with an event-supporting post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -1453,7 +1453,7 @@ class Test_Event_Query extends Base {
 	 * gate reports 93.26% for this file (18 uncovered lines) even though the
 	 * code runs. Each helper therefore gets a direct invoke per return path.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_event_loop_query_args
 	 *
 	 * @return void
@@ -1500,7 +1500,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_event_loop_query_args falls back and omits unset optionals.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_event_loop_query_args
 	 *
 	 * @return void
@@ -1535,7 +1535,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_event_loop_query_args collects excluded post IDs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_event_loop_query_args
 	 *
 	 * @return void
@@ -1560,7 +1560,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_loop_query_args builds activity vars plus context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_shadow_loop_query_args
 	 *
 	 * @return void
@@ -1594,7 +1594,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_loop_query_args omits unset activity vars.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_shadow_loop_query_args
 	 *
 	 * @return void
@@ -1614,7 +1614,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_source_context_args casts and passes set values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_shadow_source_context_args
 	 *
 	 * @return void
@@ -1648,7 +1648,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test get_shadow_source_context_args omits unset context values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_shadow_source_context_args
 	 *
 	 * @return void
@@ -1791,7 +1791,7 @@ class Test_Event_Query extends Base {
 	 * and a shadow-source AQL loop should not receive event vars — the two
 	 * support groups own disjoint param sets.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -1854,7 +1854,7 @@ class Test_Event_Query extends Base {
 	 * Shadow-source-only Query Loop context should propagate activity
 	 * params without pulling in event-only vars.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -1898,7 +1898,7 @@ class Test_Event_Query extends Base {
 	 * untouched (regression for #1806 / Playground "plain venue loop
 	 * returns zero results" report).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void

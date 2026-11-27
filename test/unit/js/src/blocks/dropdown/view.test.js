@@ -348,7 +348,7 @@ describe( 'dropdown hover dismissal', () => {
 	/**
 	 * Reports whether the pointer is over the dropdown.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param {HTMLElement} wrapper The dropdown block.
 	 * @param {boolean}     hovered Whether the pointer is over it.

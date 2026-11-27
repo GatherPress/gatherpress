@@ -97,7 +97,7 @@ final class Query {
 	 * queries that differ only by `tax_query` share a cached result. The terms
 	 * salt drops the entry when a response changes without the comment.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Comment_Query $query Current instance of WP_Comment_Query (passed by reference).
 	 *

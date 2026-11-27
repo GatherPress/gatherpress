@@ -3,7 +3,7 @@
  * The query of a calendar.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -23,14 +23,14 @@ use WP_Query;
  * Builds the WP_Query arguments of a calendar from the Query Loop context and the date range
  * of the calendar, and queries its posts.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Query_Builder {
 
 	/**
 	 * Query parameter that marks a query as a calendar query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const CALENDAR_QUERY_PARAM = 'gatherpress_calendar_query';
@@ -38,7 +38,7 @@ final class Query_Builder {
 	/**
 	 * Query parameter for the view type of a calendar query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const CALENDAR_QUERY_VIEW_TYPE = 'gatherpress_calendar_view_type';
@@ -46,7 +46,7 @@ final class Query_Builder {
 	/**
 	 * Query parameter for the first day of a calendar query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const CALENDAR_QUERY_START_DATE = 'gatherpress_calendar_start_date';
@@ -54,7 +54,7 @@ final class Query_Builder {
 	/**
 	 * Query parameter for the last day of a calendar query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const CALENDAR_QUERY_END_DATE = 'gatherpress_calendar_end_date';
@@ -62,7 +62,7 @@ final class Query_Builder {
 	/**
 	 * Query parameter for the heading of a calendar query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const CALENDAR_QUERY_HEADING = 'gatherpress_calendar_heading';
@@ -73,7 +73,7 @@ final class Query_Builder {
 	 * Date_Range multiplies the page by the unit count. A very large page
 	 * overflows that integer and causes a fatal TypeError.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const MAX_PAGE = 10000;
@@ -81,7 +81,7 @@ final class Query_Builder {
 	/**
 	 * Constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Block   $block      The calendar block, with the Query Loop context.
 	 * @param Date_Range $date_range The date range of the calendar.
@@ -97,7 +97,7 @@ final class Query_Builder {
 	 * This filter allows sites to adapt the number of posts fetched
 	 * for calendar rendering to match their specific performance and event volume needs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int Number of posts to query.
 	 */
@@ -108,7 +108,7 @@ final class Query_Builder {
 		 * Defaults to 500. A calendar queries all posts of its date range in one query, so posts
 		 * after this number do not show. Lower it to make the query smaller. Values below 1 become 1.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int $posts_per_page Number of posts to query.
 		 *
@@ -126,7 +126,7 @@ final class Query_Builder {
 	 * Pagination blocks: `query-{$query_id}-page` when the Query block has a
 	 * queryId (0 included), and `query-page` when it has none.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param mixed $query_id The Query block's queryId, or null when it has none.
 	 *
@@ -144,7 +144,7 @@ final class Query_Builder {
 	 *
 	 * When an array is provided, returns true only if all post types support 'gatherpress-event-date'.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param mixed $post_type Post type slug or array of slugs.
 	 *
@@ -169,7 +169,7 @@ final class Query_Builder {
 	/**
 	 * Builds the WP_Query arguments of the calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, mixed> WP_Query arguments.
 	 */
@@ -211,7 +211,7 @@ final class Query_Builder {
 	/**
 	 * Queries the IDs of the posts of the calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<int> Post IDs.
 	 */
@@ -254,7 +254,7 @@ final class Query_Builder {
 	 * post_author 0 (for example from an importer or WP-CLI) to the
 	 * logged-out user ID 0, which would show them to every viewer.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $query_args WP_Query arguments.
 	 *

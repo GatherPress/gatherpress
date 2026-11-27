@@ -202,7 +202,7 @@ final class Event_Query {
 			 * Loop lists, on the front end and in the editor preview.
 			 *
 			 * @since 0.33.0
-			 * @since TBD    Renamed from `gatherpress_query_vars`. Also runs for Query
+			 * @since 0.37.0 Renamed from `gatherpress_query_vars`. Also runs for Query
 			 *               Loops of shadow-source posts, such as venues, where
 			 *               `$query_args` can carry `gatherpress_has_events_filter` and
 			 *               `gatherpress_upcoming_events_only`.
@@ -369,7 +369,7 @@ final class Event_Query {
 	 * Also carries the editor-preview shadow-source context, because an event
 	 * loop can be scoped to the shadow-source post it was placed on.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $block_query         Query attribute from the block context.
 	 * @param string               $requested_post_type Post type the block asked for, '' when unset.
@@ -431,7 +431,7 @@ final class Event_Query {
 	/**
 	 * Build the event-activity query vars for a shadow-source Query Loop.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $block_query Query attribute from the block context.
 	 *
@@ -458,7 +458,7 @@ final class Event_Query {
 	/**
 	 * Build the editor-preview shadow-source context query vars.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $block_query Query attribute from the block context.
 	 *
