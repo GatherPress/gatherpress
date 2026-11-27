@@ -26,12 +26,12 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/rsvp/class-rsvp.php:457](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-rsvp.php#L457)
+- [includes/core/classes/rsvp/class-rsvp.php:467](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-rsvp.php#L467)
 ```php
 do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state )
 ```
 
-- [includes/core/classes/rsvp/class-rsvp.php:500](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-rsvp.php#L500)
+- [includes/core/classes/rsvp/class-rsvp.php:510](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/class-rsvp.php#L510)
 ```php
 do_action( 'gatherpress_rsvp_waiting_list_promoted', $post_id, $state )
 ```
