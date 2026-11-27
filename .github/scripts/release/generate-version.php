@@ -460,19 +460,19 @@ function resolve_since_tbd_in( $contents, $version ) {
 	$total = count( $lines );
 
 	for ( $i = 0; $i < $total; $i++ ) {
-		if ( ! preg_match( '/^(.*?@since\s+)TBD\b([ \t]*)(.*)$/', $lines[ $i ], $match ) ) {
+		if ( ! preg_match( '/^(.*?@since\s+)TBD\b([ \t]*)([^\r]*)(\r?)$/', $lines[ $i ], $match ) ) {
 			continue;
 		}
 
 		++$count;
-		list( , $prefix, $padding, $note ) = $match;
+		list( , $prefix, $padding, $note, $eol ) = $match;
 
 		if ( $note === '' ) {
-			$lines[ $i ] = $prefix . $version . $padding;
+			$lines[ $i ] = $prefix . $version . $padding . $eol;
 			continue;
 		}
 
-		$lines[ $i ] = $prefix . $version . ' ' . $note;
+		$lines[ $i ] = $prefix . $version . ' ' . $note . $eol;
 		$old_column  = strlen( $prefix ) + 3 + strlen( $padding );
 		$new_column  = strlen( $prefix ) + strlen( $version ) + 1;
 
