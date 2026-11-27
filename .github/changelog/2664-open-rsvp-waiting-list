@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-An RSVP that waits for approval, such as one from someone without an account who confirms by email, now goes on the waiting list when the event is already full by the time it is approved, the same as an RSVP from someone with an account.
