@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-Comment: Test-only change to the datetime picker E2E spec, nothing for users.
-
