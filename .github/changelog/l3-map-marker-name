@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Screen readers now announce the pin on an interactive venue map by the venue name, or by the address when the venue has no title, instead of "Marker".
