@@ -23,7 +23,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/map/provider/class-osm.php:210](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/provider/class-osm.php#L210)
+- [includes/core/classes/venue/map/provider/class-osm.php:226](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/provider/class-osm.php#L226)
 ```php
 apply_filters(
 			'gatherpress_static_map_composite_time_budget',

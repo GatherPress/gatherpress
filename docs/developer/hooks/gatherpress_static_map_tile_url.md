@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/map/provider/class-osm.php:439](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/provider/class-osm.php#L439)
+- [includes/core/classes/venue/map/provider/class-osm.php:541](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/provider/class-osm.php#L541)
 ```php
 apply_filters( 'gatherpress_static_map_tile_url', $default )
 ```
