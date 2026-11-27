@@ -41,26 +41,6 @@ const pendingGuestCounts = {};
 const guestCountsInFlight = new Set();
 
 /**
- * The page all guest count saves from this page carry.
- *
- * With the save order, it lets the server ignore an older save that reaches it
- * after a newer one, which can happen when the page is left (#2641). Saves from
- * another page or device carry another value, so the server does not compare them.
- *
- * @since TBD
- */
-const GUEST_COUNT_SAVE_PAGE = `${ Date.now() }-${ window.crypto
-	.getRandomValues( new Uint32Array( 2 ) )
-	.join( '-' ) }`;
-
-/**
- * The order of the last guest count change on this page.
- *
- * @since TBD
- */
-let guestCountSaveOrder = 0;
-
-/**
  * Stops a guest count save that waits for the delay, without saving.
  *
  * @since TBD
@@ -189,10 +169,6 @@ const { state, actions } = store( 'gatherpress', {
 			// Each arrow key step is a change. Only the last value is saved and
 			// announced, once the changes stop for the delay.
 			cancelGuestCount( postId );
-			guestCountSaveOrder += 1;
-
-			const saveOrder = guestCountSaveOrder;
-
 			pendingGuestCounts[ postId ] = {
 				// Kept here because a response to an older save replaces the count in state.
 				guests,
@@ -203,12 +179,7 @@ const { state, actions } = store( 'gatherpress', {
 				save: ( restoreFocus ) =>
 					sendRsvpApiRequest(
 						postId,
-						{
-							...state.posts[ postId ].currentUser,
-							guests,
-							savePage: GUEST_COUNT_SAVE_PAGE,
-							saveOrder,
-						},
+						{ ...state.posts[ postId ].currentUser, guests },
 						state,
 						restoreFocus
 							? () => {

@@ -1021,9 +1021,10 @@ final class Rest_Api {
 	/**
 	 * Saves the RSVP unless a newer save from the same page is already stored.
 	 *
-	 * Guest count saves send the page they come from and their order on that page.
-	 * A save started as the page is left can reach the server before an earlier
-	 * one, so the earlier one must not overwrite it (#2641). Saves from another
+	 * Saves from the RSVP block send the page they come from and their order on
+	 * that page. A save can reach the server before an earlier one, such as a
+	 * guest count sent as the page is left, or a status change right after a guest
+	 * count, so the earlier one must not overwrite it (#2641). Saves from another
 	 * page or device are never ignored, and a save without an order always goes
 	 * through. The order is stored before the save, so a newer save that comes in
 	 * meanwhile sees it.
