@@ -143,7 +143,7 @@ final class Rest_Api {
 					'apply' => array(
 						'type'        => 'boolean',
 						'default'     => false,
-						'description' => __( 'Whether to delete orphaned files. Defaults to a dry run.', 'gatherpress' ),
+						'description' => __( 'Whether to delete orphaned files. Default is a dry run.', 'gatherpress' ),
 					),
 					'limit' => array(
 						'type'        => 'integer',
