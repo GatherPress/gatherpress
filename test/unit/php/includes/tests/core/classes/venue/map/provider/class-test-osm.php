@@ -294,6 +294,175 @@ class Test_OSM extends Base {
 	}
 
 	/**
+	 * The marker is drawn with the filtered colors, at 1x and at 2x.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::stamp_marker
+	 *
+	 * @return void
+	 */
+	public function test_stamp_marker_uses_filtered_colors(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$callback = static fn(): array => array(
+			'fill'   => '#0000ff',
+			'center' => '#0f0',
+		);
+
+		add_filter( 'gatherpress_static_map_marker_colors', $callback );
+
+		$osm = new OSM();
+
+		// Body sits between the center dot and the outline: 5px out at 1x, 10px at 2x.
+		$offsets = array(
+			1 => 5,
+			2 => 10,
+		);
+
+		foreach ( $offsets as $scale => $offset ) {
+			$canvas = imagecreatetruecolor( 64, 64 );
+
+			$osm->stamp_marker( $canvas, 32, 32, (float) $scale );
+
+			$this->assertSame(
+				0x0000ff,
+				imagecolorat( $canvas, 32 + $offset, 32 ),
+				"Failed to assert the body is filtered at {$scale}x."
+			);
+			$this->assertSame(
+				0x00ff00,
+				imagecolorat( $canvas, 32, 32 ),
+				"Failed to assert the center is filtered at {$scale}x."
+			);
+		}
+
+		remove_filter( 'gatherpress_static_map_marker_colors', $callback );
+	}
+
+	/**
+	 * Marker colors default, and a filtered color is kept only when it is
+	 * a valid hex color.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_marker_colors
+	 *
+	 * @return void
+	 */
+	public function test_get_marker_colors(): void {
+		$osm = new OSM();
+
+		$this->assertSame( OSM::DEFAULT_MARKER_COLORS, $osm->get_marker_colors() );
+
+		$callback = static fn(): array => array(
+			'border'  => '#ABCDEF',
+			'fill'    => 'red',
+			'outline' => 123,
+			'center'  => '#ABC',
+		);
+
+		add_filter( 'gatherpress_static_map_marker_colors', $callback );
+
+		$this->assertSame(
+			array(
+				'border'  => '#abcdef',
+				'fill'    => '#dc3545',
+				'outline' => '#1e1e1e',
+				'center'  => '#aabbcc',
+			),
+			$osm->get_marker_colors(),
+			'Failed to assert invalid colors keep their default and short colors expand.'
+		);
+
+		remove_filter( 'gatherpress_static_map_marker_colors', $callback );
+		add_filter( 'gatherpress_static_map_marker_colors', '__return_false' );
+
+		$this->assertSame(
+			OSM::DEFAULT_MARKER_COLORS,
+			$osm->get_marker_colors(),
+			'Failed to assert a value that is not an array keeps the defaults.'
+		);
+
+		remove_filter( 'gatherpress_static_map_marker_colors', '__return_false' );
+
+		$object = static fn(): object => (object) array( 'fill' => '#0000ff' );
+
+		add_filter( 'gatherpress_static_map_marker_colors', $object );
+
+		$this->assertSame(
+			OSM::DEFAULT_MARKER_COLORS,
+			$osm->get_marker_colors(),
+			'Failed to assert an object keeps the defaults.'
+		);
+
+		remove_filter( 'gatherpress_static_map_marker_colors', $object );
+	}
+
+	/**
+	 * Filtered marker colors are checked, with the defaults as fallback.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::normalize_marker_colors
+	 *
+	 * @return void
+	 */
+	public function test_normalize_marker_colors(): void {
+		$osm = new OSM();
+
+		$this->assertSame(
+			OSM::DEFAULT_MARKER_COLORS,
+			Utility::invoke_hidden_method( $osm, 'normalize_marker_colors', array( 'oops' ) ),
+			'Failed to assert a value that is not an array keeps the defaults.'
+		);
+		$this->assertSame(
+			array(
+				'border'  => '#aabbcc',
+				'fill'    => '#0000ff',
+				'outline' => '#1e1e1e',
+				'center'  => '#ffffff',
+			),
+			Utility::invoke_hidden_method(
+				$osm,
+				'normalize_marker_colors',
+				array(
+					array(
+						'border'  => '#ABC',
+						'fill'    => '#0000FF',
+						'outline' => 'red',
+					),
+				)
+			),
+			'Failed to assert colors are expanded, lowercased and checked.'
+		);
+	}
+
+	/**
+	 * A six-digit hex color allocates its RGB color.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::allocate_hex_color
+	 *
+	 * @return void
+	 */
+	public function test_allocate_hex_color(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$canvas = imagecreatetruecolor( 1, 1 );
+		$osm    = new OSM();
+
+		$color = Utility::invoke_hidden_method( $osm, 'allocate_hex_color', array( $canvas, '#dc3545' ) );
+
+		$this->assertSame( 0xdc3545, $color );
+	}
+
+	/**
 	 * Web Mercator projection: longitude 0 maps to the equator-meridian
 	 * intersection, which sits exactly at the canvas mid-point at any
 	 * zoom. zoom=2 → 4 tiles wide → 512 world pixels at TILE_SIZE 256.
@@ -731,6 +900,43 @@ class Test_OSM extends Base {
 		$this->assertNotSame( $first, $osm->get_cache_source(), 'Failed to assert a new key changes the source.' );
 
 		$settings->set( 'carto_api_key', '' );
+	}
+
+	/**
+	 * Marker colors are part of the cache source only when they differ
+	 * from the default, so saved maps with the default marker keep their hash.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_cache_source
+	 *
+	 * @return void
+	 */
+	public function test_get_cache_source_includes_changed_marker_colors(): void {
+		$osm     = new OSM();
+		$default = $osm->get_cache_source();
+
+		$this->assertStringNotContainsString( '|marker=', $default );
+
+		$short = static fn(): array => array( 'border' => '#FFF' );
+
+		add_filter( 'gatherpress_static_map_marker_colors', $short );
+
+		$this->assertSame(
+			$default,
+			$osm->get_cache_source(),
+			'Failed to assert a short default color keeps the source.'
+		);
+
+		remove_filter( 'gatherpress_static_map_marker_colors', $short );
+
+		$callback = static fn(): array => array( 'fill' => '#0000ff' );
+
+		add_filter( 'gatherpress_static_map_marker_colors', $callback );
+
+		$this->assertSame( $default . '|marker=#ffffff,#0000ff,#1e1e1e,#ffffff', $osm->get_cache_source() );
+
+		remove_filter( 'gatherpress_static_map_marker_colors', $callback );
 	}
 
 	/**

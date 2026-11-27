@@ -118,3 +118,23 @@ To tint the default marker toward a theme color, combine `brightness(0) saturate
 
 Themes that would rather supply their own marker artwork should replace the icon rather than filter it.
 
+The marker on a static OpenStreetMap image is drawn on the server, so CSS cannot reach it. Change its colors with the `gatherpress_static_map_marker_colors` filter instead. Each key takes a hex color, and a key left out keeps its default. Saved maps render again with the new colors.
+
+```php
+add_filter(
+	'gatherpress_static_map_marker_colors',
+	static function ( array $colors ): array {
+		$colors['fill'] = '#2271b1';
+
+		return $colors;
+	}
+);
+```
+
+| Key | Part of the marker | Default |
+| --- | --- | --- |
+| `border` | Outer ring | `#ffffff` |
+| `fill` | Body | `#dc3545` |
+| `outline` | Thin line around the body | `#1e1e1e` |
+| `center` | Dot in the middle | `#ffffff` |
+
