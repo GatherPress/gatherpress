@@ -53,7 +53,6 @@ const Duration = () => {
 
 				setDuration( value );
 			} }
-			__nexthasnomarginbottom
 		/>
 	);
 };

@@ -23,7 +23,7 @@ Two are public. The rest are internal plumbing, hidden from the UI, and are pref
 | `_gatherpress_venue` | Events | No | Ties an event to its venue. One term per published venue post |
 | `_gatherpress_rsvp_status` | RSVP comments | No | The response: `attending`, `not_attending`, `waiting_list`, `no_status` |
 | `_gatherpress_rsvp_provider` | RSVP comments | No | How the person was identified. One term per provider class |
-| `_gatherpress_rsvp_flag` | RSVP comments | No | Yes/no markers such as `checked-in` |
+| `_gatherpress_rsvp_flag` | RSVP comments | No | Yes/no markers such as `checked-in` and `no-show` |
 
 The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a comment. [The RSVP docs](../rsvp/README.md) cover that in full.
 
@@ -47,6 +47,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_guest_limit` | Guests per RSVP. `0` means none |
 | `gatherpress_online_event_link` | The joining link, shown only to attendees |
 | `gatherpress_rsvp_form_schemas` | The RSVP form's custom field definitions, keyed by form id |
+| `gatherpress_event_reminder_sent` | For each reminder timing, the UTC start it was last queued for, so each timing reminds one start once |
 
 `gatherpress_datetime` is the canonical value the editor and REST write. The [events table](#the-events-table) is derived from it and is what queries read.
 
@@ -55,6 +56,8 @@ The two limit keys are enforced server-side on every write, including from WP-CL
 ### Venues
 
 Five keys are editor-writable, registered `show_in_rest` so they can be bound to blocks through `core/post-meta`: `gatherpress_address`, `gatherpress_latitude`, `gatherpress_longitude`, `gatherpress_phone`, `gatherpress_website`.
+
+`gatherpress_manual_coordinates` is an editor-writable boolean. While it is true, the coordinates are set by hand: neither the editor nor the geocode cron overwrites `gatherpress_latitude` and `gatherpress_longitude` from the address.
 
 Eight more hold the structured address the geocoder derives from `gatherpress_address`: `gatherpress_house_number`, `gatherpress_street`, `gatherpress_city`, `gatherpress_county`, `gatherpress_state`, `gatherpress_postcode`, `gatherpress_country`, `gatherpress_country_code`. These are readable over REST but **not writable**. REST writes are silently stripped, because the geocode cron owns them. Write `gatherpress_address` and let the cron fill the rest.
 
@@ -78,13 +81,14 @@ The status is **not** in comment meta. It is a term. Reading it with `get_commen
 
 ## User meta
 
-Three keys, all written from the user's own profile screen and all optional:
+Four keys, all written from the user's own profile screen and all optional:
 
 | Key | Notes |
 |---|---|
 | `gatherpress_timezone` | Overrides the site timezone when displaying dates to this person |
 | `gatherpress_time_format` | Overrides the site time format |
 | `gatherpress_event_updates_opt_in` | Whether this person receives event notification email |
+| `gatherpress_event_reminders_opt_in` | Whether this person receives reminder email before events they attend |
 
 GatherPress falls back to the site's own settings for any that are unset, so nothing needs to be seeded when a user is created.
 
@@ -139,6 +143,7 @@ Everything is under the `gatherpress/v1` namespace, defined as `GATHERPRESS_REST
 A few notes for anyone calling these:
 
 - **`/event/rsvp-form` is deliberately public.** Open RSVP means a visitor who is not logged in can respond, so the permission callback lets everyone through and the validation happens inside. Treat its input as untrusted, because it is.
+- **`/event/rsvp` also takes a plain HTML form.** The RSVP block posts one when JavaScript is unavailable. It sends guests and anonymity as `gatherpress_rsvp_guests` and `gatherpress_rsvp_anonymous`, the block's own field names, and a `gatherpress_redirect` URL on the site. With that URL, the endpoint answers with a 303 back to it instead of JSON, adding `gatherpress_rsvp_error=<event ID>` when the RSVP was not saved, including when the nonce was stale.
 - **`/event/nonce` is same-origin only**, checked with `Utility::is_same_origin_request()`. It exists so cached front-end pages can fetch a fresh nonce; it is not a general-purpose token endpoint.
 - The event routes are registered from a single array in `Event\Rest_Api::get_event_routes()`. Adding one means adding an entry there, not another `register_rest_route()` call.
 

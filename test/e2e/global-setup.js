@@ -28,6 +28,11 @@ module.exports = async ( config ) => {
 		// Authenticate and save the storageState to disk.
 		await requestUtils.setupRest();
 
+		// Keep the editor's welcome guide from opening over any spec.
+		await requestUtils.setPreferences( 'core/edit-post', {
+			welcomeGuide: false,
+		} );
+
 		// eslint-disable-next-line no-console
 		console.log( 'Authentication successful - storage state saved' );
 	} catch ( error ) {

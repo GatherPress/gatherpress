@@ -229,6 +229,26 @@ export const getNonce = ( () => {
 } )();
 
 /**
+ * The page every RSVP save from this page carries.
+ *
+ * With the save order, it lets the server ignore an older save that reaches it
+ * after a newer one, which can happen when the page is left (#2641). Saves from
+ * another page or device carry another value, so the server does not compare them.
+ *
+ * @since TBD
+ */
+const RSVP_SAVE_PAGE = `${ Date.now() }-${ window.crypto
+	.getRandomValues( new Uint32Array( 2 ) )
+	.join( '-' ) }`;
+
+/**
+ * The order of the last RSVP save sent from this page.
+ *
+ * @since TBD
+ */
+let rsvpSaveOrder = 0;
+
+/**
  * Sends an RSVP API request to update the RSVP status for a given post.
  *
  * This function sends a POST request to the RSVP API endpoint with the provided
@@ -273,6 +293,12 @@ export async function sendRsvpApiRequest(
 		return;
 	}
 
+	// Numbered when sent, so a guest count, status or anonymity change sent
+	// later always wins on the server, whichever arrives first.
+	rsvpSaveOrder += 1;
+
+	const saveOrder = rsvpSaveOrder;
+
 	// Add loading class to element if provided.
 	if ( loadingElement ) {
 		loadingElement.classList.add( 'gatherpress--is-loading' );
@@ -288,6 +314,8 @@ export async function sendRsvpApiRequest(
 			gatherPressState.eventApiUrl + '/rsvp',
 			{
 				method: 'POST',
+				// Lets a save started as the page is left finish (see the RSVP block's guest count).
+				keepalive: true,
 				headers: {
 					'Content-Type': 'application/json',
 					'X-WP-Nonce': nonce,
@@ -297,6 +325,8 @@ export async function sendRsvpApiRequest(
 					status: args.status,
 					guests: args.guests,
 					anonymous: args.anonymous,
+					save_page: RSVP_SAVE_PAGE,
+					save_order: saveOrder,
 				} ),
 			},
 		);
@@ -536,6 +566,7 @@ function getTopMostOpenElement() {
  *
  * @since 0.32.0
  * @since 0.36.0 `Escape` closes only the top-most open element.
+ * @since 0.37.0 `Escape` is cancelled once handled, so a modal `<dialog>` around the element stays open.
  *
  * @param {string}   elementSelector - Selector for the parent element (modal or dropdown).
  * @param {string}   contentSelector - Selector for the inner content element.
@@ -568,6 +599,8 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 		}
 
 		event.gatherpressEscapeHandled = true;
+		// The key closed this element, so a modal <dialog> around it stays open.
+		event.preventDefault();
 		handleClose( topMost );
 	};
 

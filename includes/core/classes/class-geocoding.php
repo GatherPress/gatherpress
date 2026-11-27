@@ -135,7 +135,7 @@ final class Geocoding {
 	 * More than the 5 suggestions shown, so that rows left out by the country
 	 * filter or by a repeated label can be replaced.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 */
 	private const SEARCH_CANDIDATE_LIMIT = 10;
 
@@ -359,7 +359,9 @@ final class Geocoding {
 	 * successful Photon response, also overwrites `gatherpress_latitude`
 	 * and `gatherpress_longitude` so freeform-typed addresses (which never
 	 * trigger the JS-side autocomplete that pre-fills coordinates) stay in
-	 * sync with the structured pieces derived from the same response.
+	 * sync with the structured pieces derived from the same response,
+	 * unless the venue sets its coordinates by hand
+	 * (`gatherpress_manual_coordinates`).
 	 *
 	 * Failure modes:
 	 * - Empty address (cleared by the user): all 8 structured keys are
@@ -436,8 +438,13 @@ final class Geocoding {
 		// Persist lat/long only when Photon returned coordinates. The
 		// "not found" payload returns empty strings — we leave any
 		// user-entered coordinates alone in that case (same rationale as
-		// the empty-address branch above).
-		if ( '' !== $result['latitude'] && '' !== $result['longitude'] ) {
+		// the empty-address branch above), and always when the venue sets
+		// its coordinates by hand.
+		if (
+			'' !== $result['latitude'] &&
+			'' !== $result['longitude'] &&
+			! get_post_meta( $post_id, Venue_Meta::MANUAL_COORDINATES_KEY, true )
+		) {
 			update_post_meta( $post_id, 'gatherpress_latitude', (string) $result['latitude'] );
 			update_post_meta( $post_id, 'gatherpress_longitude', (string) $result['longitude'] );
 		}
@@ -1000,7 +1007,7 @@ final class Geocoding {
 	 *
 	 * @since 0.34.0
 	 * @since 0.36.0 Added `$country_filter`.
-	 * @since TBD Skips a feature whose label repeats an earlier suggestion.
+	 * @since 0.36.1 Skips a feature whose label repeats an earlier suggestion.
 	 *
 	 * @param mixed    $data           Decoded JSON body. Treated as "no results"
 	 *                                 when not an array or missing `features`.

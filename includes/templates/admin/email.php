@@ -5,7 +5,7 @@
  * Provides a form for sending a message to the site's opted-in users.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  *
  * @param int                   $recipient_count Number of users the message would go out to.
  * @param array<string, string> $audiences       Audience labels, keyed by audience.

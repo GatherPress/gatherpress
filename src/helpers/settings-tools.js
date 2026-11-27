@@ -22,7 +22,7 @@ let latestPreview = 0;
  * The status line stays in the page while empty, so a screen reader is
  * already watching it when the first message arrives.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} status The status output element.
  * @param {string}      text   The text to announce.
@@ -44,7 +44,7 @@ function showStatus( status, text, busy ) {
 /**
  * Add a paragraph with a bold label and a value to the import preview.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} content The preview content element.
  * @param {string}      label   The label.
@@ -64,7 +64,7 @@ function addPreviewLine( content, label, value ) {
 /**
  * Show what an import file holds before it is imported.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} content The preview content element.
  * @param {Object}      data    The parsed import file.
@@ -119,7 +119,7 @@ export function renderPreview( content, data ) {
 /**
  * Describe the result of an import.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   result                  The import result from the REST route.
  * @param {string[]} [result.imported]       Keys that were imported.
@@ -171,7 +171,7 @@ export function describeImport( result ) {
 /**
  * Download data as a JSON file.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object} data The data to download.
  *
@@ -197,7 +197,7 @@ export function downloadJson( data ) {
 /**
  * Export the settings and download them.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}      elements        The Tools elements.
  * @param {string}      elements.scope  Storage scope: `blog` or `network`.
@@ -224,7 +224,7 @@ export async function exportSettings( { scope, status } ) {
 /**
  * Read the chosen import file and preview it.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}           elements                The Tools elements.
  * @param {HTMLInputElement} elements.file           The file input.
@@ -313,7 +313,7 @@ export function setButtonBusy( button, busy ) {
 /**
  * Import the previewed file.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}            elements              The Tools elements.
  * @param {string}            elements.scope        Storage scope: `blog` or `network`.
@@ -449,7 +449,7 @@ export async function cleanupMaps( { cleanupButton, cleanupStatus } ) {
  *
  * Does nothing on pages without the Tools markup.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {void}
  */

@@ -201,4 +201,190 @@ describe( 'RSVP form submission success', () => {
 		expect( form.querySelector( '.success-second' ) ).toBeVisible();
 		expect( form.querySelector( '.success-second' ) ).not.toHaveAttribute( 'tabindex' );
 	} );
+
+	it( 'submits the form normally and shows no error when no nonce arrives', async () => {
+		const form = buildForm();
+		const submitButton = form.querySelector( 'button[type="submit"]' );
+
+		// The nonce request fails, as a 500 response without JSON does.
+		global.fetch = jest.fn( () => Promise.reject( new Error( 'Server error' ) ) );
+		form.submit = jest.fn();
+
+		await submit( form );
+
+		expect( form.submit ).toHaveBeenCalledTimes( 1 );
+		expect( form.querySelector( `.${ FORM_ERROR_CLASS }` ) ).toBeNull();
+		expect( form.querySelector( '[role="alert"]' ) ).toBeNull();
+		expect( submitButton ).toHaveFocus();
+		// Only the nonce was requested; the RSVP itself goes with the form.
+		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'does not send the form again while the fallback submission loads', async () => {
+		const form = buildForm();
+
+		global.fetch = jest.fn( () => Promise.reject( new Error( 'Server error' ) ) );
+		form.submit = jest.fn();
+
+		await submit( form );
+		await submit( form );
+
+		expect( form.submit ).toHaveBeenCalledTimes( 1 );
+		expect( state.rsvpForm.isSubmitting ).toBe( true );
+		expect(
+			form.querySelector( '.gatherpress-submit-button' ),
+		).toHaveClass( 'gatherpress--is-loading' );
+	} );
+
+	it( 'keeps the guard on when a failed RSVP request falls back', async () => {
+		const form = buildForm();
+
+		global.fetch = jest.fn( ( url ) => {
+			if ( url.endsWith( '/nonce' ) ) {
+				return Promise.resolve( {
+					json: () => Promise.resolve( { nonce: 'test-nonce' } ),
+				} );
+			}
+
+			// The RSVP request fails on the network.
+			return Promise.reject( new Error( 'Network error' ) );
+		} );
+		form.submit = jest.fn();
+
+		await submit( form );
+		await submit( form );
+
+		expect( console ).toHaveWarned();
+		expect( form.submit ).toHaveBeenCalledTimes( 1 );
+		expect( state.rsvpForm.isSubmitting ).toBe( true );
+	} );
+
+	it( 'falls back without an error when the nonce retry after a 403 fails', async () => {
+		const form = buildForm();
+		let nonceRequests = 0;
+
+		global.fetch = jest.fn( ( url ) => {
+			if ( url.endsWith( '/nonce' ) ) {
+				nonceRequests++;
+
+				// The first nonce works; the server rejects it, and the
+				// fresh nonce cannot be fetched.
+				return 1 === nonceRequests
+					? Promise.resolve( {
+						json: () => Promise.resolve( { nonce: 'stale-nonce' } ),
+					} )
+					: Promise.reject( new Error( 'Server error' ) );
+			}
+
+			return Promise.resolve( {
+				status: 403,
+				json: () => Promise.resolve( { code: 'rest_cookie_invalid_nonce' } ),
+			} );
+		} );
+		form.submit = jest.fn();
+
+		await submit( form );
+
+		expect( nonceRequests ).toBe( 2 );
+		expect( form.submit ).toHaveBeenCalledTimes( 1 );
+		expect( form.querySelector( `.${ FORM_ERROR_CLASS }` ) ).toBeNull();
+		expect( form.querySelector( '[role="alert"]' ) ).toBeNull();
+	} );
+
+	it( 'makes the form usable again when the page returns from the back/forward cache', async () => {
+		const form = buildForm();
+		const wrapper = form.querySelector( '.gatherpress-submit-button' );
+		const { callbacks } = store( 'gatherpress' );
+
+		getElement.mockReturnValue( { ref: form } );
+		getContext.mockReturnValue( { postId: 123 } );
+		callbacks.initRsvpForm();
+
+		global.fetch = jest.fn( () => Promise.reject( new Error( 'Server error' ) ) );
+		form.submit = jest.fn();
+
+		await submit( form );
+
+		expect( wrapper ).toHaveClass( 'gatherpress--is-loading' );
+
+		// A normal page load does not change the state.
+		const fresh = new Event( 'pageshow' );
+		Object.defineProperty( fresh, 'persisted', { value: false } );
+		window.dispatchEvent( fresh );
+
+		expect( state.rsvpForm.isSubmitting ).toBe( true );
+
+		const restored = new Event( 'pageshow' );
+		Object.defineProperty( restored, 'persisted', { value: true } );
+		window.dispatchEvent( restored );
+
+		expect( state.rsvpForm.isSubmitting ).toBe( false );
+		expect( wrapper ).not.toHaveClass( 'gatherpress--is-loading' );
+	} );
+} );
+
+describe( 'RSVP form initial visibility', () => {
+	let callbacks;
+
+	beforeEach( () => {
+		( { callbacks } = store( 'gatherpress' ) );
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+	} );
+
+	/**
+	 * Builds the form for an event in the given state, with a canceled notice.
+	 *
+	 * @param {string} eventState The form's data-gatherpress-event-state value.
+	 *
+	 * @return {HTMLFormElement} The form.
+	 */
+	const buildStateForm = ( eventState ) => {
+		const form = buildForm();
+		const notice = document.createElement( 'div' );
+
+		notice.className = 'canceled';
+		notice.dataset.gatherpressRsvpFormVisibility = '{"whenCanceled":"show"}';
+		form.prepend( notice );
+
+		if ( eventState ) {
+			form.dataset.gatherpressEventState = eventState;
+		}
+
+		getElement.mockReturnValue( { ref: form } );
+		getContext.mockReturnValue( { postId: 123 } );
+		callbacks.initRsvpForm();
+
+		return form;
+	};
+
+	it( 'shows only the canceled notice when the event is canceled', () => {
+		const form = buildStateForm( 'canceled' );
+
+		expect( form.querySelector( '.canceled' ) ).toBeVisible();
+		expect( form.querySelector( '.past' ) ).not.toBeVisible();
+		expect( form.querySelector( '.field' ) ).not.toBeVisible();
+		expect( form.querySelector( '.buttons' ) ).not.toBeVisible();
+	} );
+
+	it( 'hides the canceled notice when the event is not canceled', () => {
+		const form = buildStateForm( '' );
+
+		expect( form.querySelector( '.canceled' ) ).not.toBeVisible();
+		expect( form.querySelector( '.field' ) ).toBeVisible();
+	} );
+
+	it( 'follows whenCanceled set to hide on a canceled event', () => {
+		const form = buildForm();
+
+		form.querySelector( '.past' ).dataset.gatherpressRsvpFormVisibility = '{"whenCanceled":"hide"}';
+		form.dataset.gatherpressEventState = 'canceled';
+		getElement.mockReturnValue( { ref: form } );
+		getContext.mockReturnValue( { postId: 123 } );
+		callbacks.initRsvpForm();
+
+		expect( form.querySelector( '.past' ) ).not.toBeVisible();
+	} );
 } );

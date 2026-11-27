@@ -23,13 +23,13 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Capability;
 use GatherPress\Core\Event;
 use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use stdClass;
 use WP_Post;
 use WP_REST_Request;
@@ -52,7 +52,7 @@ final class Meta {
 	/**
 	 * Meta keys that give away a password-protected event's date and place.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 * @var string[]
 	 */
 	const PASSWORD_PROTECTED_META = array(
@@ -91,6 +91,7 @@ final class Meta {
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
 		add_action( 'template_redirect', array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ) );
+		add_action( 'wp_after_insert_post', array( Geo_Sync::get_instance(), 'on_event_saved' ), 10, 2 );
 	}
 
 	/**
@@ -382,9 +383,12 @@ final class Meta {
 	 * date meta and the venue geo fields copied onto it are `show_in_rest`.
 	 * They stay behind the password the way core keeps the content: whoever
 	 * can edit the event, or sends the password as a cookie or as the REST
-	 * `password` argument, sees them.
+	 * `password` argument, sees them. An open event at a password-protected
+	 * venue keeps the location copied from that venue hidden from whoever
+	 * can't see the venue, even its own editor, where an earlier copy is
+	 * still stored (a past event isn't refreshed).
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @param WP_REST_Response $response The response for the event.
 	 * @param WP_Post          $post     The event the response was prepared for.
@@ -398,15 +402,17 @@ final class Meta {
 		WP_Post $post,
 		WP_REST_Request $request
 	): WP_REST_Response {
-		if (
-			post_password_required( $post )
-			&& ! current_user_can( Capability::EDIT_POST, $post->ID )
-			&& ! hash_equals( $post->post_password, (string) $request->get_param( 'password' ) )
-		) {
-			foreach ( self::PASSWORD_PROTECTED_META as $key ) {
-				if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
-					$response->data['meta'][ $key ] = '';
-				}
+		$keys = array();
+
+		if ( Event::is_hidden_by_password( $post, $request ) ) {
+			$keys = self::PASSWORD_PROTECTED_META;
+		} elseif ( Venue_Setup::get_instance()->is_venue_hidden_by_password( $post ) ) {
+			$keys = array_diff( Geo_Sync::FIELDS, array( 'geo_public' ) );
+		}
+
+		foreach ( $keys as $key ) {
+			if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
+				$response->data['meta'][ $key ] = '';
 			}
 		}
 

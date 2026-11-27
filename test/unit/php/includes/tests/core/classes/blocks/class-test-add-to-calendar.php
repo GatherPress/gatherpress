@@ -12,6 +12,7 @@ use GatherPress\Core\Blocks\Add_To_Calendar;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 
 /**
  * Class Add_To_Calendar.
@@ -160,6 +161,55 @@ class Test_Add_To_Calendar extends Base {
 			'',
 			$result,
 			'Should return empty string for non-event post.'
+		);
+	}
+
+	/**
+	 * Tests replace_calendar_placeholders keeps a password-protected event's links behind its password.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::replace_calendar_placeholders
+	 *
+	 * @return void
+	 */
+	public function test_replace_calendar_placeholders_with_password_protected_event(): void {
+		$instance = Add_To_Calendar::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get();
+
+		$block_content = '<div class="wp-block-gatherpress-add-to-calendar">'
+			. '<a href="#gatherpress-google-calendar">Google Calendar</a></div>';
+		$block         = array(
+			'blockName' => 'gatherpress/add-to-calendar',
+			'attrs'     => array(
+				'postId' => $post->ID,
+			),
+		);
+
+		$this->assertSame(
+			'',
+			$instance->replace_calendar_placeholders( $block_content, $block ),
+			'A password-protected event should keep its calendar links from a viewer without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->replace_calendar_placeholders( $block_content, $block );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertStringContainsString(
+			'gatherpress_calendar=google-calendar',
+			$result,
+			'A password-protected event should show its calendar links to a viewer with the password.'
 		);
 	}
 }

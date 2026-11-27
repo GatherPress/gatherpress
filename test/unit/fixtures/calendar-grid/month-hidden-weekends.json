@@ -1,0 +1,179 @@
+{
+	"description": "Weekends hidden, with an event that runs over a weekend.",
+	"startOfWeek": 1,
+	"attributes": {
+		"viewType": "month",
+		"unitCount": 1,
+		"selectedDate": "2026-05-01",
+		"showWeekends": false
+	},
+	"events": [
+		{
+			"key": "over-weekend",
+			"start": "2026-05-08 09:00:00",
+			"end": "2026-05-11 17:00:00"
+		},
+		{
+			"key": "saturday",
+			"start": "2026-05-16 10:00:00",
+			"end": "2026-05-16 11:00:00"
+		}
+	],
+	"expected": {
+		"range": {
+			"start": "2026-05-01",
+			"end": "2026-05-31",
+			"unitCount": 1
+		},
+		"units": [
+			{
+				"weeks": [
+					[
+						"empty",
+						"empty",
+						"empty",
+						"empty",
+						{
+							"date": "2026-05-01",
+							"isWeekend": false,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-05-04",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-05",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-06",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-07",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-08",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "over-weekend",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 4,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						}
+					],
+					[
+						{
+							"date": "2026-05-11",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "over-weekend",
+									"span": "end",
+									"dayIndex": 4,
+									"totalDays": 4,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-05-12",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-13",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-14",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-15",
+							"isWeekend": false,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-05-18",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-19",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-20",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-21",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-22",
+							"isWeekend": false,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-05-25",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-26",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-27",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-28",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-05-29",
+							"isWeekend": false,
+							"posts": []
+						}
+					]
+				],
+				"weekNumbers": [
+					18,
+					19,
+					20,
+					21,
+					22
+				]
+			}
+		]
+	}
+}

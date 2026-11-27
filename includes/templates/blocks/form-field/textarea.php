@@ -37,12 +37,16 @@ if ( ! isset(
 		}
 		?>
 	</div>
-	<textarea<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>>
-		<?php echo esc_textarea( $attributes['field_value'] ); ?>
-	</textarea>
+	<?php // A textarea's content is its value, so nothing may sit around the value. ?>
+	<textarea<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>><?php echo esc_textarea( $attributes['field_value'] ); ?></textarea>
 	<?php if ( '' !== (string) $attributes['help_text'] ) : ?>
 		<p class="gatherpress-help-text" id="<?php echo esc_attr( $attributes['input_id'] . '-help' ); ?>">
 			<?php echo wp_kses_post( $attributes['help_text'] ); ?>
+		</p>
+	<?php endif; ?>
+	<?php if ( '' !== (string) $attributes['error_message'] ) : ?>
+		<p class="gatherpress-field-error" id="<?php echo esc_attr( $attributes['input_id'] . '-error' ); ?>">
+			<?php echo esc_html( $attributes['error_message'] ); ?>
 		</p>
 	<?php endif; ?>
 </div>

@@ -8,9 +8,35 @@ import { store, getElement } from '@wordpress/interactivity';
  */
 import {
 	activateOnSpace as activateOnSpaceHelper,
-	manageFocusTrap,
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
+
+/**
+ * Hides a panel shown by hover until the pointer leaves the dropdown.
+ *
+ * Content shown on hover must be dismissible without moving the pointer.
+ *
+ * @since 0.37.0
+ *
+ * @param {HTMLElement} wrapper The dropdown block.
+ *
+ * @return {void}
+ */
+function dismissHover( wrapper ) {
+	if (
+		wrapper.classList.contains( 'gatherpress--hover-dismissed' ) ||
+		! wrapper.matches( ':hover' )
+	) {
+		return;
+	}
+
+	wrapper.classList.add( 'gatherpress--hover-dismissed' );
+	wrapper.addEventListener(
+		'mouseleave',
+		() => wrapper.classList.remove( 'gatherpress--hover-dismissed' ),
+		{ once: true },
+	);
+}
 
 const { actions } = store( 'gatherpress', {
 	actions: {
@@ -21,6 +47,37 @@ const { actions } = store( 'gatherpress', {
 		},
 		activateOnSpace( event ) {
 			activateOnSpaceHelper( event, getElement().ref );
+		},
+		dismissHoverOnEscape( event ) {
+			if ( 'Escape' !== event.key ) {
+				return;
+			}
+
+			const trigger = getElement().ref;
+
+			dismissHover( trigger.parentElement );
+
+			if ( trigger.parentElement.classList.contains( 'gatherpress--hover-dismissed' ) ) {
+				trigger.setAttribute( 'aria-expanded', 'false' );
+			}
+		},
+		syncHoverExpanded( event ) {
+			const wrapper = getElement().ref;
+			const menu = wrapper.querySelector( '.wp-block-gatherpress-dropdown__menu' );
+			const trigger = wrapper.querySelector( '.wp-block-gatherpress-dropdown__trigger' );
+
+			if ( ! menu || ! trigger ) {
+				return;
+			}
+
+			// The menu shows while hovered, unless it was just dismissed, and
+			// stays open after the pointer leaves only when it was opened.
+			const hovered =
+				'mouseenter' === event.type &&
+				! wrapper.classList.contains( 'gatherpress--hover-dismissed' );
+			const open = hovered || menu.classList.contains( 'gatherpress--is-visible' );
+
+			trigger.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
 		},
 		linkHandler( event ) {
 			actions.preventDefault( event );
@@ -90,18 +147,42 @@ const { actions } = store( 'gatherpress', {
 			if ( dropdownMenu ) {
 				dropdownMenu.classList.remove( 'gatherpress--is-visible' );
 				dropdownTrigger.setAttribute( 'aria-expanded', 'false' );
+				dismissHover( dropdownParent );
 				dropdownTrigger.focus();
 			}
 		},
-		toggleDropdown( event = null, element = null, forceClose = false ) {
+		/**
+		 * Opens or closes the dropdown panel.
+		 *
+		 * The dropdown is a disclosure, not a menu: Tab moves through the
+		 * items and on out of the dropdown, and the panel closes when focus
+		 * leaves it. Escape and an outside click close it as well.
+		 *
+		 * @since 0.32.0
+		 * @since 0.37.0 Takes `returnFocus`, and the panel is a disclosure that Tab can leave.
+		 *
+		 * @param {Event|null}  event       The triggering event, if any.
+		 * @param {Object|null} element     The element from `getElement()`; read when omitted.
+		 * @param {boolean}     forceClose  Close the panel instead of toggling it.
+		 * @param {boolean}     returnFocus Move focus to the trigger after closing.
+		 *
+		 * @return {void}
+		 */
+		toggleDropdown(
+			event = null,
+			element = null,
+			forceClose = false,
+			returnFocus = true,
+		) {
 			actions.preventDefault( event );
 			element = element ?? getElement();
 
-			const menu = element.ref.parentElement.querySelector(
+			const wrapper = element.ref.parentElement;
+			const menu = wrapper.querySelector(
 				'.wp-block-gatherpress-dropdown__menu',
 			);
 
-			const trigger = element.ref.parentElement.querySelector(
+			const trigger = wrapper.querySelector(
 				'.wp-block-gatherpress-dropdown__trigger',
 			);
 
@@ -119,58 +200,84 @@ const { actions } = store( 'gatherpress', {
 
 			trigger.setAttribute( 'aria-expanded', isVisible ? 'true' : 'false' );
 
-			// Create focusable elements array.
-			const focusableSelectors = [
-				'a[href]:not(.gatherpress--is-disabled)',
-			];
+			if ( ! isVisible ) {
+				dismissHover( wrapper );
+			}
 
-			const focusableElements = [
-				trigger,
-				...menu.querySelectorAll( focusableSelectors.join( ',' ) ),
-			];
+			// Remove the handlers of an earlier opening before adding new
+			// ones, and remove them all when the panel closes.
+			if ( 'function' === typeof element.ref.cleanupFocusOut ) {
+				element.ref.cleanupFocusOut();
+			}
+
+			if ( 'function' === typeof element.ref.cleanupCloseHandlers ) {
+				element.ref.cleanupCloseHandlers();
+			}
 
 			if ( isVisible ) {
-				// Open dropdown: set focus trap and close handlers.
 				trigger.focus();
 
-				// Clean up any existing focus trap before creating a new one.
-				if ( 'function' === typeof element.ref.cleanupFocusTrap ) {
-					element.ref.cleanupFocusTrap();
-				}
+				// Close when focus moves to something outside the dropdown, and
+				// leave focus where it went.
+				//
+				// No related target means one of three things. A pointer press
+				// on something that takes no focus: the outside-click handler
+				// closes the panel and returns focus to the trigger. The window
+				// losing focus: focus stays inside the dropdown, so the panel
+				// stays open. Tab leaving the page: focus is no longer inside,
+				// so the panel closes.
+				const ownerDocument = wrapper.ownerDocument;
+				let pointerPressed = false;
 
-				// Set up focus trap.
-				element.ref.cleanupFocusTrap =
-					manageFocusTrap( focusableElements );
+				const handlePointerDown = () => {
+					pointerPressed = true;
+				};
+				const handleKeyDown = () => {
+					pointerPressed = false;
+				};
+				const handleFocusOut = ( focusEvent ) => {
+					const next = focusEvent.relatedTarget;
 
-				// Clean up any existing close handlers to prevent duplicates.
-				if ( 'function' === typeof element.ref.cleanupCloseHandlers ) {
-					element.ref.cleanupCloseHandlers();
-				}
+					if ( next ) {
+						if ( ! wrapper.contains( next ) ) {
+							actions.toggleDropdown( null, element, true, false );
+						}
 
-				// Set up close handlers.
+						return;
+					}
+
+					if ( pointerPressed ) {
+						return;
+					}
+
+					// Focus has not settled yet while focusout runs.
+					setTimeout( () => {
+						if (
+							menu.classList.contains( 'gatherpress--is-visible' ) &&
+							! wrapper.contains( ownerDocument.activeElement )
+						) {
+							actions.toggleDropdown( null, element, true, false );
+						}
+					}, 0 );
+				};
+
+				wrapper.addEventListener( 'focusout', handleFocusOut );
+				ownerDocument.addEventListener( 'pointerdown', handlePointerDown, true );
+				ownerDocument.addEventListener( 'keydown', handleKeyDown, true );
+				element.ref.cleanupFocusOut = () => {
+					wrapper.removeEventListener( 'focusout', handleFocusOut );
+					ownerDocument.removeEventListener( 'pointerdown', handlePointerDown, true );
+					ownerDocument.removeEventListener( 'keydown', handleKeyDown, true );
+				};
+
 				element.ref.cleanupCloseHandlers = setupCloseHandlers(
 					'.wp-block-gatherpress-dropdown__menu',
 					null,
 					() => {
-						if (
-							'function' === typeof element.ref.cleanupFocusTrap
-						) {
-							element.ref.cleanupFocusTrap();
-						}
-
 						actions.toggleDropdown( null, element, true );
 					},
 				);
-			} else {
-				// Close dropdown: clean up focus trap and close handlers.
-				if ( 'function' === typeof element.ref.cleanupFocusTrap ) {
-					element.ref.cleanupFocusTrap();
-				}
-
-				if ( 'function' === typeof element.ref.cleanupCloseHandlers ) {
-					element.ref.cleanupCloseHandlers();
-				}
-
+			} else if ( returnFocus ) {
 				trigger.focus();
 			}
 		},

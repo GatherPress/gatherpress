@@ -86,6 +86,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 		const currentVisibility = attributes?.metadata?.gatherpressRsvpFormVisibility || {};
 		const onSuccess = currentVisibility?.onSuccess || '';
 		const whenPast = currentVisibility?.whenPast || '';
+		const whenCanceled = currentVisibility?.whenCanceled || '';
 
 		const { updateBlockAttributes } = dispatch( 'core/block-editor' );
 
@@ -164,6 +165,30 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 							},
 						] }
 						onChange={ ( value ) => updateVisibility( 'whenPast', value ) }
+					/>
+					<SelectControl
+						__next40pxDefaultSize
+						label={ __( 'When Event Is Canceled', 'gatherpress' ) }
+						help={ __(
+							'Control visibility when the event is canceled. Blocks left on the default are hidden if they change on submission or once the event has passed.',
+							'gatherpress',
+						) }
+						value={ whenCanceled }
+						options={ [
+							{
+								label: __( 'Default', 'gatherpress' ),
+								value: '',
+							},
+							{
+								label: __( 'Show', 'gatherpress' ),
+								value: 'show',
+							},
+							{
+								label: __( 'Hide', 'gatherpress' ),
+								value: 'hide',
+							},
+						] }
+						onChange={ ( value ) => updateVisibility( 'whenCanceled', value ) }
 					/>
 				</InspectorAdvancedControls>
 			</Fragment>

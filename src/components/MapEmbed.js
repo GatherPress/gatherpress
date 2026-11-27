@@ -19,13 +19,14 @@ import { getFromSettings } from '../helpers/editor-settings';
  *
  * @since 0.27.0
  *
- * @param {Object} props             - Component properties.
- * @param {string} props.location    - The location to be displayed on the map.
- * @param {string} props.latitude    - The latitdue of the location to be displayed on the map.
- * @param {string} props.longitude   - The longitude of the location to be displayed on the map.
- * @param {number} [props.zoom=10]   - The zoom level of the map.
- * @param {string} [props.type='m']  - The type of the map (e.g., 'm' for roadmap).
- * @param {string} [props.className] - Additional CSS class names for styling.
+ * @param {Object} props               - Component properties.
+ * @param {string} props.location      - The location to be displayed on the map.
+ * @param {string} [props.markerLabel] - The marker's accessible name (OpenStreetMap only), usually the venue name.
+ * @param {string} props.latitude      - The latitdue of the location to be displayed on the map.
+ * @param {string} props.longitude     - The longitude of the location to be displayed on the map.
+ * @param {number} [props.zoom=10]     - The zoom level of the map.
+ * @param {string} [props.type='m']    - The type of the map (e.g., 'm' for roadmap).
+ * @param {string} [props.className]   - Additional CSS class names for styling.
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -63,6 +64,7 @@ const MapEmbed = ( props ) => {
 		return (
 			<OpenStreetMap
 				location={ location }
+				markerLabel={ props.markerLabel }
 				latitude={ latitude }
 				longitude={ longitude }
 				className={ className }

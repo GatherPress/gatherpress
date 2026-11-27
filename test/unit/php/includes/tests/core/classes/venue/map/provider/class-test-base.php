@@ -39,6 +39,20 @@ class Test_Base extends GatherPress_Test_Base {
 	}
 
 	/**
+	 * Default `get_cache_source()` is empty, so a provider that doesn't
+	 * override it keeps its saved maps.
+	 *
+	 * @since 0.36.2
+	 *
+	 * @covers ::get_cache_source
+	 *
+	 * @return void
+	 */
+	public function test_get_cache_source_default_is_empty(): void {
+		$this->assertSame( '', $this->make_minimal_provider()->get_cache_source() );
+	}
+
+	/**
 	 * Default `supported_map_types()` returns just `['roadmap']` —
 	 * a minimal provider only ships the basemap. Subclasses that ship
 	 * satellite/hybrid/terrain override this.

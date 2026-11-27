@@ -27,7 +27,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:1342](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1342)
+- [includes/core/classes/class-geocoding.php:1349](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1349)
 ```php
 apply_filters(
 			'gatherpress_log_geocoding_errors',

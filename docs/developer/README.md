@@ -20,6 +20,7 @@ Standalone guides for customizing specific GatherPress features through hooks:
 - [Taxonomies](taxonomies/): registering your own taxonomy across every event post type, attaching categories and tags, and renaming or detaching Topics.
 - [WP-CLI commands](wp-cli/README.md): `wp gatherpress event rsvp` and `wp gatherpress settings import|export`, and how to add a command of your own.
 - [Content import and export](content-import-export/README.md): how event dates survive a WXR round trip, and how to carry your own data with them.
+- [Calendar blocks](blocks/calendar.md): the attributes, binding sources, CSS classes and hooks of the month, week and day calendar blocks.
 
 For every hook GatherPress exposes, see the auto-generated [hook reference](hooks/) and the [hook naming convention](hooks-naming-convention.md).
 
@@ -113,7 +114,7 @@ In fact, after the initial setup, you may notice that in your code editor, there
 
 ### Installing Dependencies
 
-1. Install the version of Node in `.nvmrc.`. [NVM](https://github.com/nvm-sh/nvm) can be used to achieve this.
+1. Install the version of Node in `.nvmrc` (Node.js 26). [NVM](https://github.com/nvm-sh/nvm) can be used to achieve this.
 2. Install [Composer](https://getcomposer.org/doc/00-intro.md)
 3. In your terminal window, `cd` to the `gatherpress` directory
 4. Run `npm install` to get node dependencies

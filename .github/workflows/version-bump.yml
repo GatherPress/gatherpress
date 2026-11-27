@@ -6,8 +6,13 @@ name: Version Bump
 # label — replacing the old flow of running the gatherpress-develop WP-CLI
 # command in a local WordPress install (#1827).
 #
+# For a patch, set the branch to the patch branch, `version-X.Y.Z`, cut from
+# main. The bump is committed onto that branch, and the release PR to main
+# is opened when the branch has none (#2586).
+#
 # Prerequisite: the target version must already have a credits file at
 # .github/scripts/release/credits/<version>.json (that lands via a normal PR).
+# A patch with no file starts from the previous patch's file.
 #
 # The GatherPress Alpha lockstep sync is handed off to that repo's own
 # Version Bump workflow: dispatched automatically when a
@@ -27,6 +32,11 @@ on:
         description: 'Version to bump to (X.Y.Z or X.Y.Z-alpha.N / -beta.N)'
         required: true
         type: string
+      branch:
+        description: 'Branch to bump: develop, or the patch branch version-X.Y.Z cut from main'
+        required: true
+        default: develop
+        type: string
 
 permissions:
   contents: write
@@ -38,22 +48,35 @@ concurrency:
 
 jobs:
   bump:
-    name: Generate version ${{ inputs.version }}
+    name: Generate version ${{ inputs.version }} on ${{ inputs.branch }}
     runs-on: ubuntu-latest
     steps:
-      - name: Validate version input
+      - name: Validate inputs
         env:
           VERSION: ${{ inputs.version }}
+          BRANCH: ${{ inputs.branch }}
         run: |
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta)\.[0-9]+)?$ ]]; then
             echo "::error::'${VERSION}' is not a valid version (X.Y.Z or X.Y.Z-alpha.N/-beta.N)."
             exit 1
           fi
 
-      - name: Checkout develop
+          # A patch branch carries only its own version, and a pre-release
+          # is never cut from main.
+          if [ "${BRANCH}" != "develop" ] && [ "${BRANCH}" != "version-${VERSION}" ]; then
+            echo "::error::Branch must be develop or version-${VERSION}, not '${BRANCH}'."
+            exit 1
+          fi
+
+          if [ "${BRANCH}" != "develop" ] && [[ "${VERSION}" == *-* ]]; then
+            echo "::error::A pre-release is bumped on develop, not on '${BRANCH}'."
+            exit 1
+          fi
+
+      - name: Checkout ${{ inputs.branch }}
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: ${{ inputs.branch }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -81,17 +104,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ inputs.version }}
+          BRANCH: ${{ inputs.branch }}
           REPO: ${{ github.repository }}
         run: |
           branch="version-${VERSION}"
           head_sha=$(git rev-parse HEAD)
 
-          # Branch off develop via the API, then commit every file the bump
+          # On develop, branch off via the API. A patch branch already exists,
+          # so the bump is committed onto it. Either way every file the bump
           # touched (version strings, generated credits, lockfile, and any
-          # credits-fold changes) with createCommitOnBranch so GitHub signs
-          # the commit (#1921).
-          gh api "repos/${REPO}/git/refs" \
-            -f ref="refs/heads/${branch}" -f sha="${head_sha}" > /dev/null
+          # credits-fold changes) goes in with createCommitOnBranch so GitHub
+          # signs the commit (#1921).
+          if [ "${BRANCH}" = "develop" ]; then
+            gh api "repos/${REPO}/git/refs" \
+              -f ref="refs/heads/${branch}" -f sha="${head_sha}" > /dev/null
+            headline="Start ${VERSION}"
+          else
+            headline="Bump version to ${VERSION}"
+          fi
 
           # File contents reach jq via --rawfile (and the accumulated array via
           # --slurpfile below), never as command-line arguments: Linux caps a
@@ -115,12 +145,30 @@ jobs:
             --arg repo "${REPO}" \
             --arg branch "${branch}" \
             --arg oid "${head_sha}" \
-            --arg headline "Start ${VERSION}" \
+            --arg headline "${headline}" \
             --slurpfile additions /tmp/bump-additions.json \
             '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions[0]}}}}' \
             > /tmp/bump-commit.json
 
           gh api graphql --input /tmp/bump-commit.json > /dev/null
+
+          if [ "${BRANCH}" != "develop" ]; then
+            existing=$(gh pr list --head "${branch}" --base main --state open --json url --jq '.[0].url')
+
+            if [ -n "${existing}" ]; then
+              echo "Committed the ${VERSION} bump onto ${branch}: ${existing}" >> "$GITHUB_STEP_SUMMARY"
+            else
+              gh pr create \
+                --base main \
+                --head "${branch}" \
+                --title "Release ${VERSION}" \
+                --body "The ${VERSION} patch release. The version bump was committed by the Version Bump workflow.
+
+          **Merge with a merge commit, never squash.** See the patch release flow in docs/contributor/release-process.md."
+            fi
+
+            exit 0
+          fi
 
           gh pr create \
             --base develop \
@@ -137,7 +185,19 @@ jobs:
         env:
           ALPHA_TOKEN: ${{ secrets.GATHERPRESS_ALPHA_TOKEN }}
           VERSION: ${{ inputs.version }}
+          BRANCH: ${{ inputs.branch }}
         run: |
+          # Alpha's Version Bump opens its PR against its develop, and a patch
+          # belongs on its main, so that one is opened by hand.
+          if [ "${BRANCH}" != "develop" ]; then
+            {
+              echo "### GatherPress Alpha lockstep sync"
+              echo ""
+              echo "A patch goes on gatherpress-alpha's \`main\`, which its Version Bump workflow does not target. Open its \`version-${VERSION}\` PR against \`main\` by hand: it changes the \`Version:\` header to ${VERSION}. See the patch release flow in docs/contributor/release-process.md."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           if [ -n "${ALPHA_TOKEN}" ]; then
             GH_TOKEN="${ALPHA_TOKEN}" gh workflow run version-bump.yml \
               --repo GatherPress/gatherpress-alpha \

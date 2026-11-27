@@ -19,6 +19,7 @@ namespace GatherPress\Core\Venue\Map\Provider;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
+use GatherPress\Core\Venue\Map\Carto;
 use GatherPress\Core\Venue\Map;
 use GdImage;
 use Throwable;
@@ -26,8 +27,8 @@ use Throwable;
 /**
  * Class OSM.
  *
- * Tile-composite static map provider. Reads CartoDB's keyless OSM
- * basemap by default; the tile-URL template is filterable so a site can
+ * Tile-composite static map provider. Reads CARTO's OSM basemap by
+ * default; the tile-URL template is filterable so a site can
  * point at a different XYZ tile server (Stamen, Maptiler, self-hosted)
  * without changing code.
  *
@@ -36,13 +37,14 @@ use Throwable;
 final class OSM extends Base {
 
 	/**
-	 * Default XYZ tile URL template. CartoDB's "light_all" basemap —
-	 * keyless, fast CDN, fits the GatherPress aesthetic.
+	 * Default XYZ tile URL template: CARTO's "light_all" basemap, the same
+	 * one the interactive map uses.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.2 Uses CARTO's `basemaps.cartocdn.com` host, as the interactive map does.
 	 * @var string
 	 */
-	const DEFAULT_TILE_URL = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
+	const DEFAULT_TILE_URL = Settings::MAP_TILE_URL;
 
 	/**
 	 * Tile dimension in pixels (Web Mercator standard).
@@ -61,6 +63,45 @@ final class OSM extends Base {
 	 * @var int
 	 */
 	const COMPOSITE_TIME_BUDGET = 10;
+
+	/**
+	 * Prefix of the transient set when a render gets no tiles, which
+	 * pauses rendering for `TILES_FAILED_PAUSE` seconds. The rest of the
+	 * name is a hash of the tile URL and tile zoom, so a new key, a new tile
+	 * server, or a zoom the server does serve does not wait for the pause.
+	 *
+	 * @since 0.36.2
+	 * @var string
+	 */
+	const TILES_FAILED_TRANSIENT = 'gatherpress_static_map_tiles_failed_';
+
+	/**
+	 * Seconds to pause rendering after a render gets no tiles.
+	 *
+	 * A map is rendered on page view when it has no saved image, so without
+	 * a pause a tile host that is down or rejecting the key would be asked
+	 * again on every page view.
+	 *
+	 * @since 0.36.2
+	 * @var int
+	 */
+	const TILES_FAILED_PAUSE = 5 * MINUTE_IN_SECONDS;
+
+	/**
+	 * Default colors of the static map marker, as hex colors.
+	 *
+	 * `border` is the outer ring, `fill` the body, `outline` the thin line
+	 * around the body, and `center` the dot in the middle.
+	 *
+	 * @since TBD
+	 * @var array<string, string>
+	 */
+	const DEFAULT_MARKER_COLORS = array(
+		'border'  => '#ffffff',
+		'fill'    => '#dc3545',
+		'outline' => '#1e1e1e',
+		'center'  => '#ffffff',
+	);
 
 	/**
 	 * Provider slug used in post meta keys, filenames, and the
@@ -89,10 +130,13 @@ final class OSM extends Base {
 	/**
 	 * Composite OSM tiles around the venue, stamp a marker at the canvas
 	 * center, and return the finished GD image. Returns null when GD is
-	 * unavailable, when the requested dimensions are not positive, or when
-	 * the retina variant would require a tile zoom past `Map::ZOOM_MAX`.
+	 * unavailable, when the requested dimensions are not positive, when
+	 * the retina variant would require a tile zoom past the highest one
+	 * the tiles are served at, or when no tile loads.
 	 *
 	 * @since 0.34.0
+	 * @since 0.36.2 Returns null when no tile loads, and for a pause after that.
+	 *            Renders CARTO tiles at `Carto::ZOOM_MAX` at most.
 	 *
 	 * @param float  $latitude  Venue latitude in decimal degrees.
 	 * @param float  $longitude Venue longitude in decimal degrees.
@@ -130,13 +174,23 @@ final class OSM extends Base {
 			$density = 1;
 		}
 
+		$tiles = $this->get_tile_url_template();
+
+		// CARTO serves raster tiles only up to its own limit, so a CARTO map
+		// renders at that zoom at most, as the interactive map does.
+		$max_zoom = Carto::is_tile_url( $tiles ) ? Carto::ZOOM_MAX : Map::ZOOM_MAX;
+		$zoom     = min( $zoom, $max_zoom );
+
 		// Tile zoom climbs with density so the retina variant renders true
 		// zoom+1 detail. If that would exceed the provider's serveable
 		// zoom range, skip — orchestrator treats null as "no retina at
 		// this combo" and moves on with just the 1× image.
 		$tile_zoom = $zoom + (int) log( $density, 2 );
 
-		if ( $tile_zoom > Map::ZOOM_MAX ) {
+		// md5() here only names the transient, matching class-map.php.
+		$paused = self::TILES_FAILED_TRANSIENT . md5( $tiles . '|' . $tile_zoom ); // NOSONAR.
+
+		if ( $tile_zoom > $max_zoom || false !== get_transient( $paused ) ) {
 			return null;
 		}
 
@@ -160,8 +214,6 @@ final class OSM extends Base {
 		$bg = (int) imagecolorallocate( $canvas, 238, 238, 238 );
 		imagefilledrectangle( $canvas, 0, 0, $canvas_width - 1, $canvas_height - 1, $bg );
 
-		$tiles = $this->get_tile_url_template();
-
 		/**
 		 * Filter the wall-clock budget (in seconds) for a single OSM
 		 * render() call. When the deadline is exceeded mid-loop, remaining
@@ -176,6 +228,7 @@ final class OSM extends Base {
 			self::COMPOSITE_TIME_BUDGET
 		);
 		$deadline = microtime( true ) + $budget;
+		$painted  = 0;
 
 		for ( $tx = $left_tile; $tx <= $right_tile; $tx++ ) {
 			for ( $ty = $top_tile; $ty <= $bottom_tile; $ty++ ) {
@@ -183,8 +236,15 @@ final class OSM extends Base {
 					break 2;
 				}
 
-				$this->paint_tile( $canvas, $tx, $ty, $tile_zoom, $left_pixel, $top_pixel, $tiles );
+				$painted += (int) $this->paint_tile( $canvas, $tx, $ty, $tile_zoom, $left_pixel, $top_pixel, $tiles );
 			}
+		}
+
+		// A map with no tiles is only the gray background. It is not saved,
+		// so a later render tries again once the pause ends.
+		if ( 0 === $painted ) {
+			set_transient( $paused, 1, self::TILES_FAILED_PAUSE );
+			return null;
 		}
 
 		$this->stamp_marker(
@@ -199,8 +259,8 @@ final class OSM extends Base {
 
 	/**
 	 * Fetch one OSM tile and stamp it onto the in-flight canvas at its
-	 * world-pixel-aligned destination. Silently skips tiles that fail to
-	 * fetch or decode — the gray composite background shows through.
+	 * world-pixel-aligned destination. Skips tiles that fail to fetch or
+	 * decode, and the gray composite background shows through.
 	 *
 	 * Extracted from `render()` to keep that loop body shallow enough to
 	 * stay under SonarCloud's cognitive-complexity threshold.
@@ -215,7 +275,7 @@ final class OSM extends Base {
 	 * @param int     $top_pixel  World-pixel y-offset of the canvas top-left.
 	 * @param string  $tiles      URL template (`{z}/{x}/{y}` placeholders).
 	 *
-	 * @return void
+	 * @return bool True when the tile was painted.
 	 */
 	private function paint_tile(
 		$canvas,
@@ -225,17 +285,12 @@ final class OSM extends Base {
 		int $left_pixel,
 		int $top_pixel,
 		string $tiles
-	): void {
+	): bool {
 		$tile_png = $this->fetch_tile( $tile_zoom, $tx, $ty, $tiles );
-
-		if ( null === $tile_png ) {
-			return;
-		}
-
-		$tile = $this->decode_tile( $tile_png );
+		$tile     = null === $tile_png ? false : $this->decode_tile( $tile_png );
 
 		if ( false === $tile ) {
-			return;
+			return false;
 		}
 
 		$dst_x = $tx * self::TILE_SIZE - $left_pixel;
@@ -243,6 +298,8 @@ final class OSM extends Base {
 
 		imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
 		unset( $tile );
+
+		return true;
 	}
 
 	/**
@@ -321,7 +378,15 @@ final class OSM extends Base {
 			)
 		);
 
-		$response = wp_safe_remote_get( $url, array( 'timeout' => 5 ) );
+		$args = array( 'timeout' => 5 );
+
+		// A CARTO key restricted to the site's domain is checked against the
+		// referer, which a server request does not send on its own.
+		if ( Carto::is_tile_url( $url ) ) {
+			$args['headers'] = array( 'Referer' => home_url( '/' ) );
+		}
+
+		$response = wp_safe_remote_get( $url, $args );
 
 		if ( is_wp_error( $response ) ) {
 			return null;
@@ -345,6 +410,7 @@ final class OSM extends Base {
 	 * a pinprick.
 	 *
 	 * @since 0.34.0
+	 * @since TBD Colors come from `get_marker_colors()`.
 	 *
 	 * @param GdImage $canvas Destination canvas.
 	 * @param int     $x      Pixel X position (marker center).
@@ -354,18 +420,103 @@ final class OSM extends Base {
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
-		$white = (int) imagecolorallocate( $canvas, 255, 255, 255 );
-		$red   = (int) imagecolorallocate( $canvas, 220, 53, 69 );
-		$dark  = (int) imagecolorallocate( $canvas, 30, 30, 30 );
+		$colors = array_map(
+			fn( string $hex ): int => $this->allocate_hex_color( $canvas, $hex ),
+			$this->get_marker_colors()
+		);
 
 		$outer = max( 1, (int) round( 20 * $scale ) );
 		$inner = max( 1, (int) round( 16 * $scale ) );
 		$dot   = max( 1, (int) round( 6 * $scale ) );
 
-		imagefilledellipse( $canvas, $x, $y, $outer, $outer, $white );
-		imagefilledellipse( $canvas, $x, $y, $inner, $inner, $red );
-		imageellipse( $canvas, $x, $y, $inner, $inner, $dark );
-		imagefilledellipse( $canvas, $x, $y, $dot, $dot, $white );
+		imagefilledellipse( $canvas, $x, $y, $outer, $outer, $colors['border'] );
+		imagefilledellipse( $canvas, $x, $y, $inner, $inner, $colors['fill'] );
+		imageellipse( $canvas, $x, $y, $inner, $inner, $colors['outline'] );
+		imagefilledellipse( $canvas, $x, $y, $dot, $dot, $colors['center'] );
+	}
+
+	/**
+	 * Colors of the static map marker, filterable.
+	 *
+	 * A color that is missing or is not a valid hex color keeps its
+	 * default, so a filter can change one color and leave the rest.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, string> Lowercase six-digit hex colors keyed like `DEFAULT_MARKER_COLORS`.
+	 */
+	public function get_marker_colors(): array {
+		/**
+		 * Filter the colors of the marker drawn on static OpenStreetMap images.
+		 *
+		 * Static maps are rendered on the server, so CSS cannot change their
+		 * marker. Saved maps render again when these colors change.
+		 *
+		 * @since TBD
+		 *
+		 * @param array<string, string> $colors {
+		 *     Hex colors of the marker.
+		 *
+		 *     @type string $border  Outer ring. Default `#ffffff`.
+		 *     @type string $fill    Body of the marker. Default `#dc3545`.
+		 *     @type string $outline Thin line around the body. Default `#1e1e1e`.
+		 *     @type string $center  Dot in the middle. Default `#ffffff`.
+		 * }
+		 */
+		return self::normalize_marker_colors(
+			apply_filters( 'gatherpress_static_map_marker_colors', self::DEFAULT_MARKER_COLORS )
+		);
+	}
+
+	/**
+	 * Check filtered marker colors, falling back to the defaults.
+	 *
+	 * A filter callback can return any type, so a result that is not an
+	 * array gives the default marker. Three-digit colors are expanded, so
+	 * `#fff` for a white part still matches the default.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $filtered The value returned by the marker colors filter.
+	 *
+	 * @return array<string, string> Lowercase six-digit hex colors keyed like `DEFAULT_MARKER_COLORS`.
+	 */
+	private static function normalize_marker_colors( mixed $filtered ): array {
+		$filtered = is_array( $filtered ) ? $filtered : array();
+		$colors   = array();
+
+		foreach ( self::DEFAULT_MARKER_COLORS as $key => $default ) {
+			$color = is_string( $filtered[ $key ] ?? null ) ? (string) sanitize_hex_color( $filtered[ $key ] ) : '';
+
+			$colors[ $key ] = $color
+				? strtolower( (string) preg_replace( '/^#(.)(.)(.)$/', '#$1$1$2$2$3$3', $color ) )
+				: $default;
+		}
+
+		return $colors;
+	}
+
+	/**
+	 * Allocate a hex color such as `#dc3545` on a canvas.
+	 *
+	 * @since TBD
+	 *
+	 * @param GdImage $canvas Destination canvas.
+	 * @param string  $hex    Six-digit hex color, from `get_marker_colors()`.
+	 *
+	 * @return int GD color identifier.
+	 */
+	private function allocate_hex_color( $canvas, string $hex ): int {
+		$hex = ltrim( $hex, '#' );
+
+		/**
+		 * Red, green, and blue channels. Two hex digits each, so 0 to 255.
+		 *
+		 * @var array{int<0, 255>, int<0, 255>, int<0, 255>} $rgb
+		 */
+		$rgb = sscanf( $hex, '%02x%02x%02x' );
+
+		return (int) imagecolorallocate( $canvas, $rgb[0], $rgb[1], $rgb[2] );
 	}
 
 	/**
@@ -400,6 +551,36 @@ final class OSM extends Base {
 		}
 
 		return Settings::add_map_tile_key( $template );
+	}
+
+	/**
+	 * Where the tiles come from, for the static map cache.
+	 *
+	 * Saved maps render again when the tile URL, the CARTO key, or the
+	 * marker colors change. The key is replaced with a hash of it, so its
+	 * value stays out of the cache hash.
+	 *
+	 * @since 0.36.2
+	 * @since TBD Includes the marker colors when they are not the default.
+	 *
+	 * @return string The tile URL template, with the key hashed.
+	 */
+	public function get_cache_source(): string {
+		$source = (string) preg_replace_callback(
+			'/([?&]key=)([^&]*)/',
+			// md5() here only keeps the key out of the cache hash.
+			static fn( array $matches ): string => $matches[1] . md5( $matches[2] ), // NOSONAR.
+			$this->get_tile_url_template()
+		);
+
+		// Left out for the default marker, so existing saved maps keep their hash.
+		$colors = $this->get_marker_colors();
+
+		if ( self::DEFAULT_MARKER_COLORS !== $colors ) {
+			$source .= '|marker=' . implode( ',', $colors );
+		}
+
+		return $source;
 	}
 
 	/**

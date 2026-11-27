@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Opening the editor no longer changes the order, the upcoming or past setting, or the name of an Event Query Loop, and no longer shows unsaved changes for it. A loop without a name still gets a name, such as "Upcoming Events". A name that the author gives the loop now stays when the loop's settings change.

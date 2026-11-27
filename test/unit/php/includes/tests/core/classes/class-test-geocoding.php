@@ -1479,7 +1479,7 @@ class Test_Geocoding extends Base {
 	/**
 	 * A repeated label is suggested once, and the 5-row cap counts unique labels (#2449).
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::search_addresses
 	 * @covers ::build_search_suggestions_response
@@ -3210,6 +3210,36 @@ class Test_Geocoding extends Base {
 		// addresses (no autocomplete pick) don't leave the map block uncoordinated.
 		$this->assertSame( '40.8435252', (string) get_post_meta( $venue_post_id, 'gatherpress_latitude', true ) );
 		$this->assertSame( '-74.2398353', (string) get_post_meta( $venue_post_id, 'gatherpress_longitude', true ) );
+	}
+
+	/**
+	 * A venue that sets its coordinates by hand keeps them when its address
+	 * geocodes, and still gets the structured address of the response.
+	 *
+	 * @covers ::async_geocode_venue
+	 *
+	 * @return void
+	 */
+	public function test_async_geocode_venue_keeps_manual_coordinates(): void {
+		$instance      = Geocoding::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $venue_post_id, 'gatherpress_address', '11 Durrell Street, Verona NJ' );
+		update_post_meta( $venue_post_id, 'gatherpress_latitude', '52.37' );
+		update_post_meta( $venue_post_id, 'gatherpress_longitude', '4.89' );
+		update_post_meta( $venue_post_id, 'gatherpress_manual_coordinates', true );
+
+		$this->mock_photon_response( array( $this->build_photon_feature() ) );
+
+		$instance->async_geocode_venue( $venue_post_id );
+
+		$this->assertSame( 'Verona', (string) get_post_meta( $venue_post_id, 'gatherpress_city', true ) );
+		$this->assertSame(
+			'52.37',
+			(string) get_post_meta( $venue_post_id, 'gatherpress_latitude', true ),
+			'Failed to assert manual coordinates are kept.'
+		);
+		$this->assertSame( '4.89', (string) get_post_meta( $venue_post_id, 'gatherpress_longitude', true ) );
 	}
 
 	/**

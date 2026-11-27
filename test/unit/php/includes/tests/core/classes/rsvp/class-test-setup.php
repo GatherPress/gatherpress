@@ -139,6 +139,12 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'transition_comment_status',
+				'priority' => 10,
+				'callback' => array( $instance, 'enforce_capacity_on_approval' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_set_rsvp_meta_default' ),
@@ -1100,8 +1106,8 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_rsvp_screen_options_with_page_parameter(): void {
-		// Set up the $_GET parameter for the RSVP page.
-		$_GET['page'] = Rsvp::COMMENT_TYPE; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// Set the page URL parameter for the RSVP page.
+		$this->set_url_params( array( 'page' => Rsvp::COMMENT_TYPE ) );
 
 		$instance = Setup::get_instance();
 
@@ -1116,7 +1122,6 @@ class Test_Setup extends Base {
 		$this->assertNotNull( $screen );
 
 		// Clean up.
-		unset( $_GET['page'] );
 		set_current_screen( 'front' );
 	}
 
@@ -1128,9 +1133,6 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_rsvp_screen_options_without_page_returns_early(): void {
-		// Ensure $_GET['page'] is not set.
-		unset( $_GET['page'] );
-
 		$instance = Setup::get_instance();
 
 		// Should return early without doing anything.
@@ -1153,8 +1155,12 @@ class Test_Setup extends Base {
 		wp_set_current_user( $user_id );
 
 		// Set up request parameters.
-		$_REQUEST['s']      = 'test search'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['status'] = 'attending'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->set_url_params(
+			array(
+				's'      => 'test search',
+				'status' => 'attending',
+			)
+		);
 
 		$instance = Setup::get_instance();
 
@@ -1166,8 +1172,33 @@ class Test_Setup extends Base {
 		$this->assertNotEmpty( $output );
 
 		// Clean up.
-		unset( $_REQUEST['s'], $_REQUEST['status'] );
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Searching from a check-in filtered screen keeps the filter.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::render_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_render_rsvp_admin_page_keeps_the_check_in_filter_in_search(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['check_in'] = 'not-recorded';
+
+		ob_start();
+		Setup::get_instance()->render_rsvp_admin_page();
+		$output = ob_get_clean();
+
+		unset( $_REQUEST['check_in'] );
+
+		$this->assertStringContainsString(
+			'<input type="hidden" name="check_in" value="not-recorded" />',
+			$output
+		);
 	}
 
 	/**
@@ -1597,5 +1628,319 @@ class Test_Setup extends Base {
 			wp_style_is( 'wp-components', 'enqueued' ),
 			'Failed to assert opening the screen enqueues the components stylesheet.'
 		);
+	}
+
+	/**
+	 * Requests a row action on the RSVP screen, as its Approve link does.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $rsvp_id The RSVP comment ID.
+	 *
+	 * @return string|null The request URI before, for the test to put back.
+	 */
+	private function request_approve( int $rsvp_id ): ?string {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$request_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+
+		$nonce = wp_create_nonce( Rsvp::COMMENT_TYPE );
+
+		$this->set_url_params( array( '_wpnonce' => $nonce ) );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = (string) $rsvp_id;
+		$_SERVER['REQUEST_URI']          = '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp'
+			. '&action=approve&gatherpress_rsvp_id=' . $rsvp_id . '&_wpnonce=' . $nonce;
+
+		return $request_uri;
+	}
+
+	/**
+	 * Creates a pending RSVP on a new event.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function create_pending_rsvp(): int {
+		return $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_approved' => '0',
+			)
+		);
+	}
+
+	/**
+	 * An action redirects to the list without the action, with its result.
+	 *
+	 * A reload of the URL it lands on cannot repeat the action.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 * @covers ::redirect_after_action
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_redirects_after_an_action(): void {
+		$rsvp_id     = $this->create_pending_rsvp();
+		$request_uri = $this->request_approve( $rsvp_id );
+
+		$redirect = array();
+
+		// Stop at the redirect, before the exit that follows it.
+		add_filter(
+			'wp_redirect',
+			static function ( $location, $status ) use ( &$redirect ) {
+				$redirect = array( $location, $status );
+
+				throw new \Exception( 'gatherpress_test_redirect' );
+			},
+			9999,
+			2
+		);
+
+		try {
+			Setup::get_instance()->prepare_rsvp_admin_page();
+			$this->fail( 'Failed to assert an action redirects.' );
+		} catch ( \Exception $exception ) {
+			$this->assertSame( 'gatherpress_test_redirect', $exception->getMessage() );
+		} finally {
+			unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+			$_SERVER['REQUEST_URI'] = $request_uri;
+			set_current_screen( 'front' );
+		}
+
+		$this->assertSame(
+			array( '/wp-admin/edit.php?post_type=gatherpress_event&page=gatherpress_rsvp&approved=1', 303 ),
+			$redirect,
+			'Failed to assert the redirect drops the action and its nonce and carries the result.'
+		);
+		$this->assertSame( '1', get_comment( $rsvp_id )->comment_approved, 'Failed to assert the action ran once.' );
+	}
+
+	/**
+	 * A cancelled redirect leaves the screen to load as before.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 * @covers ::redirect_after_action
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_loads_when_the_redirect_is_cancelled(): void {
+		$rsvp_id     = $this->create_pending_rsvp();
+		$request_uri = $this->request_approve( $rsvp_id );
+
+		add_filter( 'wp_redirect', '__return_false', 9999 );
+
+		Setup::get_instance()->prepare_rsvp_admin_page();
+
+		unset( $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+		$_SERVER['REQUEST_URI'] = $request_uri;
+		set_current_screen( 'front' );
+
+		$this->assertSame( '1', get_comment( $rsvp_id )->comment_approved, 'Failed to assert the action ran.' );
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-rsvp-admin', 'enqueued' ),
+			'Failed to assert the screen goes on loading.'
+		);
+	}
+
+	/**
+	 * Without an action there is no redirect, and the result args are removable.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 * @covers ::redirect_after_action
+	 * @covers ::add_removable_result_args
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_does_not_redirect_without_an_action(): void {
+		$redirected = false;
+
+		add_filter(
+			'wp_redirect',
+			static function () use ( &$redirected ) {
+				$redirected = true;
+
+				return false;
+			},
+			9999
+		);
+
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		Setup::get_instance()->prepare_rsvp_admin_page();
+		set_current_screen( 'front' );
+
+		$this->assertFalse( $redirected, 'Failed to assert the screen does not redirect without an action.' );
+
+		foreach ( List_Table::RESULT_ARGS as $result_arg ) {
+			$this->assertContains(
+				$result_arg,
+				wp_removable_query_args(),
+				sprintf( 'Failed to assert %s is removed from the address bar.', $result_arg )
+			);
+		}
+	}
+
+	/**
+	 * The action result args are added to the query args core removes, once each.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::add_removable_result_args
+	 *
+	 * @return void
+	 */
+	public function test_add_removable_result_args(): void {
+		$args = Setup::get_instance()->add_removable_result_args( array( 'message', 'approved' ) );
+
+		$this->assertSame(
+			array_values( array_unique( array_merge( array( 'message', 'approved' ), List_Table::RESULT_ARGS ) ) ),
+			$args,
+			'Failed to assert the result args are added after core\'s args.'
+		);
+		$this->assertSame(
+			1,
+			array_count_values( $args )['approved'],
+			'Failed to assert an arg core already removes is not added twice.'
+		);
+	}
+
+	/**
+	 * The screen shows the result of the last action as a notice.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::render_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_render_rsvp_admin_page_shows_the_action_notice(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->set_url_params( array( 'approved' => '1' ) );
+
+		ob_start();
+		Setup::get_instance()->render_rsvp_admin_page();
+		$output = ob_get_clean();
+
+		$this->assertMatchesRegularExpression(
+			// WordPress 7.2 prints the notice's class before its id.
+			'#<hr class="wp-header-end">\s*<div (?=[^>]*id="moderated")'
+				. '(?=[^>]*class="notice notice-success is-dismissible")[^>]*><p>1 RSVP approved\.</p></div>#',
+			$output,
+			'Failed to assert the notice follows the header.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity_on_approval on approval.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity_on_approval
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_on_approval(): void {
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '0' );
+
+		wp_set_comment_status( $comment_id, 'approve' );
+
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::WAITING_LIST->value ),
+			'Failed to assert an RSVP approved on a full event moves to the waiting list.'
+		);
+	}
+
+	/**
+	 * Coverage for enforce_capacity_on_approval ignoring other transitions.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::enforce_capacity_on_approval
+	 *
+	 * @return void
+	 */
+	public function test_enforce_capacity_on_approval_skips(): void {
+		$instance   = Setup::get_instance();
+		$post_id    = $this->create_event_with_attendee( 1 );
+		$comment_id = $this->create_rsvp( $post_id, Status::ATTENDING, '1' );
+		$comment    = get_comment( $comment_id );
+
+		$instance->enforce_capacity_on_approval( 'unapproved', 'approved', $comment );
+		$instance->enforce_capacity_on_approval( 'approved', 'approved', $comment );
+
+		$this->assertTrue(
+			is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert other transitions leave the RSVP alone.'
+		);
+
+		$other_id = $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) );
+
+		wp_set_object_terms( $other_id, Status::ATTENDING->value, Status::TAXONOMY );
+		$instance->enforce_capacity_on_approval( 'approved', 'unapproved', get_comment( $other_id ) );
+
+		$this->assertTrue(
+			is_object_in_term( $other_id, Status::TAXONOMY, Status::ATTENDING->value ),
+			'Failed to assert a regular comment is left alone.'
+		);
+	}
+
+	/**
+	 * Creates an event with a capacity and one approved attendee.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $capacity The event capacity.
+	 *
+	 * @return int The event post ID.
+	 */
+	private function create_event_with_attendee( int $capacity ): int {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', $capacity );
+
+		$this->create_rsvp( $post_id, Status::ATTENDING, '1', $this->factory->user->create() );
+
+		return $post_id;
+	}
+
+	/**
+	 * Creates an RSVP comment.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int    $post_id  The event post ID.
+	 * @param Status $status   The RSVP status.
+	 * @param string $approved The comment approval value.
+	 * @param int    $user_id  The user ID, or 0 for someone without an account.
+	 *
+	 * @return int The RSVP comment ID.
+	 */
+	private function create_rsvp( int $post_id, Status $status, string $approved, int $user_id = 0 ): int {
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'guest@example.org',
+				'user_id'              => $user_id,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, $status->value, Status::TAXONOMY );
+
+		return $comment_id;
 	}
 }

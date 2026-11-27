@@ -202,6 +202,34 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * A start-only display has no end, and no time zone when the block turns it off.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_display_datetime_parts
+	 *
+	 * @return void
+	 */
+	public function test_get_display_datetime_parts_start_only_without_timezone(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-11 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$parts = $event->get_display_datetime_parts( 'start', '', '', '', 'no' );
+
+		$this->assertNotEmpty( $parts['start'], 'Failed to assert the start is shown.' );
+		$this->assertFalse( $parts['end'], 'Failed to assert a start-only display has no end.' );
+		$this->assertFalse( $parts['separator'], 'Failed to assert there is no separator without an end.' );
+		$this->assertFalse( $parts['timezone'], 'Failed to assert the block can turn the time zone off.' );
+	}
+
+	/**
 	 * Coverage for get_display_datetime method.
 	 *
 	 * @param array  $params   Parameters for datetimes.
@@ -3529,5 +3557,59 @@ class Test_Event extends Base {
 		$this->assertNull( $captured, 'Failed to assert a post that is not an event gives the filter null.' );
 
 		remove_filter( 'gatherpress_datetime_separator', $capture );
+	}
+
+	/**
+	 * Calendars and feeds get no name or details for a password-protected venue,
+	 * whoever is asking, since a calendar response can be cached for others.
+	 *
+	 * @since 0.36.1
+	 *
+	 * @covers ::get_public_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_public_venue_information(): void {
+		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
+
+		$at_venue  = function ( string $password ): Event {
+			$venue_id = $this->factory->post->create(
+				array(
+					'post_type'     => Venue::POST_TYPE,
+					'post_status'   => 'publish',
+					'post_title'    => 'Hidden Hall',
+					'post_password' => $password,
+				)
+			);
+			$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+			update_post_meta( $venue_id, 'gatherpress_address', '1 Main St' );
+			wp_set_post_terms( $event_id, ( new Venue( $venue_id ) )->get_term_slug(), Venue::TAXONOMY );
+
+			return new Event( $event_id );
+		};
+		$protected = $at_venue( 'secret' );
+		$open      = $at_venue( '' );
+
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			array_fill_keys( array_keys( $protected->get_venue_information() ), '' ),
+			$protected->get_public_venue_information(),
+			'A protected venue shares nothing.'
+		);
+		$this->assertSame( '1 Main St', $protected->get_venue_information()['address'], 'Emails get the address.' );
+		$this->assertSame( '1 Main St', $open->get_public_venue_information()['address'], 'An open venue shares it.' );
+		$this->assertSame(
+			'',
+			( new Event( $this->factory->post->create() ) )->get_public_venue_information()['name'],
+			'A post that is not an event has no venue.'
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( '', $protected->get_public_venue_information()['address'], 'Nor does an Editor.' );
+
+		wp_set_current_user( 0 );
 	}
 }

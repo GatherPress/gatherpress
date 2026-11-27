@@ -43,4 +43,9 @@ if ( ! isset(
 			<?php echo wp_kses_post( $attributes['help_text'] ); ?>
 		</p>
 	<?php endif; ?>
+	<?php if ( '' !== (string) $attributes['error_message'] ) : ?>
+		<p class="gatherpress-field-error" id="<?php echo esc_attr( $attributes['input_id'] . '-error' ); ?>">
+			<?php echo esc_html( $attributes['error_message'] ); ?>
+		</p>
+	<?php endif; ?>
 </div>

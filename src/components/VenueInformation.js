@@ -1,7 +1,12 @@
 /**
  * WordPress dependencies
  */
-import { TextControl } from '@wordpress/components';
+import {
+	TextControl,
+	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useCallback, useRef } from '@wordpress/element';
@@ -10,7 +15,12 @@ import { useDebounce } from '@wordpress/compose';
 /**
  * Internal dependencies
  */
-import { geocodeAddress, GEOCODE_LOCK_NAME } from '../helpers/geocoding';
+import {
+	geocodeAddress,
+	geocodeFailedMessage,
+	GEOCODE_LOCK_NAME,
+	GEOCODE_NOTICE_ID,
+} from '../helpers/geocoding';
 import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
@@ -20,7 +30,9 @@ import AddressAutocompleteField from './AddressAutocompleteField';
  * phone number, and website. Each field is stored as its own post meta key
  * (gatherpress_address, gatherpress_latitude, gatherpress_longitude,
  * gatherpress_phone, gatherpress_website) so the values can be bound to
- * blocks via core/post-meta block bindings.
+ * blocks via core/post-meta block bindings. The coordinates come from the
+ * address unless gatherpress_manual_coordinates is on, for a venue without
+ * a street address.
  *
  * @since 0.27.0
  *
@@ -33,9 +45,10 @@ const VenueInformation = () => {
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
 
-	const { mapCustomLatLong, venueMeta } = useSelect(
+	const { createErrorNotice } = useDispatch( 'core/notices' );
+
+	const { venueMeta } = useSelect(
 		( selectData ) => ( {
-			mapCustomLatLong: selectData( 'gatherpress/venue' ).getMapCustomLatLong(),
 			venueMeta: selectData( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {},
 		} ),
 		[],
@@ -48,11 +61,21 @@ const VenueInformation = () => {
 	const initialLng = venueMeta.gatherpress_longitude || '';
 	const phone = venueMeta.gatherpress_phone || '';
 	const website = venueMeta.gatherpress_website || '';
+	const manualCoordinates = !! venueMeta.gatherpress_manual_coordinates;
 
-	// Use ref to track current address for geocoding without recreating callback.
+	// Use refs to track the current address and coordinates setting for
+	// geocoding without recreating the callback.
 	const addressRef = useRef( address );
+	const manualCoordinatesRef = useRef( manualCoordinates );
 
 	addressRef.current = address;
+	manualCoordinatesRef.current = manualCoordinates;
+
+	// The address the current coordinates belong to. A saved address that
+	// already has coordinates is not geocoded again when the editor opens.
+	const geocodedAddressRef = useRef(
+		address && initialLat && initialLng && ! manualCoordinates ? address : null,
+	);
 
 	// Initialize venue store with saved lat/long values on mount only.
 	// After initialization, getData manages the store directly for live updates.
@@ -77,40 +100,66 @@ const VenueInformation = () => {
 		const currentAddress = addressRef.current;
 
 		try {
-			// If address is empty, clear lat/long.
-			if ( ! currentAddress ) {
-				if ( ! mapCustomLatLong ) {
-					updateVenueLatitude( '' );
-					updateVenueLongitude( '' );
-					updateVenueField( {
-						gatherpress_latitude: '',
-						gatherpress_longitude: '',
-					} );
-				}
+			// Coordinates set by hand stay as they are, and a debounced call
+			// that runs after the address changed back needs no lookup.
+			if (
+				manualCoordinatesRef.current ||
+				currentAddress === geocodedAddressRef.current
+			) {
 				return;
 			}
 
-			const { latitude, longitude } = await geocodeAddress( currentAddress );
-
-			if ( ! mapCustomLatLong ) {
-				updateVenueLatitude( latitude || null );
-				updateVenueLongitude( longitude || null );
+			// If address is empty, clear lat/long.
+			if ( ! currentAddress ) {
+				updateVenueLatitude( '' );
+				updateVenueLongitude( '' );
 				updateVenueField( {
-					gatherpress_latitude: latitude || '',
-					gatherpress_longitude: longitude || '',
+					gatherpress_latitude: '',
+					gatherpress_longitude: '',
 				} );
+				geocodedAddressRef.current = currentAddress;
+				return;
 			}
+
+			const { latitude, longitude, error, unavailable } =
+				await geocodeAddress( currentAddress );
+
+			// Skip a stale lookup if manual coordinates or the address changed while it ran.
+			if (
+				manualCoordinatesRef.current ||
+				addressRef.current !== currentAddress
+			) {
+				return;
+			}
+
+			// A failed lookup keeps the stored coordinates, like the server-side geocode.
+			if ( error ) {
+				createErrorNotice( geocodeFailedMessage( unavailable ), {
+					id: GEOCODE_NOTICE_ID,
+					type: 'snackbar',
+				} );
+				return;
+			}
+
+			geocodedAddressRef.current = currentAddress;
+
+			updateVenueLatitude( latitude || null );
+			updateVenueLongitude( longitude || null );
+			updateVenueField( {
+				gatherpress_latitude: latitude || '',
+				gatherpress_longitude: longitude || '',
+			} );
 		} finally {
 			// Release the save lock even when geocoding throws — otherwise
 			// the editor would be stuck in the locked state forever.
 			unlockPostSaving( GEOCODE_LOCK_NAME );
 		}
 	}, [
-		mapCustomLatLong,
 		updateVenueLatitude,
 		updateVenueLongitude,
 		updateVenueField,
 		unlockPostSaving,
+		createErrorNotice,
 	] ); // address removed - read from ref instead.
 
 	// Longer debounce than autocomplete: geocoding is not user-visible during
@@ -119,6 +168,18 @@ const VenueInformation = () => {
 	const debouncedGetData = useDebounce( getData, 1000 );
 
 	useEffect( () => {
+		// Coordinates set by hand need no geocoding. Turning them off geocodes
+		// the address again.
+		if ( manualCoordinates ) {
+			geocodedAddressRef.current = null;
+			return undefined;
+		}
+
+		// The coordinates already belong to this address.
+		if ( address === geocodedAddressRef.current ) {
+			return undefined;
+		}
+
 		// Block the Save button while the address is being geocoded. Without
 		// this, a quick save persists the new address with the previous
 		// lat/long and Venue\Map bakes the static PNG at the wrong coords
@@ -133,10 +194,10 @@ const VenueInformation = () => {
 			unlockPostSaving( GEOCODE_LOCK_NAME );
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ address ] ); // Only depend on address, not debouncedGetData.
+	}, [ address, manualCoordinates ] ); // Not debouncedGetData.
 
 	return (
-		<>
+		<VStack spacing={ 4 }>
 			<AddressAutocompleteField
 				variant="settings"
 				value={ address }
@@ -144,6 +205,43 @@ const VenueInformation = () => {
 					updateVenueField( { gatherpress_address: value } );
 				} }
 			/>
+			<ToggleControl
+				label={ __( 'Set coordinates manually', 'gatherpress' ) }
+				help={ __(
+					'For a venue without a street address, like a park entrance. The address then no longer moves the map pin.',
+					'gatherpress',
+				) }
+				checked={ manualCoordinates }
+				onChange={ ( value ) => {
+					updateVenueField( { gatherpress_manual_coordinates: value } );
+				} }
+			/>
+			{ manualCoordinates && (
+				<>
+					<TextControl
+						__next40pxDefaultSize
+						label={ __( 'Latitude', 'gatherpress' ) }
+						value={ venueMeta.gatherpress_latitude || '' }
+						type="number"
+						step="any"
+						onChange={ ( value ) => {
+							updateVenueLatitude( value );
+							updateVenueField( { gatherpress_latitude: value } );
+						} }
+					/>
+					<TextControl
+						__next40pxDefaultSize
+						label={ __( 'Longitude', 'gatherpress' ) }
+						value={ venueMeta.gatherpress_longitude || '' }
+						type="number"
+						step="any"
+						onChange={ ( value ) => {
+							updateVenueLongitude( value );
+							updateVenueField( { gatherpress_longitude: value } );
+						} }
+					/>
+				</>
+			) }
 			<TextControl
 				__next40pxDefaultSize
 				label={ __( 'Phone Number', 'gatherpress' ) }
@@ -161,7 +259,7 @@ const VenueInformation = () => {
 					updateVenueField( { gatherpress_website: value } );
 				} }
 			/>
-		</>
+		</VStack>
 	);
 };
 

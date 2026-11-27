@@ -1,0 +1,325 @@
+{
+	"description": "Overlapping multi-day events stack in slots, and a freed slot is used again.",
+	"startOfWeek": 1,
+	"attributes": {
+		"viewType": "month",
+		"unitCount": 1,
+		"selectedDate": "2026-03-01",
+		"showWeekends": true
+	},
+	"events": [
+		{
+			"key": "long",
+			"start": "2026-03-02 09:00:00",
+			"end": "2026-03-06 17:00:00"
+		},
+		{
+			"key": "middle",
+			"start": "2026-03-03 09:00:00",
+			"end": "2026-03-04 17:00:00"
+		},
+		{
+			"key": "later",
+			"start": "2026-03-05 09:00:00",
+			"end": "2026-03-07 17:00:00"
+		},
+		{
+			"key": "single",
+			"start": "2026-03-04 12:00:00",
+			"end": "2026-03-04 13:00:00"
+		}
+	],
+	"expected": {
+		"range": {
+			"start": "2026-03-01",
+			"end": "2026-03-31",
+			"unitCount": 1
+		},
+		"units": [
+			{
+				"weeks": [
+					[
+						"empty",
+						"empty",
+						"empty",
+						"empty",
+						"empty",
+						"empty",
+						{
+							"date": "2026-03-01",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-03-02",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "long",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 5,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-03-03",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "long",
+									"span": "middle",
+									"dayIndex": 2,
+									"totalDays": 5,
+									"slot": 0,
+									"allDay": false
+								},
+								{
+									"event": "middle",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 2,
+									"slot": 1,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-03-04",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "long",
+									"span": "middle",
+									"dayIndex": 3,
+									"totalDays": 5,
+									"slot": 0,
+									"allDay": false
+								},
+								{
+									"event": "middle",
+									"span": "end",
+									"dayIndex": 2,
+									"totalDays": 2,
+									"slot": 1,
+									"allDay": false
+								},
+								{
+									"event": "single",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 2,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-03-05",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "long",
+									"span": "middle",
+									"dayIndex": 4,
+									"totalDays": 5,
+									"slot": 0,
+									"allDay": false
+								},
+								{
+									"event": "later",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 3,
+									"slot": 1,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-03-06",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "long",
+									"span": "end",
+									"dayIndex": 5,
+									"totalDays": 5,
+									"slot": 0,
+									"allDay": false
+								},
+								{
+									"event": "later",
+									"span": "middle",
+									"dayIndex": 2,
+									"totalDays": 3,
+									"slot": 1,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-03-07",
+							"isWeekend": true,
+							"posts": [
+								{
+									"event": "later",
+									"span": "end",
+									"dayIndex": 3,
+									"totalDays": 3,
+									"slot": 1,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-03-08",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-03-09",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-10",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-11",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-12",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-13",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-14",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-03-15",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-03-16",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-17",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-18",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-19",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-20",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-21",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-03-22",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-03-23",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-24",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-25",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-26",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-27",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-28",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-03-29",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-03-30",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-03-31",
+							"isWeekend": false,
+							"posts": []
+						},
+						"empty",
+						"empty",
+						"empty",
+						"empty",
+						"empty"
+					]
+				],
+				"weekNumbers": [
+					9,
+					10,
+					11,
+					12,
+					13,
+					14
+				]
+			}
+		]
+	}
+}

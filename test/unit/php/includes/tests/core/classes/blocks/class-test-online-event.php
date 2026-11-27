@@ -12,7 +12,9 @@ use GatherPress\Core\Blocks\Online_Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 use WP_Block;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Test_Online_Event.
@@ -276,6 +278,68 @@ class Test_Online_Event extends Base {
 			$block_content,
 			$result,
 			'Should return block content when event has online-event term and no postId override.'
+		);
+	}
+
+	/**
+	 * Tests render_block keeps a protected online event behind its password without a postId override.
+	 *
+	 * In a Query Loop the block reads the event from the loop, so it has no
+	 * override to check, and has to ask for the password the event page would.
+	 *
+	 * @since 0.36.1
+	 * @covers ::render_block
+	 *
+	 * @return void
+	 */
+	public function test_render_block_hides_a_password_protected_event_without_override(): void {
+		$instance = Online_Event::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		);
+		$term     = term_exists( 'online-event', Venue::TAXONOMY );
+
+		if ( ! $term ) {
+			$term = wp_insert_term( 'Online Event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+
+		wp_set_object_terms( $event_id, (int) ( is_array( $term ) ? $term['term_id'] : $term ), Venue::TAXONOMY );
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/online-event',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+		$block_content  = '<div class="online-event-content">Online event</div>';
+		$block          = array( 'attrs' => array() );
+
+		$this->assertSame(
+			'',
+			$instance->render_block( $block_content, $block, $block_instance ),
+			'A protected online event should render nothing without the password.'
+		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+
+		// The cookie WordPress sets once a viewer enters the post password.
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+
+		$result = $instance->render_block( $block_content, $block, $block_instance );
+
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'A protected online event should render once the viewer has the password.'
 		);
 	}
 
@@ -838,5 +902,99 @@ class Test_Online_Event extends Base {
 		);
 
 		unregister_post_type( $type );
+	}
+
+	/**
+	 * Tests remove_tooltips turns the template's tooltip into a plain element.
+	 *
+	 * @since 0.37.0
+	 * @covers ::remove_tooltips
+	 *
+	 * @return void
+	 */
+	public function test_remove_tooltips_removes_tooltip_markup(): void {
+		$html = '<span class="gatherpress-tooltip extra" data-gatherpress-tooltip="Link available for attendees only." '
+			. 'data-gatherpress-tooltip-text-color="#fff" data-gatherpress-tooltip-bg-color="#000">Online event</span>';
+
+		$result = Online_Event::get_instance()->remove_tooltips( $html );
+		$tag    = new WP_HTML_Tag_Processor( $result );
+
+		// The tag processor can leave spaces where it removed attributes, so check the parsed tag.
+		$this->assertTrue( $tag->next_tag( 'span' ), 'The span should stay.' );
+		$this->assertSame( 'extra', $tag->get_attribute( 'class' ), 'Other classes should stay.' );
+		$this->assertNull( $tag->get_attribute( 'data-gatherpress-tooltip' ), 'The tooltip text should go.' );
+		$this->assertNull( $tag->get_attribute( 'data-gatherpress-tooltip-text-color' ) );
+		$this->assertNull( $tag->get_attribute( 'data-gatherpress-tooltip-bg-color' ) );
+		$this->assertStringContainsString( '>Online event</span>', $result, 'The text should stay.' );
+	}
+
+	/**
+	 * Tests remove_tooltips leaves link text without a tooltip unchanged.
+	 *
+	 * @since 0.37.0
+	 * @covers ::remove_tooltips
+	 *
+	 * @return void
+	 */
+	public function test_remove_tooltips_keeps_text_without_tooltip(): void {
+		$html = '<strong>Join</strong> the call';
+
+		$this->assertSame(
+			$html,
+			Online_Event::get_instance()->remove_tooltips( $html ),
+			'Text without a tooltip should not change.'
+		);
+	}
+
+	/**
+	 * Tests the online-event-link block drops the attendees-only note from a working link only.
+	 *
+	 * Uses the link text the online-event template saves, so content saved
+	 * in existing events gets the fix.
+	 *
+	 * @since 0.37.0
+	 * @covers ::remove_tooltips
+	 *
+	 * @return void
+	 */
+	public function test_online_event_link_render_removes_note_from_working_link(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $event_id, 'gatherpress_online_event_link', 'https://meet.example.test/room' );
+
+		$link_text = '<span class="gatherpress-tooltip" data-gatherpress-tooltip="Link available for attendees only.">'
+			. 'Online event</span>';
+		$block     = sprintf(
+			'<!-- wp:gatherpress/online-event-link %s /-->',
+			wp_json_encode( array( 'linkText' => $link_text ) )
+		);
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		// No RSVP: the text stays plain and keeps the note.
+		$without_link = do_blocks( $block );
+
+		$this->assertStringNotContainsString( '<a ', $without_link, 'There should be no link without an RSVP.' );
+		$this->assertStringContainsString(
+			'<span class="gatherpress-tooltip" data-gatherpress-tooltip="Link available for attendees only.">',
+			$without_link,
+			'The plain text should keep the attendees-only note.'
+		);
+
+		add_filter( 'gatherpress_force_online_event_link', '__return_true' );
+		$with_link = do_blocks( $block );
+		remove_filter( 'gatherpress_force_online_event_link', '__return_true' );
+
+		$this->assertMatchesRegularExpression(
+			'#<a class="gatherpress-online-event__text" href="https://meet\.example\.test/room"[^>]*>'
+				. '\s*<span>Online event</span>#',
+			$with_link,
+			'The working link should hold the text without the tooltip.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress-tooltip',
+			$with_link,
+			'The context should keep the full text, so the note can come back when the link goes away.'
+		);
 	}
 }

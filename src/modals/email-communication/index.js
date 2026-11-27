@@ -5,6 +5,7 @@ import { __, _x, sprintf } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
 import { createRoot, useState, useEffect, useRef } from '@wordpress/element';
 import {
+	BaseControl,
 	Button,
 	CheckboxControl,
 	Flex,
@@ -61,7 +62,7 @@ const EventCommunicationModal = () => {
 	const [ buttonDisabled, setButtonDisabled ] = useState( false );
 	const [ subject, setSubject ] = useState( '' );
 	const [ message, setMessage ] = useState( '' );
-	const textareaRef = useRef( null );
+	const subjectRef = useRef( null );
 	const sendMessage = () => {
 		if (
 			// eslint-disable-next-line no-alert -- Confirmation required before sending mass emails.
@@ -114,9 +115,9 @@ const EventCommunicationModal = () => {
 	] );
 
 	useEffect( () => {
-		// Focus the TextareaControl when the modal opens
-		if ( isOpen && textareaRef.current ) {
-			textareaRef.current.focus();
+		// Focus the first field, Subject, when the modal opens.
+		if ( isOpen && subjectRef.current ) {
+			subjectRef.current.focus();
 		}
 	}, [ isOpen ] );
 
@@ -136,78 +137,98 @@ const EventCommunicationModal = () => {
 						placeholder={ defaultSubject }
 						onChange={ ( value ) => setSubject( value ) }
 						style={ { marginBottom: '1rem' } }
+						ref={ subjectRef }
 					/>
 					<TextareaControl
 						label={ __( 'Optional message', 'gatherpress' ) }
 						value={ message }
-						focus
 						onChange={ ( value ) => setMessage( value ) }
-						ref={ textareaRef }
 					/>
-					<p className="description">
-						{ canEmailAllUsers
-							? __(
-								'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
-								'gatherpress',
-							)
-							: __(
-								'Select the recipients for your message by checking the relevant boxes. RSVP status options include both site users and non-user RSVPs.',
-								'gatherpress',
+					{ /* A named group, so assistive technology announces
+					"Recipients" and the help text with the checkboxes. */ }
+					<fieldset
+						aria-describedby="gatherpress-email-recipients-description"
+						style={ { border: 0, margin: '1rem 0 0', padding: 0 } }
+					>
+						<BaseControl.VisualLabel as="legend">
+							{ __( 'Recipients', 'gatherpress' ) }
+						</BaseControl.VisualLabel>
+						<p
+							id="gatherpress-email-recipients-description"
+							className="description"
+						>
+							{ canEmailAllUsers
+								? __(
+									'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
+									'gatherpress',
+								)
+								: __(
+									'Select the recipients for your message by checking the relevant boxes. RSVP status options include both site users and non-user RSVPs.',
+									'gatherpress',
+								) }
+						</p>
+						<Flex gap="8">
+							{ canEmailAllUsers && (
+								<FlexItem>
+									<CheckboxControl
+										label={ _x(
+											'All Members',
+											'Email recipient group option',
+											'gatherpress',
+										) }
+										checked={ isAllChecked }
+										onChange={ setAllChecked }
+									/>
+								</FlexItem>
 							) }
-					</p>
-					<Flex gap="8">
-						{ canEmailAllUsers && (
 							<FlexItem>
 								<CheckboxControl
 									label={ _x(
-										'All Members',
+										'Attending',
 										'Email recipient group option',
 										'gatherpress',
 									) }
-									checked={ isAllChecked }
-									onChange={ setAllChecked }
+									checked={ isAttendingChecked }
+									onChange={ setAttendingChecked }
 								/>
 							</FlexItem>
-						) }
-						<FlexItem>
-							<CheckboxControl
-								label={ _x(
-									'Attending',
-									'Email recipient group option',
-									'gatherpress',
-								) }
-								checked={ isAttendingChecked }
-								onChange={ setAttendingChecked }
-							/>
-						</FlexItem>
-						<FlexItem>
-							<CheckboxControl
-								label={ _x(
-									'Waiting List',
-									'Email recipient group option',
-									'gatherpress',
-								) }
-								checked={ isWaitingListChecked }
-								onChange={ setWaitingListChecked }
-							/>
-						</FlexItem>
-						<FlexItem>
-							<CheckboxControl
-								label={ _x(
-									'Not Attending',
-									'Email recipient group option',
-									'gatherpress',
-								) }
-								checked={ isNotAttendingChecked }
-								onChange={ setNotAttendingChecked }
-							/>
-						</FlexItem>
-					</Flex>
+							<FlexItem>
+								<CheckboxControl
+									label={ _x(
+										'Waiting List',
+										'Email recipient group option',
+										'gatherpress',
+									) }
+									checked={ isWaitingListChecked }
+									onChange={ setWaitingListChecked }
+								/>
+							</FlexItem>
+							<FlexItem>
+								<CheckboxControl
+									label={ _x(
+										'Not Attending',
+										'Email recipient group option',
+										'gatherpress',
+									) }
+									checked={ isNotAttendingChecked }
+									onChange={ setNotAttendingChecked }
+								/>
+							</FlexItem>
+						</Flex>
+					</fieldset>
 					<br />
+					{ /* Stays in the tab order while it cannot be used, and
+					says why, instead of a silent native disabled state. */ }
 					<Button
 						variant="primary"
 						onClick={ sendMessage }
 						disabled={ buttonDisabled || isSaving }
+						accessibleWhenDisabled
+						aria-describedby={
+							buttonDisabled
+								? 'gatherpress-email-send-hint'
+								: undefined
+						}
 					>
 						{ _x(
 							'Send Email',
@@ -215,6 +236,14 @@ const EventCommunicationModal = () => {
 							'gatherpress',
 						) }
 					</Button>
+					{ buttonDisabled && (
+						<p id="gatherpress-email-send-hint" className="description">
+							{ __(
+								'Choose at least one group of recipients.',
+								'gatherpress',
+							) }
+						</p>
+					) }
 				</Modal>
 			) }
 		</>

@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Make strings that stayed in English in translated sites translatable: the Venue block placeholders, the required field marker, the Dropdown block title, the Modal Content width settings, the RSVP list date, the separators in the Credits list, and the screen reader text of the Venues column.

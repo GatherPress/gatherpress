@@ -1,0 +1,285 @@
+{
+	"description": "A month with a timed event, an event over a week boundary, and an all-day event.",
+	"startOfWeek": 0,
+	"attributes": {
+		"viewType": "month",
+		"unitCount": 1,
+		"selectedDate": "2026-10-01",
+		"showWeekends": true
+	},
+	"events": [
+		{
+			"key": "timed",
+			"start": "2026-10-07 18:00:00",
+			"end": "2026-10-07 20:00:00"
+		},
+		{
+			"key": "three-days",
+			"start": "2026-10-09 09:00:00",
+			"end": "2026-10-11 17:00:00"
+		},
+		{
+			"key": "all-day",
+			"start": "2026-10-20 00:00:00",
+			"end": "2026-10-20 23:59:00",
+			"allDay": true
+		},
+		{
+			"key": "ends-at-midnight",
+			"start": "2026-10-25 10:00:00",
+			"end": "2026-10-27 00:00:00"
+		}
+	],
+	"expected": {
+		"range": {
+			"start": "2026-10-01",
+			"end": "2026-10-31",
+			"unitCount": 1
+		},
+		"units": [
+			{
+				"weeks": [
+					[
+						"empty",
+						"empty",
+						"empty",
+						"empty",
+						{
+							"date": "2026-10-01",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-02",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-03",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-10-04",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-10-05",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-06",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-07",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "timed",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-10-08",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-09",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "three-days",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 3,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-10-10",
+							"isWeekend": true,
+							"posts": [
+								{
+									"event": "three-days",
+									"span": "middle",
+									"dayIndex": 2,
+									"totalDays": 3,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						}
+					],
+					[
+						{
+							"date": "2026-10-11",
+							"isWeekend": true,
+							"posts": [
+								{
+									"event": "three-days",
+									"span": "end",
+									"dayIndex": 3,
+									"totalDays": 3,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-10-12",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-13",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-14",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-15",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-16",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-17",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-10-18",
+							"isWeekend": true,
+							"posts": []
+						},
+						{
+							"date": "2026-10-19",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-20",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "all-day",
+									"span": "single",
+									"dayIndex": 1,
+									"totalDays": 1,
+									"slot": 0,
+									"allDay": true
+								}
+							]
+						},
+						{
+							"date": "2026-10-21",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-22",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-23",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-24",
+							"isWeekend": true,
+							"posts": []
+						}
+					],
+					[
+						{
+							"date": "2026-10-25",
+							"isWeekend": true,
+							"posts": [
+								{
+									"event": "ends-at-midnight",
+									"span": "start",
+									"dayIndex": 1,
+									"totalDays": 2,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-10-26",
+							"isWeekend": false,
+							"posts": [
+								{
+									"event": "ends-at-midnight",
+									"span": "end",
+									"dayIndex": 2,
+									"totalDays": 2,
+									"slot": 0,
+									"allDay": false
+								}
+							]
+						},
+						{
+							"date": "2026-10-27",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-28",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-29",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-30",
+							"isWeekend": false,
+							"posts": []
+						},
+						{
+							"date": "2026-10-31",
+							"isWeekend": true,
+							"posts": []
+						}
+					]
+				],
+				"weekNumbers": [
+					40,
+					41,
+					42,
+					43,
+					44
+				]
+			}
+		]
+	}
+}

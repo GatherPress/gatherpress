@@ -81,20 +81,20 @@ initShowIfDependencies();
  * Date Format and Time Format fields that fill their Custom field and preview
  * from the format picked, as on Settings > General.
  *
- * @since TBD
+ * @since 0.37.0
  */
 initFormatFields();
 
 /**
  * Import and export on the Tools tab, per site and at Network Admin.
  *
- * @since TBD
+ * @since 0.37.0
  */
 initSettingsTools();
 
 /**
  * Select all and Deselect all for the network's inherited settings.
  *
- * @since TBD
+ * @since 0.37.0
  */
 initNetworkAllowlist();

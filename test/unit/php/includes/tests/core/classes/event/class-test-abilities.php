@@ -406,7 +406,7 @@ class Test_Abilities extends Base {
 	/**
 	 * Test that get_upcoming_events leaves out password-protected events.
 	 *
-	 * @since TBD
+	 * @since 0.36.1
 	 *
 	 * @covers ::get_upcoming_events
 	 *

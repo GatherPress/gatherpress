@@ -12,6 +12,8 @@ Event List (deprecated in 0.34, replaced by the [Event Query](./event-query.md) 
 
 [Add to Calendar](./add-to-calendar.md): lets a visitor add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md).
 
+[Event Calendar](./event-calendar.md): shows events in a month, week or day calendar, with Previous and Next links. It is a variation of the Query Loop block.
+
 ## Other blocks used in an event
 
 See details on [Creating and managing events](../creating-and-managing-events.md)
