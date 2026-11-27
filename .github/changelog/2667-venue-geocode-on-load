@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Opening a venue in the editor no longer geocodes its saved address again. When a geocode request fails, the venue keeps its saved map location and a notice says so, so a failed lookup no longer empties the coordinates and replaces the map with "Map is being prepared".

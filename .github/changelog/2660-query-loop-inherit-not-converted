@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Opening a template whose Query Loop shows the page's own events, such as an events archive, no longer turns it into an upcoming events list or marks the template as changed.

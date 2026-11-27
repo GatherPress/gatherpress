@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Added a viewer local time tooltip to the Event Date block and an administrative setting under Events > Date & Time. When enabled and the event date displays a timezone, viewers in a different timezone see the converted event time in their local timezone via an accessible tooltip.

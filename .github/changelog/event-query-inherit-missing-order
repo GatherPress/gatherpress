@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-An inherited Event Query block saved without a sort order or per-page count keeps the main query's instead of logging warnings.
