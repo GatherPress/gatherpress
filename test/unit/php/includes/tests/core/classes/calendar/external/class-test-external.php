@@ -33,7 +33,7 @@ class Test_External extends Base {
 	 * `GatherPress\Core\Calendar\External\External` through the alias map in
 	 * `includes/core/register-class-aliases.php`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -730,7 +730,7 @@ class Test_External extends Base {
 	/**
 	 * A line that already fits in 75 octets is returned as it is.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::fold_ical_line
 	 *
@@ -751,7 +751,7 @@ class Test_External extends Base {
 	 * The property name counts towards the first line, and each continuation line spends one
 	 * of its 75 octets on the leading space.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::fold_ical_line
 	 *
@@ -776,7 +776,7 @@ class Test_External extends Base {
 	/**
 	 * Folding counts octets and never splits a multi-octet UTF-8 character.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::fold_ical_line
 	 *
@@ -815,7 +815,7 @@ class Test_External extends Base {
 	/**
 	 * Lines that would be cut inside a two-, three- and four-octet character.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, array{0: string, 1: int}>
 	 */
@@ -830,7 +830,7 @@ class Test_External extends Base {
 	/**
 	 * Every line of the VEVENT stays within 75 octets, however long or non-Latin the event's text.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_ical_event_string
 	 * @covers ::fold_ical_line
@@ -1183,7 +1183,7 @@ class Test_External extends Base {
 	 * cancellation would otherwise be published under the old revision and
 	 * never displace what the subscriber already has.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_ical_event_string
 	 * @covers ::get_sequence

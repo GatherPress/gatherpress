@@ -13,7 +13,7 @@ import { getViewerTimeLabel } from './viewer-time';
 /**
  * An event's operational status slug, or an empty string when there is none.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {*} value The `gatherpress_status` value from the REST field.
  *
@@ -160,7 +160,7 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
  * The event's own preference wins, then the block's "Append time zone", then the
  * site setting. Mirrors `Html_Renderer::is_timezone_shown()`.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string}  timezonePreference  The event's preference: 'always', 'never' or ''.
  * @param {string}  showTimezone        The block attribute: 'yes', 'no' or ''.
@@ -179,7 +179,7 @@ export function isTimezoneAppended( timezonePreference, showTimezone, defaultSho
 /**
  * The help text of the "Show viewer local time" toggle.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}  args                    Toggle state.
  * @param {boolean} args.isAllDay           Whether the event is all day.
@@ -208,7 +208,7 @@ export function getViewerTimeHelp( { isAllDay, isTimezoneAppended: timezoneAppen
  * Empty when the author is already in the event's timezone, as it is for a
  * viewer there.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}      args           Label inputs.
  * @param {boolean}     args.isEnabled Whether the block shows the viewer time.

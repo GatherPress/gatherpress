@@ -135,7 +135,7 @@ final class Shadow_Source {
 	/**
 	 * Pass shadow-source activity parameters through REST queries.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $args    Query arguments.
 	 * @param WP_REST_Request      $request REST request.
@@ -180,7 +180,7 @@ final class Shadow_Source {
 	/**
 	 * Add shadow-source activity parameters to a REST collection schema.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, array<string, mixed>> $query_params Collection parameters.
 	 *
@@ -749,7 +749,7 @@ final class Shadow_Source {
 	 * type, so the filter does not apply. An empty array means it applied and
 	 * matched nothing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $source_post_type     Shadow-source post type slug to resolve source posts for.
 	 * @param bool   $upcoming_events_only Whether to keep only source posts with upcoming events.

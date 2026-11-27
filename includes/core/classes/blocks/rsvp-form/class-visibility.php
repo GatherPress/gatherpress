@@ -3,7 +3,7 @@
  * Decides which blocks an RSVP Form shows for the state it renders in.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks\Rsvp_Form;
@@ -17,14 +17,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * Reads a block's gatherpressRsvpFormVisibility rule against the form's
  * state: just submitted, the event has passed, or the event is canceled.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Visibility {
 
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param bool $is_success  Whether the form was successfully submitted.
 	 * @param bool $is_past     Whether the event has passed.
@@ -39,7 +39,7 @@ final class Visibility {
 	/**
 	 * Whether a block with this visibility rule is shown.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $visibility_rule The visibility rule as a JSON object.
 	 *
@@ -86,7 +86,7 @@ final class Visibility {
 	 *
 	 * A notice inside a block hidden for a canceled event does not count.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<int, array<string, mixed>> $blocks          The parsed inner blocks.
 	 * @param bool                             $ancestor_hidden Whether a parent block is hidden.
@@ -117,7 +117,7 @@ final class Visibility {
 	 * to the RSVP flow, through onSuccess or whenPast, is hidden, since a
 	 * canceled event takes no RSVPs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $visibility The decoded visibility rule.
 	 *

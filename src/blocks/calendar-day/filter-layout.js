@@ -2,7 +2,7 @@
  * GatherPress Calendar Day Layout Filter
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { addFilter } from '@wordpress/hooks';
@@ -16,7 +16,7 @@ import { hasRibbonStyle } from '../calendar/utils/day-classes';
  * A calendar day with the Ribbon style requires its layout to stay intact
  * for multi-day ribbons and event slots.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object} settingValue Current setting value.
  * @param {string} settingName  Name of the setting being queried.

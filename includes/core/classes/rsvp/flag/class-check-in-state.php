@@ -3,7 +3,7 @@
  * A check-in state of an RSVP.
  *
  * @package GatherPress\Core\Rsvp\Flag
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Rsvp\Flag;
@@ -19,14 +19,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * removes the others. An RSVP with none is not recorded. Register a state with
  * `Check_In_Registry` so the RSVP screen offers it.
  *
- * @since TBD
+ * @since 0.37.0
  */
 abstract class Check_In_State extends Base {
 
 	/**
 	 * Gets the name of the state, for example "Checked in".
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The translated name.
 	 */
@@ -35,7 +35,7 @@ abstract class Check_In_State extends Base {
 	/**
 	 * Gets the name of the action that sets the state, for example "Check in".
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The translated action name.
 	 */
@@ -47,7 +47,7 @@ abstract class Check_In_State extends Base {
 	 * Reports count the attended states as present and the others as absent,
 	 * and leave out RSVPs that are not recorded.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when the person attended.
 	 */
@@ -58,7 +58,7 @@ abstract class Check_In_State extends Base {
 	 *
 	 * A Dashicon name without its `dashicons-` prefix, for example `yes`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The Dashicon name.
 	 */
@@ -67,7 +67,7 @@ abstract class Check_In_State extends Base {
 	/**
 	 * Sets the RSVP to this state, and removes its other check-in states.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when the RSVP has this state and no other.
 	 */

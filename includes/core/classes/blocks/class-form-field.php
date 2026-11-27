@@ -331,7 +331,7 @@ final class Form_Field {
 	 * JavaScript, the field shows what was typed in place of its default,
 	 * and its error, if any. A hidden field keeps its own value.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */

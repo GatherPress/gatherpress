@@ -156,7 +156,7 @@ class Test_Rsvp_Form extends Base {
 	 * Without JavaScript the form posts to wp-comments-post.php and comes back
 	 * with `#<form id>`, so the id has to survive into the next render.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::transform_block_content
 	 * @covers ::generate_form_id
 	 *
@@ -264,7 +264,7 @@ class Test_Rsvp_Form extends Base {
 	 * form needs a name a screen reader can tell apart. A name the author set
 	 * is kept.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -314,7 +314,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests transform_block_content names the form's page for wp_get_referer().
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -3200,7 +3200,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests transform_block_content with canceled event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::transform_block_content
 	 * @covers ::get_canceled_notice
@@ -3263,7 +3263,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests that a block inside a canceled event's form follows the canceled rules.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::apply_visibility_attribute
 	 * @covers ::handle_form_visibility
@@ -4440,7 +4440,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Builds a returned submission the way Rsvp\Form reads one back.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $overrides Keys to change.
 	 *
@@ -4463,7 +4463,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Sets the returned submission the RSVP Form block is rendering.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed>|null $submission The submission, or null for none.
 	 *
@@ -4480,7 +4480,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Stores a submission under a token in the URL, the way a rejected submission does.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $submission The submission.
 	 *
@@ -4508,7 +4508,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Clears the returned submission state of both singletons.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -4524,7 +4524,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Returns the content of an event with one RSVP Form holding two fields.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The post content.
 	 */
@@ -4540,7 +4540,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests begin_returned_form leaves other blocks alone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4566,7 +4566,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests begin_returned_form picks up the submission of the form it came from.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4601,7 +4601,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests begin_returned_form leaves a submission from another form waiting.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4647,7 +4647,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests only the first of two identical forms takes the submission.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4689,7 +4689,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests get_returned_field hands each field its value and error, and the first error the focus.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_returned_field
 	 *
 	 * @return void
@@ -4769,7 +4769,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests add_returned_form_error shows the form message and any error no field showed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::add_returned_form_error
 	 *
 	 * @return void
@@ -4833,7 +4833,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests transform_block_content adds the returned form's message and ends the returned form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -4870,7 +4870,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests a rejected submission renders back into its form with its values and errors.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @coversNothing
 	 *
 	 * @return void

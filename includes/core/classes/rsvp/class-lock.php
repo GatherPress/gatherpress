@@ -3,7 +3,7 @@
  * Serializes RSVP capacity changes for an event.
  *
  * @package GatherPress\Core\Rsvp
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -18,14 +18,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * request ends, even if it fails. On SQLite, such as WordPress Playground,
  * the lock functions do nothing, and the code runs without a lock.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Lock {
 
 	/**
 	 * Seconds to wait for the lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var int
 	 */
@@ -37,7 +37,7 @@ final class Lock {
 	 * Shared by every instance, since one request can create several for the
 	 * same event and a nested run must not wait on its own lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var array<int, true>
 	 */
@@ -46,7 +46,7 @@ final class Lock {
 	/**
 	 * The lock's name.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -59,7 +59,7 @@ final class Lock {
 	 * prefix keeps sites apart. MySQL allows 64 characters, so a long prefix
 	 * is cut from the front, keeping the post ID.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event post ID.
 	 */
@@ -75,7 +75,7 @@ final class Lock {
 	 * When the lock is not granted in time, the fallback runs instead, so the
 	 * callback never runs unlocked.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param callable      $callback The code to run.
 	 * @param callable|null $fallback Optional. What to run when the lock is not granted.

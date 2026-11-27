@@ -132,7 +132,7 @@ final class Cache {
 		 * Return 0 to send `no-cache` and rebuild on every request.
 		 *
 		 * @since 0.36.0
-		 * @since TBD    Renamed from `gatherpress_calendar_max_age`.
+		 * @since 0.37.0    Renamed from `gatherpress_calendar_max_age`.
 		 *
 		 * @param int $max_age Seconds a calendar response stays fresh.
 		 *

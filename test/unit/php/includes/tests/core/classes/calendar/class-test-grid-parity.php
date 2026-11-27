@@ -3,7 +3,7 @@
  * Class handles the PHP half of the calendar grid parity tests.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Calendar;

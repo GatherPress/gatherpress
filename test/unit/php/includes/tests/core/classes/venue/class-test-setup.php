@@ -1375,7 +1375,7 @@ class Test_Setup extends Base {
 	/**
 	 * Tests get_venue_meta leaves out a venue a password hides.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_meta
 	 *

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Calendar\External\Feed_Placeholder.
  *
  * @package GatherPress\Core\Calendar\External
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Calendar\External;
@@ -21,7 +21,7 @@ use WP_HTML_Tag_Processor;
 /**
  * Class Test_Feed_Placeholder.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @coversDefaultClass \GatherPress\Core\Calendar\External\Feed_Placeholder
  * @group              endpoints
@@ -34,7 +34,7 @@ class Test_Feed_Placeholder extends Base {
 	 * The instance is built during plugin bootstrap, so the constructor only
 	 * runs inside a test once the stored instance is cleared.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::__construct
 	 *
@@ -57,7 +57,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * Coverage for setup_hooks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::setup_hooks
 	 *
@@ -80,7 +80,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * Renders a link with the given href through the placeholder filter.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $href    The link's href.
 	 * @param int    $post_id Optional. The post the block renders for.
@@ -106,7 +106,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * Converts a feed URL to the `webcal://` form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $url The feed URL.
 	 *
@@ -119,7 +119,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * Content without a placeholder comes back unchanged.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 *
@@ -138,7 +138,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * An href that only looks like a placeholder loses its href.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 * @covers ::get_url
@@ -156,7 +156,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The site placeholders give the site-wide feed, as https and webcal.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 * @covers ::get_url
@@ -178,7 +178,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The page placeholder gives the front page's site-wide feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_page_feed_url
 	 *
@@ -196,7 +196,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The page placeholder gives a venue page's feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_page_feed_url
 	 *
@@ -221,7 +221,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The page placeholder has no feed on a single event, which has no feed of its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_page_feed_url
 	 *
@@ -238,7 +238,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The archive placeholder gives the archive feed of the event's post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_archive_feed_url
 	 *
@@ -256,7 +256,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The archive placeholder gives the feed of the events archive being viewed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_archive_feed_url
 	 *
@@ -275,7 +275,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The archive placeholder reads an array post type query var.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_archive_feed_url
 	 *
@@ -294,7 +294,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The archive placeholder has no feed outside an event or events archive.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_archive_feed_url
 	 *
@@ -309,7 +309,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The venue placeholder gives the event's venue feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_in_context
 	 * @covers ::get_venue_feed_url
@@ -336,7 +336,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The venue placeholder gives the feed of the venue being rendered.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_in_context
 	 *
@@ -354,7 +354,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The venue placeholder has no feed when a password hides the event's venue.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_in_context
 	 *
@@ -383,7 +383,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The venue placeholder has no feed without an event or venue in context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_in_context
 	 *
@@ -410,7 +410,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The venue slug placeholder gives that venue's feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_by_slug
 	 *
@@ -433,7 +433,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The venue slug placeholder has no feed for a missing, draft or protected venue.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_by_slug
 	 * @covers ::get_venue_feed_url
@@ -470,7 +470,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * Without a venue post type, no slug finds a venue.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_by_slug
 	 *
@@ -489,7 +489,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The topic slug placeholder gives that topic's feed, and none for a missing topic.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_topic_feed_url
 	 *
@@ -518,7 +518,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * Every placeholder in one block is replaced.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 *
@@ -550,7 +550,7 @@ class Test_Feed_Placeholder extends Base {
 	 * A block around an inner block's unresolved placeholder leaves it alone,
 	 * and still resolves its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 *
@@ -597,7 +597,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * A block that renders its link from an attribute resolves the placeholder.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 *
@@ -618,7 +618,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * A venue of a post type without venue feeds has no feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_by_slug
 	 * @covers ::get_venue_feed_url
@@ -652,7 +652,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * A protected venue of one post type doesn't hide a public one of another with the same slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_venue_by_slug
 	 *
@@ -693,7 +693,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The topic slug placeholder has no feed when no event post type uses topics.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_topic_feed_url
 	 *
@@ -718,7 +718,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * An unresolved link loses its href and is marked, so it is no longer a link.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 *
@@ -743,7 +743,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * A dropdown item in Add to Calendar uses the event Add to Calendar is set to.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 * @covers ::get_post_id
@@ -807,7 +807,7 @@ class Test_Feed_Placeholder extends Base {
 	 * The dropdown item turns a link with no `href` into a button. A placeholder
 	 * with no feed loses its `href`, and must stay plain text.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::replace_placeholders
 	 *
@@ -848,7 +848,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * Outside the loop on a listing page, the first listed post is not used.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_post_id
 	 *
@@ -892,7 +892,7 @@ class Test_Feed_Placeholder extends Base {
 	/**
 	 * The page placeholder has no feed on a password-protected venue page, as the venue placeholder.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_page_feed_url
 	 *

@@ -268,7 +268,7 @@ class Test_Rsvp extends Base {
 	 * the default disabled button for a block saved without one, and excludes
 	 * interactivity attributes and the other statuses' inner blocks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::transform_block_content
 	 * @covers ::get_default_canceled_template
@@ -353,7 +353,7 @@ class Test_Rsvp extends Base {
 	 * gets marked when the block renders, including for events saved before
 	 * this change.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::transform_block_content
 	 * @covers ::mark_disabled_buttons
@@ -410,7 +410,7 @@ class Test_Rsvp extends Base {
 	 * The render filters run in order, so this goes through all of them: the
 	 * interactivity filter must not put the button back in the Tab order.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::apply_rsvp_button_interactivity
 	 * @covers ::mark_disabled_buttons
@@ -465,7 +465,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Tests that only the controls carrying, or wrapped by, the disabled class get marked.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::mark_disabled_buttons
 	 *
@@ -1300,7 +1300,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Creates an upcoming event, loads its page as a logged-in user, and resets the RSVP block counts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $status The RSVP to save for the user first, if any.
 	 * @param int    $guests The guest count to save with it.
@@ -1340,7 +1340,7 @@ class Test_Rsvp extends Base {
 	 * the waiting list, the guest count and anonymity fields, a close button
 	 * and a link acting as an RSVP button.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $statuses The statuses of the containers, in order.
 	 *
@@ -1367,7 +1367,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Asserts that a button submits a status to the given form, whatever the attribute order.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $html    The HTML to search.
 	 * @param string $form_id The form's id.
@@ -1393,7 +1393,7 @@ class Test_Rsvp extends Base {
 	 * Without an RSVP, the buttons attend or set their status, closing saves
 	 * nothing, and only the shown container joins the form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 * @covers ::join_rsvp_form
 	 * @covers ::submit_rsvp_status
@@ -1456,7 +1456,7 @@ class Test_Rsvp extends Base {
 	 * While attending, the toggle leaves, closing saves the current status,
 	 * Enter keeps it, and the fields show the saved values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 * @covers ::join_rsvp_form
 	 * @covers ::get_rsvp_form
@@ -1500,7 +1500,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * An existing block id is kept, and Not Attending toggles back to Attending.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 * @covers ::join_rsvp_form
 	 *
@@ -1529,7 +1529,7 @@ class Test_Rsvp extends Base {
 	 *
 	 * An error shows only on its own event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 *
 	 * @return void
@@ -1611,7 +1611,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Calls the helpers directly, so their coverage is traced.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::join_rsvp_form
 	 * @covers ::submit_rsvp_status
 	 * @covers ::get_rsvp_form

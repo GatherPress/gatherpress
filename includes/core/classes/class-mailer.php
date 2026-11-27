@@ -7,7 +7,7 @@
  * recipient context switching, and the wp_mail call itself.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core;
@@ -27,7 +27,7 @@ use WP_User_Query;
  * then queues it with plain data. Mailer runs the jobs: one batch of
  * recipients per job, each job queuing the next before it sends.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-type Recipient array{is_user: bool, user_id: int, comment_id: int, email: string, name: string}
  * @phpstan-type ComposedEmail array{subject: string, body: string, headers?: array<int, string>}
@@ -51,7 +51,7 @@ final class Mailer {
 	/**
 	 * Action hook that runs one batch of a queued mail job.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -60,7 +60,7 @@ final class Mailer {
 	/**
 	 * Consent context for emails about an event, which follow the opt-in.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -69,7 +69,7 @@ final class Mailer {
 	/**
 	 * Consent context for site-wide messages, which follow the opt-in.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -78,7 +78,7 @@ final class Mailer {
 	/**
 	 * Consent context for event reminders, which follow the reminder opt-in.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -87,7 +87,7 @@ final class Mailer {
 	/**
 	 * Consent context for emails about the recipient's own RSVP, which skip the opt-in.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -99,7 +99,7 @@ final class Mailer {
 	 * Each batch carries the last user ID, or the last RSVP comment ID, it
 	 * sent to, and the next batch starts after it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var array{source: string, last_id: int}
 	 */
@@ -111,7 +111,7 @@ final class Mailer {
 	/**
 	 * Registered mail types, keyed by name.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var array<string, MailType>
 	 */
@@ -120,7 +120,7 @@ final class Mailer {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -129,7 +129,7 @@ final class Mailer {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -144,7 +144,7 @@ final class Mailer {
 	 * RSVP comment meta for non-user recipients. Users have a separate opt-in
 	 * for reminders; an RSVP without an account has one opt-in for both.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array  $recipient Recipient row from a mail path.
 	 * @param string $context   Mail path asking for consent.
@@ -180,7 +180,7 @@ final class Mailer {
 	 * events, without touching the other mail paths. A recipient without a
 	 * valid email address never consents, whatever the filter returns.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array  $recipient Recipient row from a mail path.
 	 * @param string $context   Mail path asking for consent, e.g. `event`, `site_message`, `reminder` or `rsvp`.
@@ -200,7 +200,7 @@ final class Mailer {
 		 * Lets a site set its own consent rule per kind of email, for example
 		 * requiring an explicit opt-in before a site-wide message goes out.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param bool   $consent   Whether the recipient consents. Defaults to the opt-in, or to
 		 *                          true for the `rsvp` context.
@@ -226,7 +226,7 @@ final class Mailer {
 	 * template match the recipient. Non-user recipients keep the current
 	 * context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $recipient Recipient row from a mail path.
 	 * @phpstan-param Recipient $recipient
@@ -251,7 +251,7 @@ final class Mailer {
 	/**
 	 * Restore the context that was active before a recipient switch.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param bool    $switched_locale Whether `switch_context()` switched the locale.
 	 * @param WP_User $sender          User to make current again.
@@ -273,7 +273,7 @@ final class Mailer {
 	/**
 	 * Send an email to a single recipient.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string             $email   Recipient email address.
 	 * @param string             $subject Email subject line.
@@ -299,7 +299,7 @@ final class Mailer {
 	 * `$compose` callback so the subject and body are built in the recipient's
 	 * locale and user context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array    $recipient Recipient row from a mail path.
 	 * @param callable $compose   Returns `array{subject: string, body: string, headers?: array<int, string>}`
@@ -345,7 +345,7 @@ final class Mailer {
 	 * Runs `send()` for every recipient, so each one gets their own consent
 	 * check and context, and `$compose` builds their copy.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array    $recipients Recipient rows from a mail path.
 	 * @param callable $compose    Returns `array{subject: string, body: string, headers?: array<int, string>}`
@@ -373,7 +373,7 @@ final class Mailer {
 	 * an email goes to and what it says. Register on every request, since
 	 * cron runs in a request of its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $type       Mail type name, e.g. `event` or `site_message`.
 	 * @param array  $definition {
@@ -401,7 +401,7 @@ final class Mailer {
 	 * Only schedules the first batch, so the request that queues it returns
 	 * without waiting on recipients or the mail server.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $type    A registered mail type.
 	 * @param array  $payload Plain data the type needs, stored with the job.
@@ -421,7 +421,7 @@ final class Mailer {
 	 * users and recipient list are looked up once for the whole walk, rather
 	 * than once per batch the way a job looks them up.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $type    A registered mail type.
 	 * @param array  $payload Plain data the type needs.
@@ -455,7 +455,7 @@ final class Mailer {
 	/**
 	 * Look a type's users and recipient list up once, for a walk over every batch.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $definition A registered mail type.
 	 * @param array $payload    Plain data the type needs.
@@ -487,7 +487,7 @@ final class Mailer {
 	 * here rather than when the email was queued, so anyone who opted out in
 	 * between is skipped.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $type    A registered mail type.
 	 * @param array  $payload Plain data the type needs.
@@ -525,7 +525,7 @@ final class Mailer {
 	 * is added or removed between batches from shifting the rest, which would
 	 * skip one recipient or mail another twice.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $type       The mail type's name.
 	 * @param array  $definition The mail type.
@@ -581,7 +581,7 @@ final class Mailer {
 		 * Lets a site narrow or extend who a batch goes to. Mailer still checks
 		 * each recipient's consent before sending.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param array  $recipients Recipient rows in this batch.
 		 * @param string $type       The mail type, e.g. `event` or `site_message`.
@@ -604,7 +604,7 @@ final class Mailer {
 	/**
 	 * Get where a type's recipient list starts, or null when it has none.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $definition A registered mail type.
 	 * @phpstan-param MailType $definition
@@ -626,7 +626,7 @@ final class Mailer {
 	 * Paging by ID, rather than by offset, keeps a user who joins or leaves
 	 * between batches from shifting the pages.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $query_args `get_users()` arguments that pick the users.
 	 * @param int   $last_id    Last user ID of the page before.
@@ -680,7 +680,7 @@ final class Mailer {
 	/**
 	 * Get how many recipients one job sends to.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $type The mail type.
 	 *
@@ -693,7 +693,7 @@ final class Mailer {
 		 * Lower it on hosts with a short PHP time limit or a strict mail rate
 		 * limit, so each cron job finishes in time.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int    $batch_size Recipients per batch. Default 50.
 		 * @param string $type       The mail type, e.g. `event` or `site_message`.
@@ -711,7 +711,7 @@ final class Mailer {
 	 * `gatherpress_email_pre_enqueue_job` filter; the native WP-Cron path
 	 * deduplicates on the hook and args, and retries once before giving up.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $hook  Action hook fired when the job runs.
 	 * @param array  $args  Args passed to the action hook.
@@ -732,7 +732,7 @@ final class Mailer {
 		 * through to the default"; everything else, including falsy values
 		 * like `false`, `0`, and `''`, short-circuits.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
 		 * @param string $hook          Action hook name fired when the job runs.

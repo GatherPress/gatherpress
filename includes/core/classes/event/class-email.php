@@ -3,7 +3,7 @@
  * Event update, waiting list promotion and reminder emails.
  *
  * @package GatherPress\Core\Event
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Event;
@@ -28,7 +28,7 @@ use WP_Comment;
  * up and they move off the waiting list, and the reminder attendees get
  * before an event starts. Mailer queues and sends them.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-type SendOptions array{all: bool, attending: bool, waiting_list: bool, not_attending: bool}
  * @phpstan-import-type Recipient from Mailer
@@ -44,7 +44,7 @@ final class Email {
 	/**
 	 * The Mailer type for event update emails.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -53,7 +53,7 @@ final class Email {
 	/**
 	 * The Mailer type for waiting list promotion emails.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -62,7 +62,7 @@ final class Email {
 	/**
 	 * The Mailer type for event reminder emails.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -71,7 +71,7 @@ final class Email {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -81,7 +81,7 @@ final class Email {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -92,7 +92,7 @@ final class Email {
 	/**
 	 * Tell Mailer who event emails go to and what they say.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -132,7 +132,7 @@ final class Email {
 	/**
 	 * Queue an event update email for the selected recipients.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id Event post ID.
 	 * @param array  $send    Who to send the email to.
@@ -163,7 +163,7 @@ final class Email {
 	 * rather than sent while that request waits. Nothing is queued while
 	 * waiting list emails are turned off under Notifications.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int   $post_id Event post ID.
 	 * @param State $state   The promoted RSVP.
@@ -187,7 +187,7 @@ final class Email {
 	/**
 	 * Queue the reminder email for an event about to start.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id Event post ID.
 	 * @param string $start   The GMT start the reminder is for.
@@ -207,7 +207,7 @@ final class Email {
 	/**
 	 * Get the users a queued event email goes to.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $payload The queued email: its `send` options.
 	 * @phpstan-param Payload $payload
@@ -224,7 +224,7 @@ final class Email {
 	 * When every user is already getting the email, RSVPs from users are left
 	 * out, so nobody gets it twice.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $payload The queued email: its `post_id` and `send` options.
 	 * @phpstan-param Payload $payload
@@ -250,7 +250,7 @@ final class Email {
 	 * Looked up when the job runs, and only while the RSVP is still attending,
 	 * since the attendee can cancel between the promotion and the email.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $payload The queued email: its `post_id` and the promoted RSVP's `comment_id`.
 	 * @phpstan-param Payload $payload
@@ -276,7 +276,7 @@ final class Email {
 	 * published, once it has been canceled, once it has started, or once its
 	 * start has moved, since the new start gets its own reminder.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $payload The queued email: its `post_id` and the `start` it was queued for.
 	 * @phpstan-param Payload $payload
@@ -302,7 +302,7 @@ final class Email {
 	/**
 	 * Build a queued event update email for one recipient.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
@@ -327,7 +327,7 @@ final class Email {
 	 * Mailer calls this while the attendee's language is active, so the
 	 * subject and message are translated for them.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
@@ -367,7 +367,7 @@ final class Email {
 	 * active, so the subject and the event time are shown for them. The
 	 * button leads back to the event, where the attendee can change their RSVP.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
@@ -409,7 +409,7 @@ final class Email {
 	 * Runs while the recipient's context is active so the default subject and
 	 * the template are translated in the recipient's locale and timezone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id          Event post ID.
 	 * @param string $message          Optional message for the email body.
@@ -478,7 +478,7 @@ final class Email {
 	 * Every user when "all" is picked, plus the RSVPs with the picked
 	 * statuses, from users and people without an account alike.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $send    Who to send the email to.
 	 * @param int   $post_id The event post ID.
@@ -508,7 +508,7 @@ final class Email {
 	/**
 	 * Get recipient rows for the RSVPs with the requested statuses.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $send    Which RSVP statuses to send to.
 	 * @param int   $post_id The event post ID.
@@ -570,7 +570,7 @@ final class Email {
 	 * user, and returns null when no valid email is on file so the caller can
 	 * skip the row.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Comment $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
 	 *

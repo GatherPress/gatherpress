@@ -3,7 +3,7 @@
  * Unit tests for GatherPress\Core\Traits\Has_Capabilities.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Traits;
@@ -25,7 +25,7 @@ class Test_Has_Capabilities extends Base {
 	/**
 	 * Verify Event and Venue default to the read capability on Capability.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::read_capability
 	 *
@@ -39,7 +39,7 @@ class Test_Has_Capabilities extends Base {
 	/**
 	 * Verify Event and Venue default to the edit capability on Capability.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::edit_capability
 	 *

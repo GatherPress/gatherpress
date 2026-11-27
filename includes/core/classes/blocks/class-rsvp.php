@@ -49,7 +49,7 @@ final class Rsvp {
 	 *
 	 * Its value is the event's post ID, so only that event's RSVP blocks show the error.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const ERROR_QUERY_ARG = 'gatherpress_rsvp_error';
@@ -57,7 +57,7 @@ final class Rsvp {
 	/**
 	 * RSVP blocks rendered so far in this request, counted per event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<int, int>
 	 */
 	private array $render_counts = array();
@@ -327,7 +327,7 @@ final class Rsvp {
 	 * It runs on the rendered markup, so templates already saved in events
 	 * get it too.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $markup The rendered inner blocks of the RSVP block.
 	 *
@@ -370,7 +370,7 @@ final class Rsvp {
 	 *
 	 * Matches the editor's default canceled template, a disabled button.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The serialized blocks.
 	 */
@@ -400,7 +400,7 @@ final class Rsvp {
 	 * Logged-out visitors get the Login modal instead, and a past or
 	 * canceled event takes no RSVPs, so none of them gets the form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $block_content The RSVP block's HTML.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -478,7 +478,7 @@ final class Rsvp {
 	 * - The guest count and anonymity fields join the form, showing the
 	 *   saved values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag       Processor positioned on the element.
 	 * @param string                $form_id   The id of the RSVP block's form.
@@ -520,7 +520,7 @@ final class Rsvp {
 	/**
 	 * Makes a button submit the RSVP block's form with the given status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag     Processor positioned on the button.
 	 * @param string                $form_id The id of the RSVP block's form.
@@ -542,7 +542,7 @@ final class Rsvp {
 	 * A logged-in visitor sends the REST nonce; a magic-link session is
 	 * authorized by its cookie, as it is with JavaScript.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $form_id The form's id.
 	 * @param int    $post_id The event's post ID.

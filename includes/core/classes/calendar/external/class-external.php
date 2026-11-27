@@ -415,7 +415,7 @@ final class External {
 	 * fold counts the escaped octets.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Public and static, for the calendar envelope.
+	 * @since 0.37.0 Public and static, for the calendar envelope.
 	 *
 	 * @param string $text The raw text to escape.
 	 *
@@ -500,7 +500,7 @@ final class External {
 		 * params.
 		 *
 		 * @since 0.34.0
-		 * @since TBD    Renamed from `gatherpress_calendar_url`.
+		 * @since 0.37.0    Renamed from `gatherpress_calendar_url`.
 		 *
 		 * @param string   $endpoint_url The full calendar URL.
 		 * @param \WP_Post $post         The corresponding event post.
@@ -531,7 +531,7 @@ final class External {
 	 * between UTF-8 characters, so a multi-octet character moves whole to the
 	 * next line instead of being split in two.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $line The content line, with its value already escaped.
 	 *

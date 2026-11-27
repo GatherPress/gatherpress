@@ -31,7 +31,7 @@ class Test_Shadow_Source extends Base {
 	 * Some tests detach it or register it again from scratch, and later test
 	 * classes need venues to stay attached to events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -208,7 +208,7 @@ class Test_Shadow_Source extends Base {
 	/**
 	 * Runs the Query Loop vars filter, so the editor preview matches the front end.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::rest_query
 	 *
 	 * @return void

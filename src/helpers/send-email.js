@@ -22,7 +22,7 @@ let latestCount = 0;
  * The status line stays in the page while empty, so a screen reader is
  * already watching it when the first message arrives.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} status The status output element.
  * @param {string}      text   The text to announce.
@@ -39,7 +39,7 @@ function showStatus( status, text, busy ) {
 /**
  * Read the audience picked in the Send Email form.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}                 elements          The Send Email form elements.
  * @param {HTMLSelectElement}      elements.audience The audience select.
@@ -66,7 +66,7 @@ export function readAudience( { audience, roles, days } ) {
 /**
  * Explain what an audience is missing before it can be used.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object} params The audience, from readAudience().
  *
@@ -81,7 +81,7 @@ export function getAudienceError( params ) {
 /**
  * Explain what the Send Email form is missing before it can be sent.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}      elements         The Send Email form elements.
  * @param {HTMLElement} elements.message The message textarea.
@@ -107,7 +107,7 @@ export function getFormError( { message, count }, audience ) {
 /**
  * Show only the fields of the picked audience.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}            elements              The Send Email form elements.
  * @param {HTMLSelectElement} elements.audience     The audience select.
@@ -127,7 +127,7 @@ export function showAudienceFields( { audience, audienceRows } ) {
 /**
  * Check or uncheck every role, then update the count.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}  elements The Send Email form elements.
  * @param {boolean} checked  Whether to check every role.
@@ -145,7 +145,7 @@ export function setAllRoles( elements, checked ) {
 /**
  * Update how many users the picked audience would email.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object} elements The Send Email form elements.
  *
@@ -193,7 +193,7 @@ export async function updateCount( elements ) {
 /**
  * Queue the message written in the Send Email form.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}           elements         The Send Email form elements.
  * @param {HTMLElement}      elements.button  The Send button.
@@ -265,7 +265,7 @@ export async function sendMessage( elements ) {
  *
  * Does nothing on pages without the send form.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {void}
  */

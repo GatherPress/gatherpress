@@ -3,7 +3,7 @@
  * Organizes posts into the days and slots of a calendar.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -19,7 +19,7 @@ use DateTimeZone;
  *
  * Computes the multi-day spans of posts and organizes them by date and slot.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-type EventSpan array{
  *     dates: Post_Dates,
@@ -37,7 +37,7 @@ final class Post_Organizer {
 	 *
 	 * Twelve months, the largest view. It also stops invalid dates from exhausting memory.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const MAX_EVENT_SPAN_DAYS = 366;
@@ -45,7 +45,7 @@ final class Post_Organizer {
 	/**
 	 * First visible day, at midnight UTC.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var DateTimeImmutable
 	 */
 	private readonly DateTimeImmutable $first_day;
@@ -53,7 +53,7 @@ final class Post_Organizer {
 	/**
 	 * Last visible day, at midnight UTC.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var DateTimeImmutable
 	 */
 	private readonly DateTimeImmutable $last_day;
@@ -61,7 +61,7 @@ final class Post_Organizer {
 	/**
 	 * Slots taken on each date.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<string, array<int, bool>>
 	 */
 	private array $occupied_slots = array();
@@ -69,7 +69,7 @@ final class Post_Organizer {
 	/**
 	 * Slotted entries grouped by date.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var PostsByDate
 	 */
 	private array $posts_by_date = array();
@@ -81,7 +81,7 @@ final class Post_Organizer {
 	 * every day has 24 hours, so a day where daylight saving time starts at midnight (for
 	 * example in America/Santiago) still counts as one day.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param Date_Range $date_range The date range of the calendar.
 	 * @param Time_Grid  $time_grid  The time grid of the calendar.
@@ -94,7 +94,7 @@ final class Post_Organizer {
 	/**
 	 * Organizes posts into slotted entries grouped by date.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int[] $post_ids Post IDs.
 	 *
@@ -139,7 +139,7 @@ final class Post_Organizer {
 	/**
 	 * Gets the visible spans of posts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int[] $post_ids Post IDs.
 	 *
@@ -166,7 +166,7 @@ final class Post_Organizer {
 	 * the part of the post inside the visible range, so an event that starts before the range
 	 * still shows on the visible days.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param Post_Dates $post_dates Dates of the post.
 	 *
@@ -198,7 +198,7 @@ final class Post_Organizer {
 	 *
 	 * Multi-day and all-day events first, then longer before shorter, then start date, then ID.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<int, EventSpan> $spans Spans of the posts.
 	 *
@@ -222,7 +222,7 @@ final class Post_Organizer {
 	/**
 	 * Finds the lowest 0-indexed vertical slot free across all dates of a span.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $dates Dates of the span.
 	 *
@@ -241,7 +241,7 @@ final class Post_Organizer {
 	/**
 	 * Checks whether a slot is taken on any of the given dates.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int      $slot  Slot index.
 	 * @param string[] $dates Dates of the span.
@@ -261,7 +261,7 @@ final class Post_Organizer {
 	/**
 	 * Classifies the span position for a day within a multi-day event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $day_index  1-based day index.
 	 * @param int $total_days Total days of the event.
@@ -282,7 +282,7 @@ final class Post_Organizer {
 	 *
 	 * Posts without event dates have no time, so the time grid leaves them out.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $span Span of the post.
 	 * @phpstan-param EventSpan $span
@@ -317,7 +317,7 @@ final class Post_Organizer {
 	 *
 	 * Only the visible days get an entry. Each entry keeps its day number in the full event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $span Span of the post.
 	 * @phpstan-param EventSpan $span
@@ -359,7 +359,7 @@ final class Post_Organizer {
 	 * the number of columns of its group and its column, so no two overlapping entries share
 	 * a column and all entries of a group have the same width.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param list<array<string, mixed>> $day_entries Day entries list.
 	 *
@@ -416,7 +416,7 @@ final class Post_Organizer {
 	/**
 	 * Writes the overlap column data of one group of timed entries.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<int, array<string, mixed>> $day_entries Day entries list.
 	 * @param array<int, int>                  $group       Map of entry positions to their columns.

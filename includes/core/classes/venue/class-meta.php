@@ -108,7 +108,7 @@ final class Meta {
 	 * While it is true, geocoding the address leaves `gatherpress_latitude`
 	 * and `gatherpress_longitude` alone, for venues without a street address.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	public const MANUAL_COORDINATES_KEY = 'gatherpress_manual_coordinates';

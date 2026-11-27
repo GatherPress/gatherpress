@@ -738,7 +738,7 @@ class Test_Setup extends Base {
 	/**
 	 * The site name in PRODID is decoded, escaped and folded to 75 octets.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_ical_wrap
 	 *

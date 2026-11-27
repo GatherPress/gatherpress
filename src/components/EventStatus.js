@@ -21,7 +21,7 @@ import { getStatusDescription, getStatusOptions } from '../helpers/event-status'
  * `gatherpress_status` REST field, so this stays a SelectControl rather than a
  * term-id round trip.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {JSX.Element} A select control for the event status.
  */

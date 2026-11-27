@@ -6,7 +6,7 @@
  * settings page, so it carries no event data.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  *
  * @param string $message Message content for the email.
  */

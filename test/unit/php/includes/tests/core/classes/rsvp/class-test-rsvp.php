@@ -1535,7 +1535,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for enforce_capacity.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity
 	 *
@@ -1566,7 +1566,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for enforce_capacity counting guests.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity
 	 *
@@ -1587,7 +1587,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for enforce_capacity reading fresh responses over a stale cache.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity
 	 *
@@ -1610,7 +1610,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for enforce_capacity counting an anonymous RSVP for a visitor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity
 	 *
@@ -1637,7 +1637,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for enforce_capacity leaving a pending RSVP alone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity
 	 *
@@ -1662,7 +1662,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for enforce_capacity leaving RSVPs alone when there is nothing to check.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity
 	 *
@@ -1690,7 +1690,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for the helpers that run while holding the event's lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity_locked
 	 * @covers ::promote_waiting_list
@@ -1739,7 +1739,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for promote_waiting_list in each case.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::promote_waiting_list
 	 *
@@ -1784,7 +1784,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for process_locked when the save removes the RSVP.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::process_locked
 	 *
@@ -1814,7 +1814,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for enforce_capacity when the lock is not granted.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity
 	 * @covers ::move_to_waiting_list
@@ -1854,7 +1854,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for the fallback filling a free spot after it runs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::fall_back_to_waiting_list
 	 *
@@ -1892,7 +1892,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for count_attendees counting anonymous RSVPs and guests for a visitor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::count_attendees
 	 * @covers ::promote_waiting_list
@@ -1932,7 +1932,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Coverage for promote_waiting_list skipping a party that does not fit.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::promote_waiting_list
 	 *
@@ -1963,7 +1963,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Creates an event with a capacity and one approved attendee.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $capacity The event capacity.
 	 *
@@ -1982,7 +1982,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Creates an RSVP comment.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id  The event post ID.
 	 * @param Status $status   The RSVP status.

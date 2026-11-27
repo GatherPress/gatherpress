@@ -142,7 +142,7 @@ final class Rsvp {
 	/**
 	 * Lock that serializes capacity changes for this event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var Lock
 	 */
@@ -367,7 +367,7 @@ final class Rsvp {
 	/**
 	 * Process an RSVP request while holding the event's lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param Intent $intent The RSVP response/intent to save.
 	 *
@@ -417,7 +417,7 @@ final class Rsvp {
 	/**
 	 * Promote pending RSVPs from the waiting list while holding the event's lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int Number of RSVPs promoted from the waiting list.
 	 */
@@ -449,7 +449,7 @@ final class Rsvp {
 					 * Lets a site act on the freed spot, for example to tell the
 					 * attendee. GatherPress queues a confirmation email here.
 					 *
-					 * @since TBD
+					 * @since 0.37.0
 					 *
 					 * @param int   $post_id Event post ID.
 					 * @param State $state   The promoted RSVP.
@@ -513,7 +513,7 @@ final class Rsvp {
 	 * event may have filled up by the time it is approved. A pending RSVP is
 	 * left alone until then.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $comment_id The RSVP comment ID.
 	 *
@@ -537,7 +537,7 @@ final class Rsvp {
 	/**
 	 * Moves an attending RSVP to the waiting list when its capacity check cannot run, then fills any free spot.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $comment_id The RSVP comment ID.
 	 *
@@ -558,7 +558,7 @@ final class Rsvp {
 	 * Also used when the attendee count cannot be checked safely: the waiting
 	 * list never overbooks the event, and the next promotion fills any free spot.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $comment_id The RSVP comment ID.
 	 *
@@ -578,7 +578,7 @@ final class Rsvp {
 	/**
 	 * Moves an attending RSVP to the waiting list while holding the event's lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $comment_id The RSVP comment ID.
 	 *
@@ -598,7 +598,7 @@ final class Rsvp {
 	 * Counted from the comments themselves: an anonymous RSVP's identity is
 	 * withheld from a viewer who cannot manage RSVPs, so storage drops it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int The number of people attending.
 	 */

@@ -364,7 +364,7 @@ final class Rsvp extends Base {
 	 * Built from {@see Reminder::get_timings()}, so a timing added or removed
 	 * through its filter gets or loses its checkbox here.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, SettingsOption> The checkbox options, keyed by setting.
 	 */

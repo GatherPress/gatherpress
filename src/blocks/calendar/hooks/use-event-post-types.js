@@ -2,7 +2,7 @@
  * Hook to discover registered post types supporting gatherpress-event-date.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { useSelect } from '@wordpress/data';

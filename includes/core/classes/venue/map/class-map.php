@@ -1717,7 +1717,7 @@ final class Map {
 	 * inputs that'd change visible output also change the hash in the descriptor.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Takes the filename instead of the pieces it is built from.
+	 * @since 0.37.0 Takes the filename instead of the pieces it is built from.
 	 *
 	 * @param GdImage $image    Finished image from a provider's `render()`.
 	 * @param string  $filename Filename from {@see self::filename_for()}.

@@ -54,7 +54,7 @@ class Test_Saved_Image extends Base {
 	 *
 	 * The delay itself is covered by `test_delete_unused_files_waits()`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -67,7 +67,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Remove the delay filter and any queued delete.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -81,7 +81,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * The queued delete events, in run order.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<int, array{0: int, 1: array<int, mixed>}> Each event's time and args.
 	 */
@@ -100,7 +100,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Run a queued delete event the way WP-Cron does: remove it, then fire it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array{0: int, 1: array<int, mixed>} $event The event's time and args.
 	 *
@@ -415,7 +415,7 @@ class Test_Saved_Image extends Base {
 	 * A page cache can still serve HTML with the old URL, so the file is
 	 * deleted later, and only when no venue points at it again by then.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::delete_unused
 	 * @covers ::delete_unused_files
@@ -470,7 +470,7 @@ class Test_Saved_Image extends Base {
 	 * again days later, the first event must not delete it before the
 	 * second event's delay ends.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::delete_unused_now
 	 * @covers ::queued_urls
@@ -506,7 +506,7 @@ class Test_Saved_Image extends Base {
 	 * args within ten minutes. The second queue must still be scheduled, so
 	 * the first event does not delete the files before the later deadline.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::delete_unused_files
 	 * @covers ::delete_unused_now
@@ -545,7 +545,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * The delay filter sets when the files go; zero or less deletes at once.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @dataProvider data_delete_unused_delay
 	 * @covers ::delete_unused_files
@@ -584,7 +584,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Delays for test_delete_unused_files_honors_the_delay().
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, array{0: int, 1: bool}>
 	 */
@@ -599,7 +599,7 @@ class Test_Saved_Image extends Base {
 	/**
 	 * Nothing is scheduled when no file needs to go.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::delete_unused_files
 	 *

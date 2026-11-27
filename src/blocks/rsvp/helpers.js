@@ -43,7 +43,7 @@ export function parseSerializedInnerBlocks( serialized ) {
 /**
  * Convert a block template to blocks.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Array} template The block template structure.
  *
@@ -65,7 +65,7 @@ export function templateToBlocks( template ) {
  * Uses the status's saved blocks, or its default template for a block saved
  * before that status existed.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string}                serializedInnerBlocks The raw `serializedInnerBlocks` attribute value.
  * @param {string}                status                The RSVP status to load.

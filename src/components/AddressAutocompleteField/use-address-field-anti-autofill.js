@@ -52,7 +52,7 @@ export function useAddressFieldAntiAutofill( value, inputRef ) {
 	 * context menu's Paste. Clearing the DOM property here, before the event's
 	 * default action runs, lets that input land.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param {Event} event - The keydown or contextmenu event on the field.
 	 *

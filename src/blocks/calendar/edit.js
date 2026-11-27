@@ -2,7 +2,7 @@
  * Calendar Block Editor Component
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { __ } from '@wordpress/i18n';
@@ -46,7 +46,7 @@ import { CalendarTable } from '../../components/CalendarTable';
  *
  * Main editor component for the Calendar block.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props               Component props.
  * @param {Object}   props.attributes    Block attributes.

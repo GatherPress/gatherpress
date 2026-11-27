@@ -2,13 +2,13 @@
  * Class names of a calendar day cell in the editor.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 /**
  * Build the class names of a day cell, as Calendar_Day::get_day_cell_classes() does.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}  day            Day descriptor.
  * @param {string}  day.date       Y-m-d date of the day.
@@ -48,7 +48,7 @@ export function getDayClassNames( day, today, { ribbon, grid } ) {
  * Whether a day's class names include the Ribbon style, as a whole class name,
  * as Calendar_Day::get_time_grid_classes() checks on the server.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} className Class names of the day block.
  *

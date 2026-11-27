@@ -3,7 +3,7 @@
  * Event scheduler for event start and end actions, cache invalidation, and optional tracking.
  *
  * @package GatherPress\Core\Event
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Event;
@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * triggers cache invalidation and custom action hooks. Also optionally tracks upcoming event IDs per post type and
  * runs a daily fallback check.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Scheduler {
 
@@ -35,7 +35,7 @@ final class Scheduler {
 	/**
 	 * Action hook fired when an event has ended.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const ENDED_ACTION = 'gatherpress_event_ended';
@@ -43,7 +43,7 @@ final class Scheduler {
 	/**
 	 * Action hook fired when an event starts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const STARTING_ACTION = 'gatherpress_event_starting';
@@ -51,7 +51,7 @@ final class Scheduler {
 	/**
 	 * WP-Cron hook name for single event start action.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const START_CRON_ACTION = 'gatherpress_event_start_run';
@@ -59,7 +59,7 @@ final class Scheduler {
 	/**
 	 * Post meta key storing the GMT start datetime.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const START_META_KEY = 'gatherpress_datetime_start_gmt';
@@ -67,7 +67,7 @@ final class Scheduler {
 	/**
 	 * WP-Cron hook name for single event end action.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const CRON_ACTION = 'gatherpress_event_end_run';
@@ -75,7 +75,7 @@ final class Scheduler {
 	/**
 	 * WP-Cron hook name for daily validation fallback check.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const SWEEP_ACTION = 'gatherpress_event_end_sweep';
@@ -83,7 +83,7 @@ final class Scheduler {
 	/**
 	 * Post meta key storing the GMT end datetime.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const POST_META_KEY = 'gatherpress_datetime_end_gmt';
@@ -91,7 +91,7 @@ final class Scheduler {
 	/**
 	 * Option holding the tracked upcoming event IDs, keyed by post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const OPTION_NAME = 'gatherpress_event_upcoming_ids';
@@ -99,7 +99,7 @@ final class Scheduler {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -108,7 +108,7 @@ final class Scheduler {
 	/**
 	 * Registers action hooks for scheduling, post transitions, and cron events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -130,7 +130,7 @@ final class Scheduler {
 	/**
 	 * Schedules the daily sweep for missed event ends, when a post type tracks upcoming events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -145,7 +145,7 @@ final class Scheduler {
 	/**
 	 * Handles post status transitions to manage event end scheduling.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string  $new_status New post status.
 	 * @param string  $old_status Previous post status.
@@ -169,7 +169,7 @@ final class Scheduler {
 	/**
 	 * Handles post meta additions and updates for event start and end datetimes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Required by WP post meta hook signature.
 	 *
@@ -193,7 +193,7 @@ final class Scheduler {
 	/**
 	 * Schedules and tracks the start and end of a published upcoming event, or clears them otherwise.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id The event post ID.
 	 * @param string $status  The event's post status.
@@ -218,7 +218,7 @@ final class Scheduler {
 	/**
 	 * Cleans up scheduled cron and tracking before post deletion.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID being deleted.
 	 *
@@ -240,7 +240,7 @@ final class Scheduler {
 	 * Clears any earlier run first, so a changed start moves it. Nothing is
 	 * scheduled once the start has passed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event post ID to schedule.
 	 *
@@ -264,7 +264,7 @@ final class Scheduler {
 	/**
 	 * Clears any scheduled event start cron job for a given event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID to clear scheduling for.
 	 *
@@ -277,7 +277,7 @@ final class Scheduler {
 	/**
 	 * Handles the WP-Cron execution at an event's start time.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The ID of the event that is starting.
 	 *
@@ -306,7 +306,7 @@ final class Scheduler {
 		 * );
 		 * ```
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int $post_id The post ID of the event that is starting.
 		 */
@@ -316,7 +316,7 @@ final class Scheduler {
 	/**
 	 * Schedules a single WP-Cron event for when an event reaches its end time.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event post ID to schedule.
 	 *
@@ -339,7 +339,7 @@ final class Scheduler {
 	/**
 	 * Clears any scheduled event end cron job for a given event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID to clear scheduling for.
 	 *
@@ -354,7 +354,7 @@ final class Scheduler {
 	 *
 	 * Validates that the event has ended and fires the main action hook.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The ID of the event that ended.
 	 *
@@ -389,7 +389,7 @@ final class Scheduler {
 		 * );
 		 * ```
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int $post_id The post ID of the event that ended.
 		 */
@@ -399,7 +399,7 @@ final class Scheduler {
 	/**
 	 * Invalidates object caches and WordPress core post cache for an ended event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The ID of the event to invalidate caches for.
 	 *
@@ -415,7 +415,7 @@ final class Scheduler {
 		/**
 		 * Filters cache keys to invalidate when an event ends.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param array<string>|mixed $cache_keys Array of cache keys to invalidate.
 		 * @param int                 $post_id    The event post ID.
@@ -446,7 +446,7 @@ final class Scheduler {
 	 * removed when its event ends, is unpublished or is deleted, so the list
 	 * can feed a `post__in` query instead of a `meta_query` on the dates.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $post_type The post type slug to check.
 	 *
@@ -479,7 +479,7 @@ final class Scheduler {
 		 * }
 		 * ```
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param bool $enabled Whether tracking is enabled. Default false.
 		 */
@@ -500,7 +500,7 @@ final class Scheduler {
 		 * add_filter( 'gatherpress_event_upcoming_tracking_enabled_gatherpress_event', '__return_true' );
 		 * ```
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param bool   $enabled   Whether tracking is enabled for this post type. Default false.
 		 * @param string $post_type The post type being checked.
@@ -516,7 +516,7 @@ final class Scheduler {
 	/**
 	 * Checks whether at least one supporting post type has tracking enabled.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True if at least one post type has tracking enabled.
 	 */
@@ -533,7 +533,7 @@ final class Scheduler {
 	/**
 	 * Adds an event post ID to the upcoming tracking for its post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event post ID to track.
 	 *
@@ -556,7 +556,7 @@ final class Scheduler {
 	/**
 	 * Removes an event post ID from the upcoming tracking for its post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event post ID to remove from tracking.
 	 *
@@ -575,7 +575,7 @@ final class Scheduler {
 	/**
 	 * Returns the post type of an event whose upcoming IDs are tracked.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The post ID.
 	 *
@@ -590,7 +590,7 @@ final class Scheduler {
 	/**
 	 * Removes a post ID from the tracked IDs of a post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id   The post ID to remove.
 	 * @param string $post_type The post type slug.
@@ -607,7 +607,7 @@ final class Scheduler {
 	/**
 	 * Retrieves and normalizes the tracked upcoming event IDs of a post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $post_type The post type slug.
 	 *
@@ -636,7 +636,7 @@ final class Scheduler {
 	/**
 	 * Stores the tracked upcoming event IDs of a post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string     $post_type The post type slug.
 	 * @param array<int> $ids       The post IDs.
@@ -653,7 +653,7 @@ final class Scheduler {
 	/**
 	 * Returns the stored tracking, keyed by post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<mixed> The option value, or an empty array when it is not an array.
 	 */
@@ -666,7 +666,7 @@ final class Scheduler {
 	/**
 	 * Daily fallback check to detect events whose end time passed without being processed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -686,7 +686,7 @@ final class Scheduler {
 	/**
 	 * Drops a tracked ID that no longer belongs to its post type, or ends it if its event is past.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id   The tracked post ID.
 	 * @param string $post_type The post type it is tracked under.
@@ -709,7 +709,7 @@ final class Scheduler {
 	/**
 	 * Checks whether a post ID belongs to a post type with event dates.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID to check.
 	 *
@@ -722,7 +722,7 @@ final class Scheduler {
 	/**
 	 * Validates whether a post ID belongs to an existing future event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID to check.
 	 *
@@ -735,7 +735,7 @@ final class Scheduler {
 	/**
 	 * Validates whether a post ID belongs to an existing past event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID to check.
 	 *

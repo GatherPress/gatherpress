@@ -3,7 +3,7 @@
  * Event reminder emails.
  *
  * @package GatherPress\Core\Event
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Event;
@@ -24,7 +24,7 @@ use WP_Query;
  * the events starting within the reminder window and queues each one's
  * reminder once, through Email.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Reminder {
 
@@ -36,7 +36,7 @@ final class Reminder {
 	/**
 	 * Post meta key holding, for each reminder timing, the start it was last queued for.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -45,7 +45,7 @@ final class Reminder {
 	/**
 	 * WP-Cron hook name for the hourly reminder sweep.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -54,7 +54,7 @@ final class Reminder {
 	/**
 	 * How many events the sweep reads at a time.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var int
 	 */
@@ -63,7 +63,7 @@ final class Reminder {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -72,7 +72,7 @@ final class Reminder {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -84,7 +84,7 @@ final class Reminder {
 	/**
 	 * Whether reminder emails are turned on for the site.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when reminders are on.
 	 */
@@ -98,7 +98,7 @@ final class Reminder {
 	 * Each one gets a checkbox under Notifications, so an event can be
 	 * reminded more than once, for example a day before and an hour before.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, array{label: string, seconds: int, default: bool}> Each timing's checkbox
 	 *         label, seconds before the start, and whether it is checked by default.
@@ -112,7 +112,7 @@ final class Reminder {
 		 * The sweep runs hourly, so a reminder goes out within an hour after
 		 * its time.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param array<string, array{label: string, seconds: int, default: bool}> $timings Each timing's
 		 *        checkbox label, seconds before the start, and whether it is checked by default, keyed by name.
@@ -139,7 +139,7 @@ final class Reminder {
 	/**
 	 * The settings key for a reminder timing's checkbox.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $timing A timing name from {@see self::get_timings()}.
 	 *
@@ -152,7 +152,7 @@ final class Reminder {
 	/**
 	 * The checked reminder timings, as seconds before the start.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, int> Seconds before the start, keyed by timing name.
 	 */
@@ -171,7 +171,7 @@ final class Reminder {
 	/**
 	 * Keep the hourly sweep scheduled while reminders are on, and remove it once they are off.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -199,7 +199,7 @@ final class Reminder {
 	 * from the events table a page at a time, and queue_reminder() sends only
 	 * what is due and not yet sent.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -258,7 +258,7 @@ final class Reminder {
 	 * nothing for the same start, while a moved start can send again. An
 	 * event that has already started, or has been canceled, gets nothing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Event post ID.
 	 *
@@ -293,7 +293,7 @@ final class Reminder {
 	/**
 	 * The checked timings due for a start and not yet sent for it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string                $start The event's GMT start.
 	 * @param array<string, string> $sent  The start each timing was last sent for.

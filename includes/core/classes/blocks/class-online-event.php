@@ -205,7 +205,7 @@ final class Online_Event {
 	 * stays in place as a plain element, so its text and any other markup
 	 * are kept. Saved content is changed only in the output.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $html The link text HTML.
 	 *

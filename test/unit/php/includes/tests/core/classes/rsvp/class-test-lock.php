@@ -3,7 +3,7 @@
  * Unit tests for GatherPress\Core\Rsvp\Lock.
  *
  * @package GatherPress\Core\Rsvp
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp;
@@ -22,7 +22,7 @@ class Test_Lock extends Base {
 	/**
 	 * Event post ID the tests lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var int
 	 */
@@ -31,7 +31,7 @@ class Test_Lock extends Base {
 	/**
 	 * The query filter that denies the lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var callable|null
 	 */
@@ -40,7 +40,7 @@ class Test_Lock extends Base {
 	/**
 	 * Coverage for run holding the lock and releasing it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::run
 	 *
@@ -56,7 +56,7 @@ class Test_Lock extends Base {
 	/**
 	 * Coverage for run re-entering a lock this request holds.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::run
 	 *
@@ -75,7 +75,7 @@ class Test_Lock extends Base {
 	/**
 	 * Coverage for run releasing the lock when the callback throws.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::run
 	 *
@@ -101,7 +101,7 @@ class Test_Lock extends Base {
 	/**
 	 * Coverage for run when the lock is not granted.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::run
 	 *
@@ -137,7 +137,7 @@ class Test_Lock extends Base {
 	/**
 	 * Coverage for the lock name.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::__construct
 	 *
@@ -164,7 +164,7 @@ class Test_Lock extends Base {
 	/**
 	 * Makes GET_LOCK return the given result instead of taking the lock.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $result The SQL result, such as 0 or NULL.
 	 *
@@ -185,7 +185,7 @@ class Test_Lock extends Base {
 	/**
 	 * Whether the test event's lock is held.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when the lock is held.
 	 */

@@ -2,7 +2,7 @@
  * Utility functions and constants for calendar date range sources.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { select as wpSelect } from '@wordpress/data';

@@ -661,7 +661,7 @@ describe( 'rsvp guest count saves once after the last change', () => {
 	/**
 	 * Sets the field to a value and runs the change action, as one arrow key step does.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param {number} value The new guest count.
 	 *
@@ -828,7 +828,7 @@ describe( 'rsvp guest count saves once after the last change', () => {
 	/**
 	 * Makes the next RSVP request wait until the returned function is called.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return {Function} Lets the held request answer.
 	 */
