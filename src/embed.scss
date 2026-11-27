@@ -1,23 +1,42 @@
 // Event and venue details inside a post embed. The embed iframe loads no
 // theme styles, so these sit on top of core's wp-embed-template styles.
-.gatherpress-embed {
-	list-style: none;
-	margin: 1rem 0 0;
-	padding: 0;
+// Scoped to .wp-embed to win over core's `.wp-embed p` and `.wp-embed a`.
+.wp-embed {
+	.gatherpress-embed {
+		list-style: none;
+		margin: 1rem 0 0;
+		padding: 0;
 
-	li + li {
-		margin-top: 0.25rem;
+		li + li {
+			margin-top: 0.25rem;
+		}
 	}
-}
 
-.gatherpress-embed__venue-address {
-	display: block;
-}
+	.gatherpress-embed__venue-address {
+		display: block;
+	}
 
-.gatherpress-embed__status {
-	font-style: italic;
-}
+	.gatherpress-embed__status {
+		font-style: italic;
+	}
 
-.gatherpress-embed__rsvp {
-	margin: 1rem 0 0;
+	.gatherpress-embed__rsvp {
+		margin: 1rem 0 0;
+
+		a {
+			border: 1px solid #2c3338;
+			border-radius: 2px;
+			color: #2c3338;
+			display: inline-block;
+			font-weight: 600;
+			padding: 0.375rem 1rem;
+
+			&:hover,
+			&:focus {
+				background: #2c3338;
+				color: #fff;
+				text-decoration: none;
+			}
+		}
+	}
 }
