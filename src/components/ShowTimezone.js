@@ -49,7 +49,6 @@ const ShowTimezone = () => {
 				'Overrides the Event Date block and the site setting for this event.',
 				'gatherpress',
 			) }
-			__nexthasnomarginbottom
 		>
 			<option value="">{ __( 'Default', 'gatherpress' ) }</option>
 			<option value="always">{ __( 'Always', 'gatherpress' ) }</option>

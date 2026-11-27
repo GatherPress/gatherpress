@@ -46,7 +46,6 @@ const Timezone = () => {
 				setTimezone( value );
 				enableSave();
 			} }
-			__nexthasnomarginbottom
 		>
 			{ choices &&
 			'object' === typeof choices &&
