@@ -1184,7 +1184,7 @@ final class Utility {
 	 * `array_merge( $_GET, $_POST )`, so POST wins over GET. One difference:
 	 * an empty POST value falls back to GET instead of winning.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string        $var_name  Variable name to retrieve.
 	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
@@ -1238,7 +1238,7 @@ final class Utility {
 	 * so a forged `Host` header never reaches a link or a form. The path and
 	 * query are the request's own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $remove_query_args Query args to leave out of the URL.
 	 *
@@ -1266,7 +1266,7 @@ final class Utility {
 	 * False for admin, REST, Ajax and feed requests, which have no page for
 	 * a visitor to click through.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when the request renders a front-end page.
 	 */
@@ -1327,7 +1327,7 @@ final class Utility {
 	/**
 	 * Finds the first block with a given name in a list of parsed blocks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $blocks     Parsed blocks.
 	 * @param string       $block_name Name of the block to find.

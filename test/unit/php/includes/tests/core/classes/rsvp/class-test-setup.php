@@ -1178,7 +1178,7 @@ class Test_Setup extends Base {
 	/**
 	 * Searching from a check-in filtered screen keeps the filter.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::render_rsvp_admin_page
 	 *
@@ -1633,7 +1633,7 @@ class Test_Setup extends Base {
 	/**
 	 * Requests a row action on the RSVP screen, as its Approve link does.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -1660,7 +1660,7 @@ class Test_Setup extends Base {
 	/**
 	 * Creates a pending RSVP on a new event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int The RSVP comment ID.
 	 */
@@ -1679,7 +1679,7 @@ class Test_Setup extends Base {
 	 *
 	 * A reload of the URL it lands on cannot repeat the action.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::prepare_rsvp_admin_page
 	 * @covers ::redirect_after_action
@@ -1726,7 +1726,7 @@ class Test_Setup extends Base {
 	/**
 	 * A cancelled redirect leaves the screen to load as before.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::prepare_rsvp_admin_page
 	 * @covers ::redirect_after_action
@@ -1755,7 +1755,7 @@ class Test_Setup extends Base {
 	/**
 	 * Without an action there is no redirect, and the result args are removable.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::prepare_rsvp_admin_page
 	 * @covers ::redirect_after_action
@@ -1794,7 +1794,7 @@ class Test_Setup extends Base {
 	/**
 	 * The action result args are added to the query args core removes, once each.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::add_removable_result_args
 	 *
@@ -1818,7 +1818,7 @@ class Test_Setup extends Base {
 	/**
 	 * The screen shows the result of the last action as a notice.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::render_rsvp_admin_page
 	 *
@@ -1845,7 +1845,7 @@ class Test_Setup extends Base {
 	/**
 	 * Coverage for enforce_capacity_on_approval on approval.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity_on_approval
 	 *
@@ -1866,7 +1866,7 @@ class Test_Setup extends Base {
 	/**
 	 * Coverage for enforce_capacity_on_approval ignoring other transitions.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::enforce_capacity_on_approval
 	 *
@@ -1900,7 +1900,7 @@ class Test_Setup extends Base {
 	/**
 	 * Creates an event with a capacity and one approved attendee.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $capacity The event capacity.
 	 *
@@ -1919,7 +1919,7 @@ class Test_Setup extends Base {
 	/**
 	 * Creates an RSVP comment.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id  The event post ID.
 	 * @param Status $status   The RSVP status.

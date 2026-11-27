@@ -79,7 +79,7 @@ final class Modal {
 	 * keeps focus inside the dialog, makes the page behind it inert, and
 	 * closes it on Escape.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 *
@@ -120,7 +120,7 @@ final class Modal {
 	 * @since 0.33.0
 	 * @since 0.36.0 Marks modals that have no custom name.
 	 * @since 0.36.1    Names RSVP block modals after their title paragraph.
-	 * @since TBD       No longer sets `role`, `aria-modal`, `aria-hidden` or `tabindex`, which the `<dialog>` covers.
+	 * @since 0.37.0 No longer sets `role`, `aria-modal`, `aria-hidden` or `tabindex`, which the `<dialog>` covers.
 	 *
 	 * @param string               $block_content The HTML content of the block.
 	 * @param array<string, mixed> $block         The parsed block data.

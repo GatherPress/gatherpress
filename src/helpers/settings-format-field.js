@@ -4,7 +4,7 @@
  * The preview follows the Custom field's input events, so one is sent for it.
  * It is marked as filled in, so it doesn't count as typing and pick Custom.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}           elements        The format field elements.
  * @param {HTMLInputElement} elements.custom The Custom field.
@@ -26,7 +26,7 @@ export function fillCustomField( elements, radio ) {
  * clicking or typing in the Custom field picks Custom. Does nothing on pages
  * without a format field.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {void}
  */

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Status.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -24,7 +24,7 @@ class Test_Status extends Base {
 	 * The defaults cover Schema.org's vocabulary and each carries what the
 	 * standards need.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::all
 	 * @covers ::slugs
@@ -65,7 +65,7 @@ class Test_Status extends Base {
 	/**
 	 * A status reports the words and standard values it was given.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::label
 	 * @covers ::description
@@ -104,7 +104,7 @@ class Test_Status extends Base {
 	 * An unknown status is treated as scheduled rather than published as
 	 * something a calendar client would misread.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::exists
 	 * @covers ::label
@@ -131,7 +131,7 @@ class Test_Status extends Base {
 	/**
 	 * A site can add a status of its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::all
 	 * @covers ::slugs
@@ -167,7 +167,7 @@ class Test_Status extends Base {
 	 * A registered status that names no standard values still publishes
 	 * something true, rather than telling a calendar client nothing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::schema
 	 * @covers ::ical
@@ -193,7 +193,7 @@ class Test_Status extends Base {
 	/**
 	 * Canceled and postponed cross out the date, and a registered status can too.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::strikes_date
 	 *
@@ -227,7 +227,7 @@ class Test_Status extends Base {
 	/**
 	 * A status reports its priority for conflict resolution.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::priority
 	 *
@@ -261,7 +261,7 @@ class Test_Status extends Base {
 	/**
 	 * A site can take a status away as readily as it can add one.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::all
 	 * @covers ::slugs
@@ -291,7 +291,7 @@ class Test_Status extends Base {
 	/**
 	 * A status can name the post type support it depends on.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::all
 	 * @covers ::exists
@@ -317,7 +317,7 @@ class Test_Status extends Base {
 	 * The filter has the last word, so a site can put back a status its post
 	 * type would not otherwise be offered.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::all
 	 * @covers ::exists
@@ -349,7 +349,7 @@ class Test_Status extends Base {
 	 * Without this a term is created from the slug, and an event would say
 	 * `canceled` where it should say `Canceled`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::ensure_term
 	 *
@@ -374,7 +374,7 @@ class Test_Status extends Base {
 	 * A term that already exists keeps its stored name, so saving an event in
 	 * one locale never renames a status for everyone else.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::ensure_term
 	 *
@@ -399,7 +399,7 @@ class Test_Status extends Base {
 	/**
 	 * A status the vocabulary does not know gets no term.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::ensure_term
 	 *
@@ -515,7 +515,7 @@ class Test_Status extends Base {
 	 * Unregistering the taxonomy is the reachable way to make the term write
 	 * fail, which is what a site would see if something removed it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::set
 	 *
@@ -538,7 +538,7 @@ class Test_Status extends Base {
 	/**
 	 * An event is canceled while canceled is among its statuses.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::is_canceled
 	 *
@@ -578,7 +578,7 @@ class Test_Status extends Base {
 	/**
 	 * Coverage for get_all method and multi-status priority resolution.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_all
 	 * @covers ::get
@@ -623,7 +623,7 @@ class Test_Status extends Base {
 	/**
 	 * Coverage for get_label method.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_label
 	 *
@@ -654,7 +654,7 @@ class Test_Status extends Base {
 	/**
 	 * Coverage for get_schema method.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_schema
 	 *
@@ -685,7 +685,7 @@ class Test_Status extends Base {
 	/**
 	 * Coverage for get_ical method.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_ical
 	 *

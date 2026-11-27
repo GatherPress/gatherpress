@@ -145,7 +145,7 @@ final class User {
 	 *
 	 * Only applies on the frontend, where `user_set_timezone()` shows event times in it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The saved timezone, or an empty string when there is none.
 	 */
@@ -200,7 +200,7 @@ final class User {
 	 * Kept apart from the event updates opt-in, so a user can get reminders
 	 * for events they attend without the updates organizers send.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $user_id The user ID to check.
 	 *
@@ -216,7 +216,7 @@ final class User {
 			 * Lets a site that needs explicit consent, for example under the
 			 * GDPR, leave reminders off until a user turns them on.
 			 *
-			 * @since TBD
+			 * @since 0.37.0
 			 *
 			 * @param string $default_opt_in Default opt-in state ('1' for opted in, '0' for opted out).
 			 * @param int    $user_id        The user ID.
@@ -241,7 +241,7 @@ final class User {
 	 * post type's own labels, for example via core's
 	 * `post_type_labels_{$post_type}` filter.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Plural labels as a list, or an empty string when no post type takes RSVPs.
 	 */

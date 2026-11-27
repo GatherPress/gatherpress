@@ -3,7 +3,7 @@
  * Builds the grid structure of a calendar.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -18,7 +18,7 @@ use DateTimeImmutable;
  *
  * Generates the calendar grid structure for month, week, or day view.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-type DayPosts list<array<string, mixed>>|list<int>
  * @phpstan-type PostsByDate array<string, DayPosts>
@@ -30,7 +30,7 @@ final class Structure_Builder {
 	/**
 	 * Constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param Date_Range $date_range The date range of the calendar.
 	 */
@@ -39,7 +39,7 @@ final class Structure_Builder {
 	/**
 	 * Build complete calendar structure.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $posts_by_date Posts organized by date.
 	 * @phpstan-param PostsByDate $posts_by_date
@@ -87,7 +87,7 @@ final class Structure_Builder {
 	/**
 	 * Build one grid per month of a month view.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $posts_by_date Posts organized by date.
 	 * @phpstan-param PostsByDate $posts_by_date
@@ -112,7 +112,7 @@ final class Structure_Builder {
 	/**
 	 * Factory to create an active day entry.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param DateTimeImmutable $date  The day.
 	 * @param array<mixed>      $posts Associated posts or post IDs.
@@ -137,7 +137,7 @@ final class Structure_Builder {
 	/**
 	 * Factory to create an empty padded day entry.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $day_of_week Day of week (0-6).
 	 *
@@ -156,7 +156,7 @@ final class Structure_Builder {
 	/**
 	 * Build weeks array for a full month (with leading/trailing empty cells).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param DateTimeImmutable    $month_start   First day of the month.
 	 * @param array<string, mixed> $posts_by_date Posts by date.
@@ -213,7 +213,7 @@ final class Structure_Builder {
 	/**
 	 * Build weeks array for a week view (continuous days, no isEmpty padding).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $posts_by_date Posts organized by date.
 	 * @phpstan-param PostsByDate $posts_by_date
@@ -250,7 +250,7 @@ final class Structure_Builder {
 	/**
 	 * Build the days of a day view.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $posts_by_date Posts by date.
 	 * @phpstan-param PostsByDate $posts_by_date

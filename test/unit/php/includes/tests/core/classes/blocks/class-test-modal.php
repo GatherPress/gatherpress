@@ -138,7 +138,7 @@ class Test_Modal extends Base {
 	/**
 	 * Tests render_as_dialog turns the saved <div> into a <dialog>.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::render_as_dialog
 	 *
 	 * @return void

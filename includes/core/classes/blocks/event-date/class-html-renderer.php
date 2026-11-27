@@ -3,7 +3,7 @@
  * Renders the markup of the Event Date block.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks\Event_Date;
@@ -25,14 +25,14 @@ use WP_Block;
  * Generates the HTML output of the Event Date block: the event datetime, an optional link
  * to the event, and the context the view module needs to show the viewer's local time.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Html_Renderer {
 
 	/**
 	 * The block attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<string, mixed>
 	 */
 	private array $attributes;
@@ -40,7 +40,7 @@ final class Html_Renderer {
 	/**
 	 * The event post ID.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	private int $post_id;
@@ -48,7 +48,7 @@ final class Html_Renderer {
 	/**
 	 * The event the block shows.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var Event
 	 */
 	private Event $event;
@@ -56,7 +56,7 @@ final class Html_Renderer {
 	/**
 	 * Constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes The block attributes.
 	 * @param WP_Block             $block      The gatherpress/event-date block instance.
@@ -70,7 +70,7 @@ final class Html_Renderer {
 	/**
 	 * Render the block.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The block markup.
 	 */
@@ -113,7 +113,7 @@ final class Html_Renderer {
 	/**
 	 * Get the event URL when the block links to it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The URL, or an empty string when the block is not a link.
 	 */
@@ -124,7 +124,7 @@ final class Html_Renderer {
 	/**
 	 * Get the event datetime, with a machine-readable time element for each date shown.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The escaped datetime markup.
 	 */
@@ -152,7 +152,7 @@ final class Html_Renderer {
 	/**
 	 * Render one date, as a time element when its ISO 8601 datetime is known.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $human The date as shown.
 	 * @param string $iso   The ISO 8601 datetime.
@@ -176,7 +176,7 @@ final class Html_Renderer {
 	 *
 	 * Mirrors `isTimezoneAppended()` in src/blocks/event-date/helpers.js.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when the timezone is shown.
 	 */
@@ -197,7 +197,7 @@ final class Html_Renderer {
 	/**
 	 * Check whether the block shows the viewer's local time.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when the viewer time tooltip applies.
 	 */
@@ -217,7 +217,7 @@ final class Html_Renderer {
 	 * block displays and the timezone they are shown in. The view script is a module and
 	 * cannot import `@wordpress/i18n`, so the sentences it fills in are translated here.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, string> The context, or an empty array when the block shows no viewer time.
 	 */
@@ -250,7 +250,7 @@ final class Html_Renderer {
 	/**
 	 * Get the sentence for a start and end in the viewer's timezone, with the block's separator.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The format, taking `%1$s` start and `%2$s` end.
 	 */

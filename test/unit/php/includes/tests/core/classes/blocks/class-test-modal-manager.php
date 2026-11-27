@@ -391,7 +391,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Tests the modal closes on Escape and on an overlay click.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::attach_modal_close_behavior
 	 *
 	 * @return void
@@ -417,7 +417,7 @@ class Test_Modal_Manager extends Base {
 	 * The Modal block turns into a <dialog> as it renders, before the Modal
 	 * Manager around it adds the close handlers, so the handlers land on it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @coversNothing
 	 *
 	 * @return void
@@ -580,7 +580,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Builds modal manager markup with a button trigger.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $modals The markup after the trigger. Defaults to a modal with a close button.
 	 *
@@ -605,7 +605,7 @@ class Test_Modal_Manager extends Base {
 	 *
 	 * The test site uses plain permalinks, so the post's own `p` arg comes first.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The post ID.
 	 *
@@ -621,7 +621,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Loads a post's page with a `ref` query arg and a failed RSVP's error, and resets the modal keys.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param bool $open Whether the request asks for the post's first modal manager to open.
 	 *
@@ -662,7 +662,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Clears the faked query args.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -676,7 +676,7 @@ class Test_Modal_Manager extends Base {
 	 * A closed modal's button trigger submits a GET form that reloads the
 	 * page with the modal open, at the modal manager.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::open_modal_without_javascript
 	 * @covers ::apply_to_tags
 	 * @covers ::get_modal_key
@@ -723,7 +723,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * A link trigger without an `href` gets the URL that opens the modal; one with an `href` keeps it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::open_modal_without_javascript
 	 * @covers ::navigate_on_click
 	 *
@@ -759,7 +759,7 @@ class Test_Modal_Manager extends Base {
 	 * The requested modal renders open, its close trigger submits the close
 	 * form, and the overlay closes it too.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::open_modal_without_javascript
 	 * @covers ::apply_to_tags
 	 * @covers ::add_ways_out
@@ -819,7 +819,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * A modal with no close trigger also gets a Close link.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::open_modal_without_javascript
 	 * @covers ::apply_to_tags
 	 * @covers ::add_ways_out
@@ -850,7 +850,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * A request for a modal manager without a modal adds no ways out.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::open_modal_without_javascript
 	 *
 	 * @return void
@@ -874,7 +874,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Keys count modal managers per post, so they stay the same across page loads.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_modal_key
 	 *
 	 * @return void
@@ -903,7 +903,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Empty markup and requests other than a front-end page are left alone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::open_modal_without_javascript
 	 *
 	 * @return void
@@ -926,7 +926,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Only a link or button, with the trigger class or right after it, is a trigger.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::seek_actionable_element
 	 * @covers ::navigate_on_click
 	 *
@@ -974,7 +974,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Builds the navigation form with and without query args, and inserts HTML before the closing tag.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_navigation_form
 	 * @covers ::insert_before_closing_tag
 	 *
@@ -1016,7 +1016,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Calls apply_to_tags() directly for each outcome, so its coverage is traced.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::apply_to_tags
 	 *
 	 * @return void

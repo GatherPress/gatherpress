@@ -523,7 +523,7 @@ export const ShadowSourceFilterControls = ( {
  * Filters a Query Loop of shadow-source posts, such as venues, to those with
  * upcoming events, or with past events when the second toggle is off.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
@@ -823,7 +823,7 @@ const renderQueryControls = ( controls, fillProps ) =>
  * Shared by the controls and the panel around them, so the panel only shows
  * when it has something to render.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}  blockProps        Block edit props for the query block.
  * @param {boolean} inTemplateContext Whether the host editor is a template.

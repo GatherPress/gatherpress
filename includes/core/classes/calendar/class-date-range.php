@@ -3,7 +3,7 @@
  * The date range of a calendar.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -20,14 +20,14 @@ use WP_Block;
  *
  * The view, the days, and the heading of what a calendar shows.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Date_Range {
 
 	/**
 	 * The date format used throughout the calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const DATE_FORMAT = 'Y-m-d';
@@ -35,7 +35,7 @@ final class Date_Range {
 	/**
 	 * The view types, with the most units each view shows.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<string, int>
 	 */
 	const MAX_UNITS = array(
@@ -47,7 +47,7 @@ final class Date_Range {
 	/**
 	 * First day of the range (Y-m-d).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	public readonly string $start_date;
@@ -55,7 +55,7 @@ final class Date_Range {
 	/**
 	 * Last day of the range (Y-m-d).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	public readonly string $end_date;
@@ -63,7 +63,7 @@ final class Date_Range {
 	/**
 	 * Year of the target date.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $year;
@@ -71,7 +71,7 @@ final class Date_Range {
 	/**
 	 * Month of the target date (1 to 12).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $month;
@@ -79,7 +79,7 @@ final class Date_Range {
 	/**
 	 * Localized heading, like "October 2026".
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	public readonly string $heading;
@@ -87,7 +87,7 @@ final class Date_Range {
 	/**
 	 * Constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string                 $view_type  View type ('month', 'week', 'day').
 	 * @param int                    $unit_count Number of months, weeks or days.
@@ -120,7 +120,7 @@ final class Date_Range {
 	 *
 	 * With an event as its date range source, the calendar shows the days of that event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Calendar block attributes.
 	 * @param int                  $page       Page of the Query block. Each page moves the range by its units.
@@ -156,7 +156,7 @@ final class Date_Range {
 	 * The Query block of a calendar carries the range that `Calendar_Query` worked out for it.
 	 * Without that range, the range comes from the attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $query      The query of the Query block.
 	 * @param array<string, mixed> $attributes Calendar block attributes.
@@ -202,7 +202,7 @@ final class Date_Range {
 	/**
 	 * Validates a view type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param mixed $view_type View type to check.
 	 *
@@ -215,7 +215,7 @@ final class Date_Range {
 	/**
 	 * Resolves the number of units, from 1 to the most of the view.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Calendar block attributes.
 	 * @param string               $view_type  View type.
@@ -231,7 +231,7 @@ final class Date_Range {
 	/**
 	 * Gets the dates of the event that is the date range source of a calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Calendar block attributes.
 	 * @param WP_Block|null        $block      Block whose context gives the post of the `context` source.
@@ -252,7 +252,7 @@ final class Date_Range {
 	/**
 	 * Resolves the post of the `context` date range source.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Block|null $block Block whose context gives the post.
 	 *
@@ -267,7 +267,7 @@ final class Date_Range {
 	/**
 	 * Counts the units of a view that the days of an event span.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string     $view_type  View type.
 	 * @param Post_Dates $post_dates Dates of the event.
@@ -294,7 +294,7 @@ final class Date_Range {
 	/**
 	 * Parses a Y-m-d date string, falling back to the current datetime.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $date_str Date string in Y-m-d format.
 	 *
@@ -309,7 +309,7 @@ final class Date_Range {
 	/**
 	 * Resolves the date the range is built around.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $selected_date Selected date (Y-m-d or Y-m), or an empty string for today.
 	 * @param string $view_type     View type.
@@ -346,7 +346,7 @@ final class Date_Range {
 	/**
 	 * Calculates the first and last day of a view.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string            $view_type  View type.
 	 * @param DateTimeImmutable $base_date  Date the range is built around.
@@ -381,7 +381,7 @@ final class Date_Range {
 	/**
 	 * Gets the first day of the first week row of a week view.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return DateTimeImmutable First day of the week of the start, at 00:00:00.
 	 */
@@ -392,7 +392,7 @@ final class Date_Range {
 	/**
 	 * Gets the date range of each month of a month view.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return non-empty-list<self> One range per month, each with its own heading.
 	 */
@@ -419,7 +419,7 @@ final class Date_Range {
 	 *
 	 * A day view names each of its days. The other views name the days of the week.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<string> Translated day names, like "Mon".
 	 */
@@ -440,7 +440,7 @@ final class Date_Range {
 	/**
 	 * Gets the number of grid columns.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param bool $has_time_gutter Whether the time grid adds a column for its hours.
 	 *
@@ -459,7 +459,7 @@ final class Date_Range {
 	/**
 	 * Formats the heading of the range.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Formatted heading.
 	 */
@@ -496,7 +496,7 @@ final class Date_Range {
 	/**
 	 * Gets the date formats of the start and end of a heading for days.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array{0: string, 1: string} Start and end date formats.
 	 */
@@ -530,7 +530,7 @@ final class Date_Range {
 	/**
 	 * Gets the date formats of the start and end of a heading for months.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array{0: string, 1: string} Start and end date formats.
 	 */
@@ -556,7 +556,7 @@ final class Date_Range {
 	 * Uses the same `gatherpress_datetime_separator` filter as the Event Date block, with an
 	 * en dash as the default.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Filtered datetime separator.
 	 */

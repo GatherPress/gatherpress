@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Email.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -157,7 +157,7 @@ class Test_Email extends Base {
 	/**
 	 * Check that no promotion email goes out while waiting list emails are off.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::queue_promotion_email
 	 *
@@ -285,7 +285,7 @@ class Test_Email extends Base {
 	/**
 	 * Check that a reminder goes to the attending RSVPs while its start still holds.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::queue_reminder_email
 	 * @covers ::get_reminder_attendees
@@ -336,7 +336,7 @@ class Test_Email extends Base {
 	/**
 	 * Check the reminder's subject, message, online link, calendar links and button.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::compose_reminder_email
 	 * @covers ::build_event_email
@@ -367,7 +367,7 @@ class Test_Email extends Base {
 	/**
 	 * Check that an event update leaves out the reminder's online and calendar links.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::compose_event_email
 	 *
@@ -620,7 +620,7 @@ class Test_Email extends Base {
 	/**
 	 * Future-event emails include the RSVP Now CTA.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::build_event_email
 	 *
@@ -658,7 +658,7 @@ class Test_Email extends Base {
 	/**
 	 * Past-event emails omit the RSVP Now CTA — registration is closed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::build_event_email
 	 *
@@ -702,7 +702,7 @@ class Test_Email extends Base {
 	/**
 	 * Emails omit the RSVP Now CTA when RSVP is disabled for the event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::build_event_email
 	 *
@@ -1374,7 +1374,7 @@ class Test_Email extends Base {
 	/**
 	 * Test get_recipients skips rows the RSVP query returns that are not comments.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_recipients
 	 *
 	 * @return void

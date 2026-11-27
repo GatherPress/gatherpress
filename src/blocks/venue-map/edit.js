@@ -141,7 +141,7 @@ const buildExternalMapUrl = ( destination, latitude, longitude, zoom ) => {
  *
  * Matches the front end: tags removed, entities decoded, and trimmed.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} title The venue title.
  *

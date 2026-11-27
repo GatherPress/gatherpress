@@ -3,7 +3,7 @@
  * The check-in controls of the RSVP screen.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -21,14 +21,14 @@ use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
  * check-in filter and its query, and the check-in bulk actions. `List_Table`
  * calls these; the states come from `Check_In_Registry`.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Check_In_Controls {
 
 	/**
 	 * Prefix of the action that sets a check-in state, followed by the state's slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -37,7 +37,7 @@ final class Check_In_Controls {
 	/**
 	 * Action that removes an RSVP's check-in state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -48,7 +48,7 @@ final class Check_In_Controls {
 	 *
 	 * Unknown values are dropped so a hand-edited URL cannot query arbitrary terms.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string A registered state's slug, `not-recorded`, or an empty string when unfiltered.
 	 */
@@ -72,7 +72,7 @@ final class Check_In_Controls {
 	 * Not recorded means none of the registered check-in states. The clause joins
 	 * any response filter already on the query, and both must match.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $args The comment query arguments.
 	 *
@@ -109,7 +109,7 @@ final class Check_In_Controls {
 	/**
 	 * The check-in field, before script takes it over.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $selected The state the request is filtered to, or an empty string.
 	 *
@@ -144,7 +144,7 @@ final class Check_In_Controls {
 	 * takes over to set the state in place, so nothing moves when it does.
 	 * Another RSVP shows its state read-only, or a dash without one.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $item     The RSVP comment data.
 	 * @param string               $attendee The attendee's name, for the dropdown's label.
@@ -200,7 +200,7 @@ final class Check_In_Controls {
 	/**
 	 * The check-in actions: one for each registered state, then Clear check-in.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, string> Action labels, keyed by action.
 	 */
@@ -222,7 +222,7 @@ final class Check_In_Controls {
 	 *
 	 * As in the check-in route, an RSVP that is not approved is skipped.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $rsvp_id The RSVP comment ID.
 	 * @param string $action  A key of `get_actions()`.

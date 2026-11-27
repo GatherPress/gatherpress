@@ -186,7 +186,7 @@ abstract class Base extends PMC_Base {
 	/**
 	 * Run every queued Mailer job, including the batches they queue, as cron would.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -210,7 +210,7 @@ abstract class Base extends PMC_Base {
 	/**
 	 * Give the request an event's RSVP session cookie, as the browser sends it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id      The event's post ID.
 	 * @param string $token_string The `{comment_id}_{token}` string the cookie holds.
@@ -230,7 +230,7 @@ abstract class Base extends PMC_Base {
 	/**
 	 * Give the request URL parameters, as `Utility::get_http_input()` reads them.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $params URL parameters, with false for one that is not a string.
 	 *
@@ -249,7 +249,7 @@ abstract class Base extends PMC_Base {
 	/**
 	 * Give the request POST fields, as `Utility::get_http_input()` reads them.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $params POST fields, with false for one that is not a string.
 	 *

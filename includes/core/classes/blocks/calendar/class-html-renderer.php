@@ -3,7 +3,7 @@
  * Renders the markup of the Calendar block.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks\Calendar;
@@ -23,7 +23,7 @@ use WP_Block;
  * Generates the HTML output of the calendar: the wrapper, one table per unit, and the week rows,
  * which the gatherpress/calendar-week blocks render.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-import-type CalendarUnit from \GatherPress\Core\Calendar\Structure_Builder
  * @phpstan-type CalendarData array{
@@ -47,7 +47,7 @@ final class Html_Renderer {
 	/**
 	 * The gatherpress/calendar block instance.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var WP_Block
 	 */
 	private WP_Block $block;
@@ -55,7 +55,7 @@ final class Html_Renderer {
 	/**
 	 * The date range of the calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var Date_Range
 	 */
 	private Date_Range $date_range;
@@ -63,7 +63,7 @@ final class Html_Renderer {
 	/**
 	 * The time grid of the calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var Time_Grid
 	 */
 	private Time_Grid $time_grid;
@@ -71,7 +71,7 @@ final class Html_Renderer {
 	/**
 	 * Constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Block   $block      The gatherpress/calendar block instance.
 	 * @param Date_Range $date_range The date range of the calendar.
@@ -86,7 +86,7 @@ final class Html_Renderer {
 	/**
 	 * Build outer wrapper block attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $view_type    View type.
 	 * @param int    $unit_count   Number of units.
@@ -125,7 +125,7 @@ final class Html_Renderer {
 	/**
 	 * Build the inline style of a calendar table.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes    Block attributes.
 	 * @param int                  $columns_count Number of table columns.
@@ -160,7 +160,7 @@ final class Html_Renderer {
 	/**
 	 * Render HTML for an individual unit table.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $unit                Individual calendar unit data.
 	 * @param string               $table_style         CSS declarations for the style attribute.
@@ -210,7 +210,7 @@ final class Html_Renderer {
 	 * from the calendar's blocks: aria-modal on modals, the RSVP form and its fields, the forms
 	 * and `form` attributes that open and close modals without JavaScript, SVG icons and embeds.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $tags    Allowed HTML tags and their attributes.
 	 * @param string               $context The context the allowlist is being used in.
@@ -323,7 +323,7 @@ final class Html_Renderer {
 	/**
 	 * Generate complete calendar HTML.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes    Block attributes.
 	 * @param array<string, mixed> $calendar_data Calendar structure.
@@ -364,7 +364,7 @@ final class Html_Renderer {
 	/**
 	 * Render calendar weeks by delegating to gatherpress/calendar-week blocks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<int, array<int, array<string, mixed>>> $weeks               Weeks array.
 	 * @param bool                                         $render_week_numbers Whether rows get a week number header.
@@ -396,7 +396,7 @@ final class Html_Renderer {
 	 * Locate the inner template block by name within a block's innerBlocks,
 	 * or generate a fallback structure.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Block $block      Parent block instance.
 	 * @param string   $block_name Target inner block name.

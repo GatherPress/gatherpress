@@ -2,7 +2,7 @@
  * Core calendar calculation and configuration utilities.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { dateI18n, getSettings } from '@wordpress/date';
@@ -105,7 +105,7 @@ export function getTimeSlotDuration() {
  * { include: { slug: [ ids ] }, exclude: { ... } }, or { slug: [ ids ] } in
  * Query Loops saved before the include and exclude lists.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object|undefined} taxQuery   Query Loop taxQuery attribute.
  * @param {Array<Object>}    taxonomies Taxonomy records with slug and rest_base.
@@ -182,7 +182,7 @@ export function getColumnsCount(
  * 2. For each day of the week, calculate which day it should be based on startOfWeek
  * 3. Use dateI18n with 'D' format to get the translated abbreviated day name
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {number}  startOfWeek  - Start of week (0=Sunday, 1=Monday, 2=Tuesday, etc.).
  * @param {boolean} showWeekends - Whether to include weekend days.
@@ -231,7 +231,7 @@ export function getDayNames( startOfWeek = 0, showWeekends = true ) {
 /**
  * Generate the twelve month options for the month picker.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {Array<Object>} Array of month options, each containing:
  *   - {string} value - Month number in format "MM"

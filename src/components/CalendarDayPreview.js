@@ -2,7 +2,7 @@
  * CalendarDayPreview Component
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { memo, useCallback, useMemo } from '@wordpress/element';
@@ -150,7 +150,7 @@ function withResolvedDayContent( blocks, day, isRibbon ) {
  * day. The cell keeps its table cell role, so table navigation still reads
  * the column headers.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props                    Component props.
  * @param {Object}   props.day                Day data (day, date, posts, isEmpty, isToday).

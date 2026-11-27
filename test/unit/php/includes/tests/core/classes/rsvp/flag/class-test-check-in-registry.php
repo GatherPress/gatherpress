@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Rsvp\Flag\Check_In_Registry.
  *
  * @package GatherPress\Core\Rsvp\Flag
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp\Flag;

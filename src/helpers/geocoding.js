@@ -36,7 +36,7 @@ export const GEOCODE_LOCK_NAME = 'gatherpress/venue-geocoding';
 /**
  * Notice ID for a failed geocode, so repeat failures replace one notice.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @type {string}
  */
@@ -45,7 +45,7 @@ export const GEOCODE_NOTICE_ID = 'gatherpress_geocode_failed';
 /**
  * Message shown when a geocode request fails.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {boolean} unavailable Whether the geocoding service could not be reached.
  *

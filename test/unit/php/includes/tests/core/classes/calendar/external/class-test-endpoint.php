@@ -25,7 +25,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Permalink structure before the test.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -34,7 +34,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Saves the permalink structure.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -49,7 +49,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Unregisters the test objects and restores the permalink structure.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -872,7 +872,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Coverage for get_rewrite_base when a post type uses the permalink front.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_rewrite_base
 	 * @covers ::get_rewrite_slug
@@ -918,7 +918,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Coverage for get_rewrite_base when a taxonomy uses the permalink front.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_rewrite_base
 	 *
@@ -967,7 +967,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Coverage for get_rewrite_base without the permalink front.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_rewrite_base
 	 *
@@ -996,7 +996,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Coverage for get_rewrite_base when the rewrite settings lack with_front.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_rewrite_base
 	 *
@@ -1035,7 +1035,7 @@ class Test_Endpoint extends Base {
 	/**
 	 * Asserts the pattern matches the path of a link.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $pattern The rewrite rule pattern.
 	 * @param string $link    The link WordPress generates.

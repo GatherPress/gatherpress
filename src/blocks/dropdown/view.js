@@ -16,7 +16,7 @@ import {
  *
  * Content shown on hover must be dismissible without moving the pointer.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} wrapper The dropdown block.
  *
@@ -158,7 +158,8 @@ const { actions } = store( 'gatherpress', {
 		 * items and on out of the dropdown, and the panel closes when focus
 		 * leaves it. Escape and an outside click close it as well.
 		 *
-		 * @since TBD
+		 * @since 0.32.0
+		 * @since 0.37.0 Takes `returnFocus`, and the panel is a disclosure that Tab can leave.
 		 *
 		 * @param {Event|null}  event       The triggering event, if any.
 		 * @param {Object|null} element     The element from `getElement()`; read when omitted.

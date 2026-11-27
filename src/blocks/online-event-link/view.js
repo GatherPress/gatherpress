@@ -17,7 +17,7 @@ import { stripScriptsAndEventHandlers } from '../../helpers/globals';
  * this removes the tooltip attributes and classes, the screen-reader copy of
  * the note, and the tab stop the tooltip script adds. The text stays.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} element The element that holds the link text.
  *

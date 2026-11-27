@@ -1471,7 +1471,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_request_input reads POST first and falls back to GET.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_request_input
 	 *
 	 * @return void
@@ -2270,7 +2270,7 @@ class Test_Utility extends Base {
 	/**
 	 * The current URL comes from the home URL's scheme, host and port, plus the request's path and query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_current_url
 	 *
 	 * @return void
@@ -2305,7 +2305,7 @@ class Test_Utility extends Base {
 	/**
 	 * Only a front-end page request counts as one.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::is_page_request
 	 *
 	 * @return void

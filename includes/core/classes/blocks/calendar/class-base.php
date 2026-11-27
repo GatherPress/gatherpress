@@ -3,7 +3,7 @@
  * Base of the calendar blocks that render from their block context.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks\Calendar;
@@ -19,14 +19,14 @@ use WP_Block;
  *
  * Holds the block a calendar block renders and reads typed values from its context.
  *
- * @since TBD
+ * @since 0.37.0
  */
 abstract class Base {
 
 	/**
 	 * Block instance.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var WP_Block
 	 */
 	protected readonly WP_Block $block;
@@ -34,7 +34,7 @@ abstract class Base {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Block $block Block instance.
 	 */
@@ -47,7 +47,7 @@ abstract class Base {
 	 *
 	 * Called from the block's render.php.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Rendered HTML.
 	 */
@@ -56,7 +56,7 @@ abstract class Base {
 	/**
 	 * Get a string from the block context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $key Context key.
 	 *
@@ -71,7 +71,7 @@ abstract class Base {
 	/**
 	 * Get an integer from the block context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $key Context key.
 	 *
@@ -86,7 +86,7 @@ abstract class Base {
 	/**
 	 * Get an array from the block context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $key Context key.
 	 *
@@ -101,7 +101,7 @@ abstract class Base {
 	/**
 	 * Get the time grid of the calendar from the block context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return Time_Grid The time grid, or a disabled one outside a calendar.
 	 */

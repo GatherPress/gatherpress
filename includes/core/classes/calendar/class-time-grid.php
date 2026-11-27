@@ -3,7 +3,7 @@
  * The time grid of a calendar's day and week views.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -16,14 +16,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * The hours a time grid shows, its rows, and the tracks of the events on it.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Time_Grid {
 
 	/**
 	 * First hour of the grid, from 0 to 23.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $start_hour;
@@ -31,7 +31,7 @@ final class Time_Grid {
 	/**
 	 * Hour the grid ends at, from 1 to 24 and after the first hour.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $end_hour;
@@ -39,7 +39,7 @@ final class Time_Grid {
 	/**
 	 * Hours in each labeled row.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $slot_hours;
@@ -47,7 +47,7 @@ final class Time_Grid {
 	/**
 	 * Minutes in each step of a row. Each row has four steps.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $quarter_mins;
@@ -55,7 +55,7 @@ final class Time_Grid {
 	/**
 	 * Number of steps, the tracks of the grid.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $total_quarters;
@@ -63,7 +63,7 @@ final class Time_Grid {
 	/**
 	 * Labels of the rows, like "08:00". Empty when the grid is off.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var list<string>
 	 */
 	public readonly array $slots;
@@ -71,7 +71,7 @@ final class Time_Grid {
 	/**
 	 * Constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param bool $enabled    Whether the calendar shows the time grid.
 	 * @param int  $start_hour First hour of the grid.
@@ -92,7 +92,7 @@ final class Time_Grid {
 	 * The grid is on for day and week views of a query ordered by event date, when the
 	 * calendar turns it on.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Calendar block attributes.
 	 * @param array<string, mixed> $query      Query block context.
@@ -124,7 +124,7 @@ final class Time_Grid {
 	/**
 	 * Gets the time grid that the calendar block passes to its inner blocks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $context Block context.
 	 *
@@ -141,7 +141,7 @@ final class Time_Grid {
 	 *
 	 * The editor preview reads the same value from the editor settings.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int Hours per row, 1 or more.
 	 */
@@ -153,7 +153,7 @@ final class Time_Grid {
 		 * time and ends at the step at or after its end time: 15-minute steps for 1-hour rows, 30-minute
 		 * steps for 2-hour rows. Values below 1 become 1.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int $slot_hours Hours per slot.
 		 *
@@ -165,7 +165,7 @@ final class Time_Grid {
 	/**
 	 * Builds the labels of the rows.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<string> Row labels.
 	 */
@@ -186,7 +186,7 @@ final class Time_Grid {
 	 * hour starts on the first track, and a post at or after the last hour gets the last
 	 * track. So no post shows below the grid.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param Post_Dates $post_dates Dates of the post.
 	 *
@@ -217,7 +217,7 @@ final class Time_Grid {
 	 * The steps count from the first minute of the grid. With 3-hour rows a step is 45 minutes,
 	 * and a grid from 08:00 has steps at 08:45 and 09:30, not at 09:00.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int  $minutes Minutes past midnight.
 	 * @param bool $is_end  Whether to round up, for an end, so a post never has zero length.

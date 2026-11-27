@@ -146,7 +146,7 @@ export function isEventPostType( postType = null ) {
  * shadow taxonomy is on at least one post type declaring
  * `gatherpress-event-date`.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Function} selectFn       Data store selector.
  * @param {string}   sourcePostType Shadow-source post type to check.
@@ -183,7 +183,7 @@ function resolveEventActivityFilterSupport( selectFn, sourcePostType ) {
  * Re-renders once the post type and taxonomy data load, since the first
  * render often runs before they have.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} sourcePostType Shadow-source post type to check.
  *

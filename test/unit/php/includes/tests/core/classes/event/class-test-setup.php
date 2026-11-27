@@ -41,7 +41,7 @@ class Test_Setup extends Base {
 	 * Unregistering the event post type drops it from every taxonomy, and
 	 * later test classes need venues to stay attached to events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -2477,7 +2477,7 @@ class Test_Setup extends Base {
 	/**
 	 * Tests filter_event_status_term translates status term names dynamically.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::filter_event_status_term
 	 *

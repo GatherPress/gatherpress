@@ -90,7 +90,7 @@ class Test_Dropdown_Item extends Base {
 	 * The placeholder lost its href because it had no feed, so the item stays
 	 * plain text and does not become a button that does nothing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void

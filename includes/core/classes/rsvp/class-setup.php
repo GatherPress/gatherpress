@@ -258,7 +258,7 @@ final class Setup {
 	 * the event's RSVP session cookie if the magic link was clicked.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Reads the session cookie for `$post_id` instead of the URL token.
+	 * @since 0.37.0 Reads the session cookie for `$post_id` instead of the URL token.
 	 *
 	 * @param int $post_id The event's post ID. Defaults to the current post.
 	 *
@@ -303,7 +303,7 @@ final class Setup {
 	 * Covers every way a pending RSVP gets approved: the email link, the
 	 * comments screen, and code or REST requests that approve comments.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string     $new_status The new comment status.
 	 * @param string     $old_status The old comment status.
@@ -442,7 +442,7 @@ final class Setup {
 	 * Core then takes them out of the address bar and out of the table's
 	 * paging and sorting links.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $args Query args core removes.
 	 *
@@ -463,7 +463,7 @@ final class Setup {
 	 * The result args are also made removable, so core takes them out of the
 	 * address bar and out of the table's paging and sorting links.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param List_Table $list_table The list table for the current screen.
 	 *
@@ -738,7 +738,7 @@ final class Setup {
 	 * onto `send_headers`, since the page shows that person's RSVP (#1626).
 	 *
 	 * @since 0.34.0
-	 * @since TBD Starts a session cookie and redirects to the event without the token.
+	 * @since 0.37.0 Starts a session cookie and redirects to the event without the token.
 	 *
 	 * @return void
 	 */

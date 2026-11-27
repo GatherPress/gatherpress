@@ -3,7 +3,7 @@
  * Post meta capabilities used across GatherPress.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core;
@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * mapping to the specific post type's registered capability strings based on
  * post status and ownership.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Capability {
 
@@ -31,7 +31,7 @@ final class Capability {
 	 * through WordPress map_meta_cap() to the right primitive capability for the
 	 * post type and post status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const READ_POST = 'read_post';
@@ -42,7 +42,7 @@ final class Capability {
 	 * A meta capability, so it is always paired with a post ID and resolves
 	 * through WordPress map_meta_cap() to the post type's edit capability.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const EDIT_POST = 'edit_post';

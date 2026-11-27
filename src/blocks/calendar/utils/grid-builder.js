@@ -2,7 +2,7 @@
  * Grid builder functions for calendar units, weeks, and days.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { dateI18n, format } from '@wordpress/date';
@@ -16,14 +16,14 @@ import { WEEKDAY_SLUGS, isWeekendDay, getDayNames } from './calendar-utils';
  *
  * Mirrors Post_Organizer::MAX_EVENT_SPAN_DAYS: twelve months, the largest view.
  *
- * @since TBD
+ * @since 0.37.0
  */
 const MAX_EVENT_SPAN_DAYS = 366;
 
 /**
  * Milliseconds in one day.
  *
- * @since TBD
+ * @since 0.37.0
  */
 const DAY_MS = 1000 * 60 * 60 * 24;
 
@@ -32,7 +32,7 @@ const DAY_MS = 1000 * 60 * 60 * 24;
  *
  * Like the PHP side: a numeric hour stays, 0 included; anything else uses the default.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {*}      value    Hour from an attribute or the time grid configuration.
  * @param {number} fallback Hour to use when the value is not a number.
@@ -50,7 +50,7 @@ export function toHour( value, fallback ) {
  *
  * Mirrors Time_Grid: the same hours, rows and steps.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}  options            Time grid settings.
  * @param {boolean} options.enabled    Whether the calendar shows the time grid.
@@ -99,7 +99,7 @@ export function getTimeGridConfig( {
  *
  * Noon keeps the day the same when daylight saving time changes the clock.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} dateStr Date (YYYY-MM-DD).
  *
@@ -114,7 +114,7 @@ function toNoonDate( dateStr ) {
 /**
  * Count the days from one date to a later date.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Date} from Earlier date at noon.
  * @param {Date} to   Later date at noon.
@@ -132,7 +132,7 @@ function daysBetween( from, to ) {
  * later day does not run on that day, so it ends on the day before. An end
  * before the start is treated as no end.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} startRaw Start datetime (YYYY-MM-DD HH:MM:SS).
  * @param {string} endRaw   End datetime (YYYY-MM-DD HH:MM:SS), or an empty string.
@@ -771,7 +771,7 @@ export function buildConsecutiveDays(
  * Monday spans two ISO weeks, and its fourth day is always in the one that
  * holds most of the row.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Array}  week        Day entries of the row.
  * @param {number} startOfWeek Start of week (0-6).

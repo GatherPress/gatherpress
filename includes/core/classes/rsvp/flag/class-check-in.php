@@ -39,7 +39,7 @@ final class Check_In extends Check_In_State {
 	/**
 	 * Gets the name of the state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The translated name.
 	 */
@@ -50,7 +50,7 @@ final class Check_In extends Check_In_State {
 	/**
 	 * Gets the name of the action that sets the state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The translated action name.
 	 */
@@ -61,7 +61,7 @@ final class Check_In extends Check_In_State {
 	/**
 	 * Whether the state means the person attended.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True: a checked-in person attended.
 	 */
@@ -74,7 +74,7 @@ final class Check_In extends Check_In_State {
 	 *
 	 * A check mark.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The Dashicon name.
 	 */

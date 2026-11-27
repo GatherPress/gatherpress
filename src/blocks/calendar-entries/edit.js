@@ -2,7 +2,7 @@
  * Calendar Entries Block Editor Component
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import {

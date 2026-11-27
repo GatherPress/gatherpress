@@ -3,7 +3,7 @@
  * Renders the Calendar block.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -27,14 +27,14 @@ use WP_Block;
  * Renders the gatherpress/calendar block: the date range of its Query block, the posts in that
  * range, and one table per month, week or day view unit.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Calendar extends Base {
 
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/calendar';
@@ -42,7 +42,7 @@ final class Calendar extends Base {
 	/**
 	 * Block attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<string, mixed>
 	 */
 	private readonly array $attributes;
@@ -50,7 +50,7 @@ final class Calendar extends Base {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 * @param WP_Block             $block      Block instance.
@@ -66,7 +66,7 @@ final class Calendar extends Base {
 	 *
 	 * Called from the block's render.php.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Rendered HTML, or an empty string outside a Query Loop.
 	 */
@@ -126,7 +126,7 @@ final class Calendar extends Base {
 	 *
 	 * The editor uses the same attribute (calendar/edit.js) and the same range as its control.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $week_block Parsed week block of the calendar template.
 	 *
