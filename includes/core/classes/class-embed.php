@@ -106,8 +106,8 @@ final class Embed {
 	/**
 	 * Builds the details markup for an embedded event or venue.
 	 *
-	 * A password-protected post shows nothing, matching how WordPress hides
-	 * its excerpt in the embed.
+	 * A password-protected post shows nothing, even to a viewer who entered the
+	 * password, because the embed iframe can be cached and shown to anyone.
 	 *
 	 * @since TBD
 	 *
@@ -118,7 +118,7 @@ final class Embed {
 	 * @throws Exception If date/time formatting fails.
 	 */
 	public function get_details_markup( ?WP_Post $post ): string {
-		if ( ! $post instanceof WP_Post || post_password_required( $post ) ) {
+		if ( ! $post instanceof WP_Post || '' !== $post->post_password ) {
 			return '';
 		}
 

@@ -13,6 +13,7 @@ use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Status;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
+use PasswordHash;
 
 /**
  * Class Test_Embed.
@@ -31,6 +32,15 @@ class Test_Embed extends Base {
 	 * @var string
 	 */
 	const CUSTOM_EVENT_POST_TYPE = 'gp_test_embed_event';
+
+	/**
+	 * Custom post type that only declares venue-information support.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	const CUSTOM_VENUE_POST_TYPE = 'gp_test_embed_venue';
 
 	/**
 	 * Test instance of Embed.
@@ -62,6 +72,8 @@ class Test_Embed extends Base {
 	 */
 	public function tearDown(): void {
 		unregister_post_type( self::CUSTOM_EVENT_POST_TYPE );
+		unregister_post_type( self::CUSTOM_VENUE_POST_TYPE );
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
 		wp_dequeue_style( 'gatherpress-embed-style' );
 		parent::tearDown();
 	}
@@ -172,6 +184,24 @@ class Test_Embed extends Base {
 			$this->instance->get_details_markup( get_post( $event->post->ID ) ),
 			'A password-protected event gives no markup.'
 		);
+
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
+		$this->assertFalse( post_password_required( $event->post->ID ), 'The cookie should unlock the event.' );
+		$this->assertSame(
+			'',
+			$this->instance->get_details_markup( get_post( $event->post->ID ) ),
+			'A password-protected event gives no markup once unlocked.'
+		);
+
+		$venue = $this->mock->post(
+			array(
+				'post_type'     => Venue::POST_TYPE,
+				'post_password' => 'secret',
+			)
+		)->get();
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ' );
+		$this->assertSame( '', $this->instance->get_details_markup( $venue ), 'A protected venue gives no markup.' );
 	}
 
 	/**
@@ -356,6 +386,34 @@ class Test_Embed extends Base {
 
 		$this->assertStringContainsString( 'https://gatherpress.org/', $markup, 'A website alone still renders.' );
 		$this->assertStringNotContainsString( 'gatherpress-embed__phone', $markup );
+	}
+
+	/**
+	 * A custom post type with venue-information support gets the venue embed.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_details_markup
+	 *
+	 * @return void
+	 */
+	public function test_get_details_markup_for_custom_venue_post_type(): void {
+		register_post_type(
+			self::CUSTOM_VENUE_POST_TYPE,
+			array(
+				'public'   => true,
+				'supports' => array( 'title', Venue::SUPPORT ),
+			)
+		);
+
+		$venue = $this->mock->post( array( 'post_type' => self::CUSTOM_VENUE_POST_TYPE ) )->get();
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ' );
+
+		$markup = $this->instance->get_details_markup( $venue );
+
+		$this->assertStringContainsString( 'gatherpress-embed--venue', $markup );
+		$this->assertStringContainsString( 'gatherpress-embed__address', $markup );
+		$this->assertStringContainsString( '123 Main Street, Montclair, NJ', $markup );
 	}
 
 	/**
