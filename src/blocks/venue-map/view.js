@@ -278,7 +278,13 @@ function mountLeafletMap( wrapper, context, lat, lng ) {
 			popupAnchor: [ 0, -20 ],
 			shadowAnchor: [ 12, 20 ],
 		} );
-		L.marker( [ lat, lng ], { icon: centeredIcon } )
+		// Leaflet renders the marker as a focusable `<img role="button">` and
+		// names it from `alt`, which defaults to "Marker". The server sends
+		// the venue name (or the address when the venue has no title).
+		L.marker( [ lat, lng ], {
+			icon: centeredIcon,
+			alt: context.markerLabel || context.address,
+		} )
 			.addTo( map )
 			.bindPopup( context.address || '' );
 

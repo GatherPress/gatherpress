@@ -23,6 +23,8 @@ The settings of the Query Loop block apply to the calendar, for example the post
 
 Select the Calendar block. The block sidebar shows the **Calendar Settings** panel.
 
+![Screenshot of the Event Calendar in the editor, showing April 2027 with timed events, an all-day event and two events of more than one day as bars, next to the Calendar Settings panel with the Month view and April 2027 selected.](../user-doc-media/event-calendar-editor-month.png)
+
 ### Date Range Source
 
 The Date Range Source sets the dates that the calendar shows.
@@ -62,6 +64,8 @@ When you select a date, the Date Offset changes to 0.
 ### Show Time Grid
 
 **Show Time Grid** shows timed events on a timeline of hours. This setting shows only in the Week and Day views, and only when the Query Loop orders the events by event date. The Event Calendar orders by event date when you add it.
+
+![Screenshot of a Week view with the time grid on the front end. Timed events sit at their hours on a grid from 08:00 to 20:00, and an event of three days and an all-day event show as bars above the hours.](../user-doc-media/event-calendar-week-time-grid.png)
 
 When the time grid is on:
 
@@ -113,8 +117,8 @@ Select a block, then select a style in the **Styles** panel.
 - **Classic**: the default style.
 - **Minimal**: no background, with thin lines between the rows.
 - **Bold**: thick borders and heavy text. Today has the primary color of the theme.
-- **Circular**: round days, with large day numbers behind the events.
-- **Gradient**: translucent surfaces on a gradient. The colors come from the text color.
+- **Circular**: round days with large day numbers. A day with events shows a smaller number above them. A circle has little room for event names, so this style suits the **Colored Dots** style of the Calendar Entries block, which shows every day's number at one size.
+- **Gradient**: light days on a dark panel, in the base and contrast colors of the theme.
 
 ### Styles of the Calendar Day block
 
@@ -124,7 +128,7 @@ Select a block, then select a style in the **Styles** panel.
 ### Styles of the Calendar Entries block
 
 - **Classic**: the time and the title of each event.
-- **Colored Dots**: a colored dot for each event, and a colored bar for an event of more than one day. Select a dot or a bar to open the event.
+- **Colored Dots**: a colored dot for each event, and a colored bar for an event of more than one day. The bar joins up across its days and stays on the same row on each day. Select a dot or a bar to open the event. Dots fit a small calendar, or one with many events, better than event names do.
 
 The blocks also have the usual design tools, for example colors, borders and spacing.
 

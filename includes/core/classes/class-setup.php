@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Admin\Dashboard;
 use GatherPress\Core\Admin\Email;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
 use GatherPress\Core\Admin\Plugin_Row;
@@ -69,6 +70,7 @@ final class Setup {
 		Calendar\External\Setup::get_instance();
 		Cli::get_instance();
 		Coexistence_Guard::get_instance();
+		Dashboard::get_instance();
 		Email::get_instance();
 		Event\Setup::get_instance();
 		Export::get_instance();

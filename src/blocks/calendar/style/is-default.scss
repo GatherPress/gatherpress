@@ -122,7 +122,10 @@
 				font-weight: 500;
 				color: color-mix(in srgb, currentcolor 60%, transparent);
 				text-align: end;
-				transform: translateY(-50%);
+
+				// Center the text, not the whole hour row, on the hour line.
+				line-height: 1;
+				transform: translateY(-0.5em);
 			}
 		}
 

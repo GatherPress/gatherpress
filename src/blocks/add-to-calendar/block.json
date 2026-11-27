@@ -13,6 +13,14 @@
 		"postType",
 		"queryId"
 	],
+	"providesContext": {
+		"postId": "postId"
+	},
+	"attributes": {
+		"postId": {
+			"type": "number"
+		}
+	},
 	"supports": {
 		"contentRole": true,
 		"gatherpress": {

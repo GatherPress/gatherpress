@@ -7,7 +7,8 @@ Every flag fires this, so code reacting to one flag compares
 `$flag` with that flag class's `SLUG`, for example
 `Check_In::SLUG` to act on a check-in. It does not fire on a
 repeat, a failed write, or when an overlapping request stored
-the flag first.
+the flag first. A check-in state fires it after the removed
+action for the state it replaces.
 
 ## Auto-generated Example
 
@@ -36,7 +37,7 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/rsvp/flag/class-base.php:143](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/flag/class-base.php#L143)
+- [includes/core/classes/rsvp/flag/class-base.php:144](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/rsvp/flag/class-base.php#L144)
 ```php
 do_action( 'gatherpress_rsvp_flag_added', $this->rsvp_id, static::SLUG )
 ```

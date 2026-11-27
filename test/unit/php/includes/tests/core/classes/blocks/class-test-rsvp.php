@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
@@ -257,6 +258,255 @@ class Test_Rsvp extends Base {
 			$result,
 			'The transform_block_content method should exclude content for other statuses, such as "attending", '
 			. 'when the event is in the past.'
+		);
+	}
+
+	/**
+	 * Tests the transform_block_content method for a canceled event.
+	 *
+	 * Verifies that a canceled event renders the block's canceled template, or
+	 * the default disabled button for a block saved without one, and excludes
+	 * interactivity attributes and the other statuses' inner blocks.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::transform_block_content
+	 * @covers ::get_default_canceled_template
+	 * @covers ::mark_disabled_buttons
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_canceled_event(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		( new Event_Status( $post->ID ) )->set( 'canceled' );
+
+		$block = array(
+			'blockName' => 'gatherpress/rsvp-v2',
+			'attrs'     => array(
+				'postId'                => $post->ID,
+				'serializedInnerBlocks' => wp_json_encode(
+					array(
+						'past'      => '<!-- wp:paragraph --><p>Past content</p><!-- /wp:paragraph -->',
+						'attending' => '<!-- wp:paragraph --><p>Attending content</p><!-- /wp:paragraph -->',
+					)
+				),
+			),
+		);
+
+		$block_content = sprintf( '<div class="wp-block-gatherpress-rsvp" data-post-id="%d"></div>', $post->ID );
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'wp-element-button">Canceled</button>',
+			$result,
+			'A block saved without a canceled template shows the default disabled button.'
+		);
+
+		$tag = new WP_HTML_Tag_Processor( $result );
+
+		$this->assertTrue( $tag->next_tag( 'button' ) );
+		$this->assertSame(
+			'true',
+			$tag->get_attribute( 'aria-disabled' ),
+			'The default Canceled button is announced as unavailable.'
+		);
+		$this->assertSame( '-1', $tag->get_attribute( 'tabindex' ), 'Tab skips the default Canceled button.' );
+		$this->assertStringContainsString( 'gatherpress--is-disabled', $result );
+		$this->assertStringNotContainsString(
+			'data-wp-interactive',
+			$result,
+			'The transform_block_content method should not include '
+			. 'the data-wp-interactive attribute for a canceled event.'
+		);
+		$this->assertStringNotContainsString(
+			'Attending content',
+			$result
+		);
+		$this->assertStringNotContainsString(
+			'Past content',
+			$result
+		);
+
+		$block['attrs']['serializedInnerBlocks'] = wp_json_encode(
+			array(
+				'canceled'  => '<!-- wp:paragraph --><p>Canceled content</p><!-- /wp:paragraph -->',
+				'attending' => '<!-- wp:paragraph --><p>Attending content</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString( 'Canceled content', $result, 'The saved canceled template renders.' );
+		$this->assertStringNotContainsString( 'Attending content', $result );
+	}
+
+	/**
+	 * Tests that a past event's saved "Past Event" button is not offered as a control.
+	 *
+	 * The past template is saved in the event's block markup, so the button
+	 * gets marked when the block renders, including for events saved before
+	 * this change.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::transform_block_content
+	 * @covers ::mark_disabled_buttons
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_past_event_disables_button(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_datetime' => wp_json_encode(
+						array(
+							'dateTimeStart' => '2024-01-22 18:00:00',
+							'dateTimeEnd'   => '2024-01-22 20:00:00',
+							'timezone'      => 'America/New_York',
+						)
+					),
+				),
+			)
+		)->get();
+
+		Setup::get_instance()->set_datetimes( $post->ID );
+
+		$past_template = '<!-- wp:buttons {"align":"center","layout":{"type":"flex","justifyContent":"center"}} -->'
+			. '<div class="wp-block-buttons aligncenter">'
+			. '<!-- wp:button {"tagName":"button","className":"gatherpress--is-disabled"} -->'
+			. '<div class="wp-block-button gatherpress--is-disabled">'
+			. '<button type="button" class="wp-block-button__link wp-element-button">Past Event</button>'
+			. '</div><!-- /wp:button --></div><!-- /wp:buttons -->';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-v2',
+			'attrs'     => array(
+				'postId'                => $post->ID,
+				'serializedInnerBlocks' => wp_json_encode( array( 'past' => $past_template ) ),
+			),
+		);
+		$block_content = sprintf( '<div class="wp-block-gatherpress-rsvp" data-post-id="%d"></div>', $post->ID );
+		$tag           = new WP_HTML_Tag_Processor( $instance->transform_block_content( $block_content, $block ) );
+
+		$this->assertTrue( $tag->next_tag( 'button' ), 'The Past Event button renders.' );
+		$this->assertSame(
+			'true',
+			$tag->get_attribute( 'aria-disabled' ),
+			'The Past Event button is announced as unavailable.'
+		);
+		$this->assertSame( '-1', $tag->get_attribute( 'tabindex' ), 'Tab skips the Past Event button.' );
+	}
+
+	/**
+	 * A disabled button that also carries the trigger-update class stays unavailable.
+	 *
+	 * The render filters run in order, so this goes through all of them: the
+	 * interactivity filter must not put the button back in the Tab order.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::apply_rsvp_button_interactivity
+	 * @covers ::mark_disabled_buttons
+	 *
+	 * @return void
+	 */
+	public function test_render_filters_keep_a_disabled_trigger_button_unavailable(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_datetime' => wp_json_encode(
+						array(
+							'dateTimeStart' => '2024-01-22 18:00:00',
+							'dateTimeEnd'   => '2024-01-22 20:00:00',
+							'timezone'      => 'America/New_York',
+						)
+					),
+				),
+			)
+		)->get();
+
+		Setup::get_instance()->set_datetimes( $post->ID );
+
+		$classes       = 'gatherpress--is-disabled gatherpress-rsvp--trigger-update';
+		$past_template = '<!-- wp:button {"tagName":"button","className":"' . $classes . '"} -->'
+			. '<div class="wp-block-button ' . $classes . '">'
+			. '<button type="button" class="wp-block-button__link wp-element-button">Past Event</button>'
+			. '</div><!-- /wp:button -->';
+		$block         = array(
+			'blockName' => Rsvp::BLOCK_NAME,
+			'attrs'     => array(
+				'postId'                => $post->ID,
+				'serializedInnerBlocks' => wp_json_encode( array( 'past' => $past_template ) ),
+			),
+		);
+		$block_content = sprintf( '<div class="wp-block-gatherpress-rsvp" data-post-id="%d"></div>', $post->ID );
+		$tag           = new WP_HTML_Tag_Processor(
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core hook, not a GatherPress one.
+			apply_filters( 'render_block_' . Rsvp::BLOCK_NAME, $block_content, $block )
+		);
+
+		$this->assertTrue( $tag->next_tag( 'button' ), 'The Past Event button renders.' );
+		$this->assertSame( '-1', $tag->get_attribute( 'tabindex' ), 'Tab still skips the Past Event button.' );
+		$this->assertSame( 'true', $tag->get_attribute( 'aria-disabled' ), 'The button stays unavailable.' );
+		$this->assertNull(
+			$tag->get_attribute( 'data-wp-on--click' ),
+			'The unavailable button gets no click handler.'
+		);
+	}
+
+	/**
+	 * Tests that only the controls carrying, or wrapped by, the disabled class get marked.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::mark_disabled_buttons
+	 *
+	 * @return void
+	 */
+	public function test_mark_disabled_buttons(): void {
+		$instance = Rsvp::get_instance();
+		$markup   = '<div class="wp-block-button gatherpress--is-disabled"><button id="wrapped">Past</button></div>'
+			. '<a id="link" href="#" class="gatherpress--is-disabled">Link</a>'
+			. '<p id="text" class="gatherpress--is-disabled"><span id="span">Note</span></p>'
+			. '<button id="other">Other</button>'
+			. '<div class="gatherpress--is-disabled"></div>'
+			. '<a id="after" href="/details">Details</a>'
+			. '<div class="gatherpress--is-disabled"><span><button id="nested">Past</button></span></div>'
+			. '<button id="last">Last</button>';
+		$tag      = new WP_HTML_Tag_Processor(
+			Utility::invoke_hidden_method( $instance, 'mark_disabled_buttons', array( $markup ) )
+		);
+		$marked   = array();
+
+		while ( $tag->next_tag() ) {
+			$id = $tag->get_attribute( 'id' );
+
+			if ( is_string( $id ) ) {
+				$marked[ $id ] = array( $tag->get_attribute( 'aria-disabled' ), $tag->get_attribute( 'tabindex' ) );
+			}
+		}
+
+		$this->assertSame(
+			array(
+				'wrapped' => array( 'true', '-1' ),
+				'link'    => array( 'true', '-1' ),
+				'text'    => array( null, null ),
+				'span'    => array( null, null ),
+				'other'   => array( null, null ),
+				'after'   => array( null, null ),
+				'nested'  => array( 'true', '-1' ),
+				'last'    => array( null, null ),
+			),
+			$marked,
+			'A control anywhere inside a disabled element, and a disabled link, are marked; a control after one is not.'
 		);
 	}
 
@@ -605,6 +855,16 @@ class Test_Rsvp extends Base {
 			$result,
 			'The handle_rsvp_form_fields method should add the data-wp-on--change attribute with the '
 			. 'updateGuestCount action.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--blur="actions.saveGuestCount"',
+			$result,
+			'A guest count still waiting to be saved is saved when the field loses focus.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--focus="actions.prepareGuestCount"',
+			$result,
+			'The nonce is fetched when the field gets focus, before any count waits to be saved.'
 		);
 		$this->assertStringContainsString(
 			'max="5"',
@@ -1040,7 +1300,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Creates an upcoming event, loads its page as a logged-in user, and resets the RSVP block counts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $status The RSVP to save for the user first, if any.
 	 * @param int    $guests The guest count to save with it.
@@ -1080,7 +1340,7 @@ class Test_Rsvp extends Base {
 	 * the waiting list, the guest count and anonymity fields, a close button
 	 * and a link acting as an RSVP button.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $statuses The statuses of the containers, in order.
 	 *
@@ -1107,7 +1367,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Asserts that a button submits a status to the given form, whatever the attribute order.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $html    The HTML to search.
 	 * @param string $form_id The form's id.
@@ -1133,7 +1393,7 @@ class Test_Rsvp extends Base {
 	 * Without an RSVP, the buttons attend or set their status, closing saves
 	 * nothing, and only the shown container joins the form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 * @covers ::join_rsvp_form
 	 * @covers ::submit_rsvp_status
@@ -1196,7 +1456,7 @@ class Test_Rsvp extends Base {
 	 * While attending, the toggle leaves, closing saves the current status,
 	 * Enter keeps it, and the fields show the saved values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 * @covers ::join_rsvp_form
 	 * @covers ::get_rsvp_form
@@ -1240,7 +1500,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * An existing block id is kept, and Not Attending toggles back to Attending.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 * @covers ::join_rsvp_form
 	 *
@@ -1265,9 +1525,11 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Logged-out visitors, past events and other requests get no form; an error shows only on its own event.
+	 * Logged-out visitors, past or canceled events and other requests get no form.
 	 *
-	 * @since TBD
+	 * An error shows only on its own event.
+	 *
+	 * @since 0.37.0
 	 * @covers ::submit_rsvp_without_javascript
 	 *
 	 * @return void
@@ -1322,6 +1584,15 @@ class Test_Rsvp extends Base {
 		);
 
 		wp_set_current_user( $this->factory()->user->create() );
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+
+		$this->assertSame(
+			$markup,
+			$instance->submit_rsvp_without_javascript( $markup, $block ),
+			'A canceled event is left alone.'
+		);
+
+		( new Event_Status( $post_id ) )->set( 'scheduled' );
 		( new Event( $post_id ) )->save_datetimes(
 			array(
 				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 week' ) ),
@@ -1340,7 +1611,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Calls the helpers directly, so their coverage is traced.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::join_rsvp_form
 	 * @covers ::submit_rsvp_status
 	 * @covers ::get_rsvp_form

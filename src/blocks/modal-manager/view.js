@@ -6,7 +6,7 @@ import { getElement, store, withSyncEvent } from '@wordpress/interactivity';
 /**
  * Query arg that opens a modal on page load, as `Modal_Manager::OPEN_QUERY_ARG`.
  *
- * @since TBD
+ * @since 0.37.0
  * @type {string}
  */
 const OPEN_QUERY_ARG = 'gatherpress_modal';
@@ -84,7 +84,7 @@ function labelModalByVisibleHeading( modal, modalContent ) {
  *
  * A modal without a custom name is named after its visible heading first.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLDialogElement} modal The modal element.
  *
@@ -273,7 +273,7 @@ const { actions } = store( 'gatherpress', {
 		 * The dialog spans the viewport behind the modal's content, so a
 		 * click that lands on the dialog itself is a click outside the content.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param {MouseEvent} event The click event.
 		 *
@@ -298,7 +298,7 @@ const { actions } = store( 'gatherpress', {
 		 * status closes instead, so openModal() can show it when its status
 		 * shows.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @return {void}
 		 */

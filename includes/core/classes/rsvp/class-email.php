@@ -3,7 +3,7 @@
  * RSVP confirmation emails.
  *
  * @package GatherPress\Core\Rsvp
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -22,7 +22,7 @@ use GatherPress\Core\Utility;
  * who RSVPs without an account gets a link that confirms their RSVP. Mailer
  * queues and sends it.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-import-type Recipient from Mailer
  * @phpstan-import-type Payload from Mailer
@@ -37,7 +37,7 @@ final class Email {
 	/**
 	 * The Mailer type for RSVP confirmation emails.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -46,7 +46,7 @@ final class Email {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->register_mail_types();
@@ -55,7 +55,7 @@ final class Email {
 	/**
 	 * Tell Mailer who the confirmation email goes to and what it says.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -74,7 +74,7 @@ final class Email {
 	/**
 	 * Queue the confirmation email for an RSVP.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $comment_id The RSVP comment ID.
 	 *
@@ -87,7 +87,7 @@ final class Email {
 	/**
 	 * Get the person a queued confirmation email goes to.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $payload The queued email: its `comment_id`.
 	 * @phpstan-param Payload $payload
@@ -120,7 +120,7 @@ final class Email {
 	 * then rather than when the RSVP was made. Mailer only composes for a
 	 * recipient it is about to send to, so counting recipients creates none.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *

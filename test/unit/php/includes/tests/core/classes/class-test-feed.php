@@ -205,7 +205,7 @@ class Test_Feed extends Base {
 	public function test_handle_events_feed_query_with_type_parameter(): void {
 		// Mock the request URI for events feed with type=past.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
-		$_GET['type']           = 'past';
+		$this->set_url_params( array( 'type' => 'past' ) );
 
 		// Create a mock query for event feed.
 		$query = $this->createMock( WP_Query::class );
@@ -220,7 +220,6 @@ class Test_Feed extends Base {
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
-		unset( $_GET['type'] );
 	}
 
 	/**
@@ -233,8 +232,6 @@ class Test_Feed extends Base {
 	 * @return void
 	 */
 	public function test_handle_topic_feed_query(): void {
-		unset( $_GET['type'] );
-
 		$query = $this->createMock( WP_Query::class );
 		$query->method( 'is_main_query' )->willReturn( true );
 		$query->method( 'is_feed' )->willReturn( true );
@@ -279,7 +276,7 @@ class Test_Feed extends Base {
 	 * @return void
 	 */
 	public function test_handle_topic_feed_query_with_past_type(): void {
-		$_GET['type'] = 'past';
+		$this->set_url_params( array( 'type' => 'past' ) );
 
 		$query = $this->createMock( WP_Query::class );
 		$query->method( 'is_main_query' )->willReturn( true );
@@ -293,8 +290,6 @@ class Test_Feed extends Base {
 			);
 
 		$this->instance->handle_events_feed_query( $query );
-
-		unset( $_GET['type'] );
 	}
 
 	/**
@@ -307,7 +302,7 @@ class Test_Feed extends Base {
 	 * @return void
 	 */
 	public function test_handle_topic_feed_query_with_non_past_type(): void {
-		$_GET['type'] = 'future';
+		$this->set_url_params( array( 'type' => 'future' ) );
 
 		$query = $this->createMock( WP_Query::class );
 		$query->method( 'is_main_query' )->willReturn( true );
@@ -321,8 +316,6 @@ class Test_Feed extends Base {
 			);
 
 		$this->instance->handle_events_feed_query( $query );
-
-		unset( $_GET['type'] );
 	}
 
 	/**
@@ -1184,7 +1177,7 @@ class Test_Feed extends Base {
 
 		// Set up the environment to simulate a feed request with type=past.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
-		$_GET['type']           = 'past';
+		$this->set_url_params( array( 'type' => 'past' ) );
 
 		// Ensure wp_rewrite is initialized with feed_base.
 		if ( ! isset( $wp_rewrite->feed_base ) ) {
@@ -1213,7 +1206,6 @@ class Test_Feed extends Base {
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
-		unset( $_GET['type'] );
 		delete_option( 'gatherpress_settings' );
 	}
 }

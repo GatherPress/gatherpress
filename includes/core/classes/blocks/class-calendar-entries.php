@@ -3,7 +3,7 @@
  * Renders the Calendar Entries block.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -23,7 +23,7 @@ use WP_Post;
  * Renders the entries of one calendar day: the entry template once for each post of the day,
  * with that post's context. Its filters are added while an entry renders and removed after it.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Calendar_Entries {
 
@@ -35,7 +35,7 @@ final class Calendar_Entries {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/calendar-entries';
@@ -45,7 +45,7 @@ final class Calendar_Entries {
 	 *
 	 * The same class as General_Block::SCREEN_READER_CLASS.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const SCREEN_READER_CLASS = 'gatherpress--screen-reader-text';
@@ -53,7 +53,7 @@ final class Calendar_Entries {
 	/**
 	 * ID of the event whose entry renders now; 0 between entries.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	private int $current_post_id = 0;
@@ -61,7 +61,7 @@ final class Calendar_Entries {
 	/**
 	 * Post type of the event whose entry renders now; '' between entries.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	private string $current_post_type = '';
@@ -69,7 +69,7 @@ final class Calendar_Entries {
 	/**
 	 * Span data of the event whose entry renders now; empty between entries.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<string, mixed>
 	 */
 	private array $current_span_data = array();
@@ -77,7 +77,7 @@ final class Calendar_Entries {
 	/**
 	 * Whether the template of the entry that renders now shows a Post Title outside the modal.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	private bool $current_shows_post_title = false;
@@ -85,7 +85,7 @@ final class Calendar_Entries {
 	/**
 	 * Current modal nesting depth to distinguish triggers from modal-content.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	private int $modal_depth = 0;
@@ -93,7 +93,7 @@ final class Calendar_Entries {
 	/**
 	 * Number of entry templates that render now, more than 1 for a calendar inside an entry.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	private int $render_depth = 0;
@@ -104,7 +104,7 @@ final class Calendar_Entries {
 	 * The block needs no hooks: `render.php` calls {@see self::render()}
 	 * directly, and the entry filters are added only while an entry renders.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 	}
@@ -114,7 +114,7 @@ final class Calendar_Entries {
 	 *
 	 * Called from the block's render.php.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 * @param WP_Block             $block      Block instance.
@@ -163,7 +163,7 @@ final class Calendar_Entries {
 	/**
 	 * Extract block attributes from parsed block safely.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Block $block Block instance.
 	 *
@@ -183,7 +183,7 @@ final class Calendar_Entries {
 	/**
 	 * Build CSS custom properties for timed event placement.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $span_data Multi-day span descriptors.
 	 *
@@ -207,7 +207,7 @@ final class Calendar_Entries {
 	/**
 	 * Read an integer from span data.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $span_data Multi-day span descriptors.
 	 * @param string               $key       Key to read.
@@ -222,7 +222,7 @@ final class Calendar_Entries {
 	/**
 	 * Build combined style attribute for an entry wrapper.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $inline_styles Base inline styles from block attributes.
 	 * @param array<string, mixed> $span_data     Span data.
@@ -255,7 +255,7 @@ final class Calendar_Entries {
 	/**
 	 * Render a single entry with its innerBlocks content.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int                  $post_id   Post ID.
 	 * @param WP_Block             $block     The Calendar Entries block instance.
@@ -295,7 +295,7 @@ final class Calendar_Entries {
 	/**
 	 * Render entry inner template while managing global post state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Post              $post      Post object.
 	 * @param WP_Block             $block     Calendar Entries block instance.
@@ -334,7 +334,7 @@ final class Calendar_Entries {
 	/**
 	 * Build CSS class list from span data.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $span_data Multi-day span descriptors.
 	 * @param int                  $row_span  Row span count.
@@ -375,7 +375,7 @@ final class Calendar_Entries {
 	/**
 	 * Build data-* attributes for entry markup.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $span_data Multi-day span descriptors.
 	 * @param int                  $row_span  Row span count.
@@ -401,7 +401,7 @@ final class Calendar_Entries {
 	/**
 	 * Build Interactivity API directives for synchronized hover/focus.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID.
 	 *
@@ -421,7 +421,7 @@ final class Calendar_Entries {
 	/**
 	 * Check whether a block is a modal or the content of a modal.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $parsed_block Block data.
 	 *
@@ -436,7 +436,7 @@ final class Calendar_Entries {
 	/**
 	 * Track when modal rendering begins.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param mixed                $pre_render   Pre-render value.
 	 * @param array<string, mixed> $parsed_block Block data.
@@ -454,7 +454,7 @@ final class Calendar_Entries {
 	/**
 	 * Track when modal rendering ends.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $block_content Rendered HTML.
 	 * @param array<string, mixed> $parsed_block  Block data.
@@ -472,7 +472,7 @@ final class Calendar_Entries {
 	/**
 	 * Check whether the entry that renders now is a multi-day or all-day event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True for a multi-day or all-day event.
 	 */
@@ -489,7 +489,7 @@ final class Calendar_Entries {
 	 * outside the modal, so the title stays as the trigger. Inside modal-content the full date
 	 * renders normally.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $block_content Rendered block HTML.
 	 *
@@ -516,7 +516,7 @@ final class Calendar_Entries {
 	 * only the outermost entry adds and removes the filters. So the rest of
 	 * the outer entry still has its event, its filters and its modal depth.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<int, array<string, mixed>> $inner_blocks Parsed blocks of the entry template.
 	 * @param int                              $post_id      Event post ID.
@@ -562,7 +562,7 @@ final class Calendar_Entries {
 			 * action fires once for each entry, so a multi-day event fires it once
 			 * for each of its visible days.
 			 *
-			 * @since TBD
+			 * @since 0.37.0
 			 *
 			 * @param int                              $post_id      Event post ID.
 			 * @param string                           $post_type    Event post type.
@@ -594,7 +594,7 @@ final class Calendar_Entries {
 	 * needs no time. Without it, the Event Date link is the trigger and must stay, and it gets
 	 * the hidden title. Each filter checks the template of the entry that renders now.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -613,7 +613,7 @@ final class Calendar_Entries {
 	/**
 	 * Remove the filters that add_entry_filters() added.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -632,7 +632,7 @@ final class Calendar_Entries {
 	 *
 	 * Hooked to render_block_context only while an entry renders.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $context Block context.
 	 *
@@ -661,7 +661,7 @@ final class Calendar_Entries {
 	/**
 	 * Get the screen reader text that says which day of a multi-day event an entry shows.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string For example ", day 2 of 5", or an empty string for a one-day event.
 	 */
@@ -683,7 +683,7 @@ final class Calendar_Entries {
 	/**
 	 * Add screen reader text to an element before its first closing tag of a type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $block_content Rendered block HTML.
 	 * @param string $text          Screen reader text.
@@ -720,7 +720,7 @@ final class Calendar_Entries {
 	 * Hooked to render_block_core/post-title only while an entry renders. A Post Title inside
 	 * the modal does not change, because the modal shows the full dates.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $block_content Rendered core/post-title block HTML.
 	 *
@@ -753,7 +753,7 @@ final class Calendar_Entries {
 	 * Hooked to render_block_gatherpress/event-date only while an entry
 	 * renders. It acts only when the template shows no Post Title.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string              $block_content Rendered gatherpress/event-date block HTML.
 	 * @param array<mixed, mixed> $parsed_block  Parsed gatherpress/event-date block.
@@ -779,7 +779,7 @@ final class Calendar_Entries {
 	 * Other code can call the_title with any types, so the arguments are
 	 * checked, not typed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param mixed $title Title from the_title.
 	 * @param mixed $id    Post ID from the_title.
@@ -820,7 +820,7 @@ final class Calendar_Entries {
 	 * so the first `</a>` closes that link. Without a link, or without a
 	 * title, the content is returned unchanged.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string              $block_content   Rendered gatherpress/event-date block HTML.
 	 * @param array<mixed, mixed> $parsed_block    Parsed gatherpress/event-date block.
@@ -873,7 +873,7 @@ final class Calendar_Entries {
 	 * A Post Title inside gatherpress/modal does not count: the modal stays
 	 * hidden until the trigger opens it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $blocks Parsed blocks of the entry template.
 	 *
@@ -904,7 +904,7 @@ final class Calendar_Entries {
 	/**
 	 * Resolve a preset or inline color value from attributes or styles.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes  Block attributes.
 	 * @param array<mixed>         $style_color Inline color style array.
@@ -933,7 +933,7 @@ final class Calendar_Entries {
 	/**
 	 * Get a nested array from the style attribute, for example style.color.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 * @param string               ...$keys    Keys below style, outermost first.
@@ -953,7 +953,7 @@ final class Calendar_Entries {
 	/**
 	 * Extract color styles from attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 *
@@ -982,7 +982,7 @@ final class Calendar_Entries {
 	/**
 	 * Extract border styles from attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 *
@@ -1008,7 +1008,7 @@ final class Calendar_Entries {
 	/**
 	 * Extract shadow style from attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 *
@@ -1032,7 +1032,7 @@ final class Calendar_Entries {
 	/**
 	 * Extract spacing styles from attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 *
@@ -1052,7 +1052,7 @@ final class Calendar_Entries {
 	/**
 	 * Builds CSS styles and classnames for an entry using wp_style_engine_get_styles.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 *
@@ -1107,7 +1107,7 @@ final class Calendar_Entries {
 	 * to render the calendar-entries template once per event, with that event's
 	 * postId/postType injected via the filter set up by the caller.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<int, array<string, mixed>> $parsed_blocks Parsed inner blocks (the template).
 	 *

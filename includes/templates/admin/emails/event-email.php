@@ -11,6 +11,9 @@
  * @param string $message  Optional message content for the email.
  * @param bool   $show_rsvp_button Optional. Whether to render the RSVP button. Defaults to true,
  *                                 so a caller that omits it keeps the button.
+ * @param bool   $show_online_link    Optional. Whether to show an online event's link. Defaults to false.
+ * @param bool   $show_calendar_links Optional. Whether to show add to calendar links. Defaults to false.
+ * @param string $rsvp_button_label   Optional. The RSVP button's text. Defaults to "RSVP Now".
  */
 
 // Exit if accessed directly.
@@ -32,6 +35,13 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 // An email about a spot the attendee already holds, such as a waiting list
 // promotion, passes false so the button does not read as "RSVP again".
 $gatherpress_show_rsvp_button = $show_rsvp_button ?? true;
+$gatherpress_rsvp_button_text = $rsvp_button_label ?? __( 'RSVP Now', 'gatherpress' );
+
+// Only emails to attendees, such as the reminder, show the online link.
+$gatherpress_online_link = ! empty( $show_online_link ) && $gatherpress_event->is_online()
+	? (string) get_post_meta( $event_id, 'gatherpress_online_event_link', true )
+	: '';
+$gatherpress_calendars   = ! empty( $show_calendar_links ) ? $gatherpress_event->get_calendar_links() : array();
 ?>
 
 <!DOCTYPE html>
@@ -92,6 +102,26 @@ $gatherpress_show_rsvp_button = $show_rsvp_button ?? true;
 			</p>
 		<?php endif; ?>
 
+		<!-- Online Link -->
+		<?php if ( '' !== $gatherpress_online_link ) : ?>
+			<p style="text-align: center;">
+				<?php esc_html_e( 'Online:', 'gatherpress' ); ?>
+				<a href="<?php echo esc_url( $gatherpress_online_link ); ?>"><?php echo esc_html( $gatherpress_online_link ); ?></a>
+			</p>
+		<?php endif; ?>
+
+		<!-- Add to Calendar -->
+		<?php if ( ! empty( $gatherpress_calendars ) ) : ?>
+			<p style="text-align: center;">
+				<?php esc_html_e( 'Add to calendar:', 'gatherpress' ); ?>
+				<?php foreach ( $gatherpress_calendars as $gatherpress_calendar ) : ?>
+					<a href="<?php echo esc_url( $gatherpress_calendar['link'] ?? $gatherpress_calendar['download'] ?? '' ); ?>" style="margin: 0 4px;">
+						<?php echo esc_html( $gatherpress_calendar['name'] ); ?>
+					</a>
+				<?php endforeach; ?>
+			</p>
+		<?php endif; ?>
+
 		<!-- RSVP Button: only when registration is still open. -->
 		<?php
 		if (
@@ -103,7 +133,7 @@ $gatherpress_show_rsvp_button = $show_rsvp_button ?? true;
 			?>
 			<div style="text-align: center; margin-top: 20px;">
 				<a href="<?php echo esc_url( $gatherpress_rsvp_url ); ?>" style="background-color: #0a58ca; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">
-					<?php esc_html_e( 'RSVP Now', 'gatherpress' ); ?>
+					<?php echo esc_html( $gatherpress_rsvp_button_text ); ?>
 				</a>
 			</div>
 		<?php endif; ?>

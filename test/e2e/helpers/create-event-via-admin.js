@@ -16,13 +16,7 @@ async function createEventWithRSVP( page ) {
 	await page.goto( `${ adminUrl }/post-new.php?post_type=gatherpress_event` );
 	await page.waitForLoadState( 'load' );
 
-	// Dismiss any modals that may appear (welcome guide, etc).
-	// The simplest approach is to press Escape multiple times.
-	await page.waitForTimeout( 1000 );
-	await page.keyboard.press( 'Escape' );
-	await page.waitForTimeout( 300 );
-	await page.keyboard.press( 'Escape' );
-	await page.waitForTimeout( 300 );
+	// The welcome guide is turned off in global-setup.js.
 
 	// Wait for editor to be ready.
 	await page.waitForSelector( '.edit-post-layout, .editor-styles-wrapper' );

@@ -80,32 +80,22 @@ test.describe( '#1607 datetime picker year-down regression', () => {
 			);
 			await page.waitForLoadState( 'load' );
 
-			// Dismiss any first-run modal (welcome guide, and historically
-			// the pattern picker before this test seeded content).
-			//
-			// Escape-then-fixed-timeout used to be enough, but it raced the
-			// modal whenever the editor loaded slowly, and unminified
-			// scripts under SCRIPT_DEBUG made losing that race routine.
-			// Wait for the overlay to actually detach instead. The loop
-			// covers modals that stack.
-			const modalOverlay = page
-				.locator( '.components-modal__screen-overlay' )
-				.first();
-
-			for ( let attempt = 0; 3 > attempt; attempt++ ) {
-				const isOpen = await modalOverlay
-					.isVisible()
-					.catch( () => false );
-
-				if ( ! isOpen ) {
-					break;
-				}
-
-				await page.keyboard.press( 'Escape' );
-				await modalOverlay
-					.waitFor( { state: 'hidden', timeout: 5000 } )
-					.catch( () => {} );
-			}
+			// Turn off the welcome guide through the preferences store, the
+			// same way editPost() in @wordpress/e2e-test-utils-playwright
+			// does. Checking for the modal and pressing Escape raced it: the
+			// guide often opened after the check and then blocked every
+			// click, so this test failed its first attempt on every CI run.
+			await page.waitForFunction(
+				() => window.wp?.data?.select( 'core/preferences' ),
+			);
+			await page.evaluate( () => {
+				window.wp.data
+					.dispatch( 'core/preferences' )
+					.set( 'core/edit-post', 'welcomeGuide', false );
+			} );
+			await expect(
+				page.locator( '.components-modal__screen-overlay' ),
+			).toHaveCount( 0 );
 
 			// Make sure the Event settings panel is open. WP usually opens
 			// it by default on first load, but a previous visit could have

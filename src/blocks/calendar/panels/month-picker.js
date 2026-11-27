@@ -18,7 +18,7 @@ import { calculateTargetDate } from '../utils/date-utils';
  * Renders a month select and a year input. Both controls stay in place
  * when the value changes, so keyboard focus is not lost.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props               - Component props.
  * @param {string}   props.selectedMonth - Currently selected month ("YYYY-MM"), or '' for the current month.

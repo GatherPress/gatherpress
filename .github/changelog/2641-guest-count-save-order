@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Keep the newest RSVP change when an older save reaches the server after it, such as a guest count saved as the page is left, or a status change made right after a guest count.

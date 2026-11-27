@@ -80,11 +80,18 @@ const { state } = store( 'gatherpress', {
 				}
 			}
 
+			// Set when the form falls back to a regular submission, so the page is already loading.
+			let submittedWithoutAjax = false;
+
 			const makeRequest = async ( isRetry = false ) => {
 				const nonce = await getNonce();
 				if ( ! nonce ) {
 					// If we can't get a nonce, fall back to regular form submission.
-					state.rsvpForm.isSubmitting = false;
+					// The guard and the loading state stay on while the page
+					// loads, so a second press cannot send the form again.
+					// initRsvpForm() clears them if the browser brings the
+					// page back from its back/forward cache.
+					submittedWithoutAjax = true;
 					form.submit();
 					return;
 				}
@@ -113,6 +120,12 @@ const { state } = store( 'gatherpress', {
 
 			try {
 				const result = await makeRequest();
+
+				// The fallback submission has no result to report, and no error
+				// may show while the page loads its response.
+				if ( submittedWithoutAjax ) {
+					return;
+				}
 
 				if ( result?.success ) {
 					// Handle blocks with form visibility attributes.
@@ -193,8 +206,8 @@ const { state } = store( 'gatherpress', {
 					error,
 				);
 
-				// Let the form submit normally as a fallback.
-				state.rsvpForm.isSubmitting = false;
+				// Let the form submit normally as a fallback. The guard stays
+				// on, as in the no-nonce fallback above.
 				form.submit();
 				return;
 			}
@@ -220,10 +233,26 @@ const { state } = store( 'gatherpress', {
 			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;
 
+			// A fallback submission leaves the guard and the loading state on
+			// while the page loads. When the browser restores this page from
+			// its back/forward cache, this callback does not run again, so
+			// make the form usable here.
+			window.addEventListener( 'pageshow', ( event ) => {
+				if ( ! event.persisted ) {
+					return;
+				}
+
+				state.rsvpForm.isSubmitting = false;
+				form
+					.querySelector( '.gatherpress-submit-button' )
+					?.classList.remove( 'gatherpress--is-loading' );
+			} );
+
 			// Check if this is a success page (form was just submitted).
 			const urlParams = new URLSearchParams( window.location.search );
 			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
 			const isPast = 'past' === form.dataset.gatherpressEventState;
+			const isCanceled = 'canceled' === form.dataset.gatherpressEventState;
 
 			// Set initial visibility for blocks based on their attributes and current state.
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
@@ -240,12 +269,20 @@ const { state } = store( 'gatherpress', {
 					visibility = {};
 				}
 
-				const { onSuccess, whenPast } = visibility;
+				const { onSuccess, whenPast, whenCanceled } = visibility;
 
 				let shouldShow = null; // null = default (always visible)
 
-				// When event is past, check whenPast (takes precedence when past).
-				if ( isPast && whenPast ) {
+				if ( isCanceled ) {
+					// A canceled event takes no RSVPs, so blocks tied to the RSVP flow hide by default.
+					if ( whenCanceled ) {
+						shouldShow = 'show' === whenCanceled;
+					} else if ( onSuccess || whenPast ) {
+						shouldShow = false;
+					}
+				} else if ( 'show' === whenCanceled ) {
+					shouldShow = false;
+				} else if ( isPast && whenPast ) {
 					shouldShow = 'show' === whenPast;
 				} else if ( ! isPast && whenPast && ! onSuccess ) {
 					// When not past but block has ONLY whenPast setting (no onSuccess).

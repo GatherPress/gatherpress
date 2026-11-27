@@ -31,7 +31,7 @@ if ( ! isset( $name, $label, $option, $value, $choices, $custom, $custom_name, $
 }
 
 $gatherpress_value    = (string) $value;
-$gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
+$gatherpress_disabled = ! empty( $disabled );
 $gatherpress_formats  = array_column( $choices, 'format' );
 
 // A saved format the list does not offer is a custom one, which is also how
@@ -61,7 +61,7 @@ $gatherpress_fallback = ! empty( $disabled ) ? $gatherpress_value : '';
 					name="<?php echo esc_attr( $name ); ?>"
 					value="<?php echo esc_attr( $gatherpress_choice['format'] ); ?>"
 					<?php checked( $gatherpress_choice['format'], $gatherpress_value ); ?>
-					<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>
+					<?php disabled( $gatherpress_disabled ); ?>
 				/>
 				<span class="gatherpress-format-field__example"><?php echo esc_html( $gatherpress_choice['example'] ); ?></span>
 				<code class="gatherpress-format-field__code"><?php echo esc_html( $gatherpress_choice['format'] ); ?></code>
@@ -82,7 +82,7 @@ $gatherpress_fallback = ! empty( $disabled ) ? $gatherpress_value : '';
 				name="<?php echo esc_attr( $name ); ?>"
 				value="<?php echo esc_attr( $custom ); ?>"
 				<?php checked( $gatherpress_is_custom ); ?>
-				<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>
+				<?php disabled( $gatherpress_disabled ); ?>
 			/>
 			<?php esc_html_e( 'Custom:', 'gatherpress' ); ?>
 		</label>
@@ -93,7 +93,7 @@ $gatherpress_fallback = ! empty( $disabled ) ? $gatherpress_value : '';
 			name="<?php echo esc_attr( $custom_name ); ?>"
 			value="<?php echo esc_attr( $gatherpress_value ); ?>"
 			aria-label="<?php esc_attr_e( 'Custom format', 'gatherpress' ); ?>"
-			<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>
+			<?php disabled( $gatherpress_disabled ); ?>
 		/>
 	</p>
 	<?php

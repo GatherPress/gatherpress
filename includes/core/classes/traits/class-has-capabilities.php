@@ -3,7 +3,7 @@
  * The Has_Capabilities trait gives a class the capabilities checked against its posts.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Traits;
@@ -22,7 +22,7 @@ use WP_REST_Request;
  * the shared ones on `Capability`. A class that needs its own declares the
  * method itself, and a method declared in the class wins over the trait's.
  *
- * @since TBD
+ * @since 0.37.0
  */
 trait Has_Capabilities {
 
@@ -33,7 +33,7 @@ trait Has_Capabilities {
 	 * resolves against the post's own type. A class overrides this method to
 	 * use its own capability.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The capability, checked together with a post ID.
 	 */
@@ -48,7 +48,7 @@ trait Has_Capabilities {
 	 * resolves against the post's own type. A class overrides this method to
 	 * use its own capability.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The capability, checked together with a post ID.
 	 */

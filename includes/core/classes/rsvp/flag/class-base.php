@@ -131,7 +131,8 @@ abstract class Base {
 				 * `$flag` with that flag class's `SLUG`, for example
 				 * `Check_In::SLUG` to act on a check-in. It does not fire on a
 				 * repeat, a failed write, or when an overlapping request stored
-				 * the flag first.
+				 * the flag first. A check-in state fires it after the removed
+				 * action for the state it replaces.
 				 *
 				 * @since 0.36.0
 				 *
@@ -205,7 +206,8 @@ abstract class Base {
 			 * Every flag fires this, so code reacting to one flag compares `$flag`
 			 * with that flag class's `SLUG`, for example `Check_In::SLUG` to act
 			 * on a removed check-in. It does not fire on a repeat, a failed write,
-			 * or when the RSVP itself is deleted.
+			 * or when the RSVP itself is deleted. A check-in state being replaced
+			 * fires it before the added action for the new state.
 			 *
 			 * @since 0.36.0
 			 *

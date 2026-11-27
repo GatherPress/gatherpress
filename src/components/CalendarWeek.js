@@ -82,7 +82,7 @@ function annotateDayPosts( day, colIndex, week, totalCols ) {
  * is memoized per-week so inactive preview rows keep their context reference
  * and bail out of re-rendering during unrelated editor state updates.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props                     Component props.
  * @param {Array}    props.week                Week day entries.

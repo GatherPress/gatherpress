@@ -3,7 +3,7 @@
  * The days of the week of a calendar.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -19,14 +19,14 @@ use DateTimeZone;
  *
  * The first day of the week, the weekend days, and the days of the week a calendar shows.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Week {
 
 	/**
 	 * Lowercase English slugs of the days of the week, from Sunday (0) to Saturday (6).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var list<string>
 	 */
 	const DAY_SLUGS = array( 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday' );
@@ -36,7 +36,7 @@ final class Week {
 	 *
 	 * 2024-01-07 12:00:00 UTC.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const REFERENCE_SUNDAY = 1704628800;
@@ -44,7 +44,7 @@ final class Week {
 	/**
 	 * The first day of the week (0 = Sunday, 1 = Monday, etc.).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $start_of_week;
@@ -52,7 +52,7 @@ final class Week {
 	/**
 	 * The days of the week that are weekend days (0 = Sunday, ..., 6 = Saturday).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var list<int>
 	 */
 	public readonly array $weekend_days;
@@ -63,7 +63,7 @@ final class Week {
 	 * Reads the first day of the week from the site settings, and the weekend days from the
 	 * `gatherpress_calendar_weekend_days` filter.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param bool $show_weekends Whether the calendar shows weekend days.
 	 */
@@ -77,7 +77,7 @@ final class Week {
 	/**
 	 * Creates the week of a calendar from its block attributes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Calendar block attributes.
 	 *
@@ -96,7 +96,7 @@ final class Week {
 	 * to match local cultural and regional norms. Filtered values that are not days 0 to 6, and
 	 * repeated days, are dropped, so the column count matches the days that are hidden.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<int> Day-of-week integers (0 = Sunday, 1 = Monday, ..., 6 = Saturday).
 	 */
@@ -114,7 +114,7 @@ final class Week {
 		 * - Iran: Friday (5) as the sole official weekend day.
 		 * - Nepal: Saturday (6) as the sole official weekend day.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int[] $weekend_days Array of day numbers where 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
 		 *
@@ -143,7 +143,7 @@ final class Week {
 	/**
 	 * Checks whether a day of the week is a weekend day.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $day_of_week Day of week (0 = Sunday through 6 = Saturday).
 	 *
@@ -156,7 +156,7 @@ final class Week {
 	/**
 	 * Gets the days of the week the calendar shows, in order from the first day of the week.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<int> Days of the week (0 = Sunday through 6 = Saturday).
 	 */
@@ -177,7 +177,7 @@ final class Week {
 	/**
 	 * Gets the translated short names of the days of the week the calendar shows.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<string> Translated day names, like "Mon".
 	 */
@@ -195,7 +195,7 @@ final class Week {
 	/**
 	 * Gets the first day of the week of a date.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param DateTimeImmutable $date Target date.
 	 *
@@ -213,7 +213,7 @@ final class Week {
 	 * Without a day to show, when every day is a hidden weekend day, the weeks run from their
 	 * first to their last day.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param DateTimeImmutable $date  A date in the first week.
 	 * @param int               $count Number of weeks.
@@ -246,7 +246,7 @@ final class Week {
 	 * A row that does not start on Monday spans two ISO weeks. Its fourth day
 	 * is always in the ISO week that holds most of the row, so that one is used.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $week_days Day entries of the row.
 	 *

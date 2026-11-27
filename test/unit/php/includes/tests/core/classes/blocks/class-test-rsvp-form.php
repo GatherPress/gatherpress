@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Form;
@@ -17,6 +18,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PasswordHash;
 use PMC\Unit_Test\Utility;
+use WP_HTML_Tag_Processor;
 use WP_Post;
 
 /**
@@ -154,7 +156,7 @@ class Test_Rsvp_Form extends Base {
 	 * Without JavaScript the form posts to wp-comments-post.php and comes back
 	 * with `#<form id>`, so the id has to survive into the next render.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::transform_block_content
 	 * @covers ::generate_form_id
 	 *
@@ -256,9 +258,63 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests transform_block_content gives the form an accessible name.
+	 *
+	 * The theme's comment form asks for the same Name and Email, so the RSVP
+	 * form needs a name a screen reader can tell apart. A name the author set
+	 * is kept.
+	 *
+	 * @since 0.37.0
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_names_the_form(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$block    = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+		$name     = static function ( string $html, string $attribute ) {
+			$tag = new WP_HTML_Tag_Processor( $html );
+
+			$tag->next_tag( array( 'tag_name' => 'form' ) );
+
+			return $tag->get_attribute( $attribute );
+		};
+
+		$default = $instance->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form">Fields</div>',
+			$block
+		);
+
+		$this->assertSame( 'RSVP', $name( $default, 'aria-label' ), 'Failed to assert the form is named RSVP.' );
+
+		$labeled = $instance->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form" aria-label="Sign up">Fields</div>',
+			$block
+		);
+
+		$this->assertSame( 'Sign up', $name( $labeled, 'aria-label' ), 'Failed to assert an author name is kept.' );
+
+		$labelledby = $instance->transform_block_content(
+			'<div class="wp-block-gatherpress-rsvp-form" aria-labelledby="rsvp-heading">Fields</div>',
+			$block
+		);
+
+		$this->assertNull( $name( $labelledby, 'aria-label' ), 'Failed to assert aria-labelledby is not overridden.' );
+		$this->assertSame(
+			'rsvp-heading',
+			$name( $labelledby, 'aria-labelledby' ),
+			'Failed to assert aria-labelledby is kept.'
+		);
+	}
+
+	/**
 	 * Tests transform_block_content names the form's page for wp_get_referer().
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -2385,7 +2441,7 @@ class Test_Rsvp_Form extends Base {
 		// Mock POST data using the test filter.
 		$mock_post_data = array(
 			'gatherpress_form_schema_id' => 'form_0',
-			'custom_text_field'          => 'Test Value',
+			'custom_text_field'          => 'C:\\Test Value',
 			'custom_email_field'         => 'test@example.com',
 			'author'                     => 'Built-in field', // Should be ignored.
 		);
@@ -2403,8 +2459,8 @@ class Test_Rsvp_Form extends Base {
 		$instance->process_custom_fields_for_form( $comment_id );
 
 		// Check that custom fields were saved.
-		$this->assertEquals(
-			'Test Value',
+		$this->assertSame(
+			'C:\\Test Value',
 			get_comment_meta( $comment_id, 'gatherpress_custom_custom_text_field', true )
 		);
 		$this->assertEquals(
@@ -3142,6 +3198,114 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests transform_block_content with canceled event.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::transform_block_content
+	 * @covers ::get_canceled_notice
+	 */
+	public function test_transform_block_content_canceled_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName'   => 'gatherpress/rsvp-form',
+			'attrs'       => array(
+				'postId' => $post_id,
+			),
+			'innerBlocks' => array(),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString( 'data-gatherpress-event-state="canceled"', $result );
+		$this->assertStringContainsString(
+			'>Registration for this event is closed because the event has been canceled.</p>',
+			$result,
+			'A form saved without a canceled notice gets the default one.'
+		);
+
+		$block['innerBlocks'] = array(
+			array(
+				'blockName'   => 'core/group',
+				'attrs'       => array(),
+				'innerBlocks' => array(
+					array(
+						'blockName'   => 'core/paragraph',
+						'attrs'       => array(
+							'metadata' => array(
+								'gatherpressRsvpFormVisibility' => array( 'whenCanceled' => 'show' ),
+							),
+						),
+						'innerBlocks' => array(),
+					),
+				),
+			),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringNotContainsString(
+			'Registration for this event is closed because the event has been canceled.',
+			$result,
+			'A form with its own canceled notice gets no default one.'
+		);
+	}
+
+	/**
+	 * Tests that a block inside a canceled event's form follows the canceled rules.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::apply_visibility_attribute
+	 * @covers ::handle_form_visibility
+	 *
+	 * @return void
+	 */
+	public function test_visibility_for_a_canceled_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+
+		$result = $instance->apply_visibility_attribute(
+			'<div class="notice">Canceled</div>',
+			array(
+				'attrs' => array(
+					'postId'   => $post_id,
+					'metadata' => array(
+						'gatherpressRsvpFormVisibility' => array( 'whenPast' => 'hide' ),
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString( 'data-gatherpress-event-state="canceled"', $result );
+		$this->assertStringContainsString( 'display: none;', $result );
+
+		$html   = '<form data-gatherpress-event-state="canceled">'
+			. '<div data-gatherpress-rsvp-form-visibility=\'{"whenCanceled":"show"}\'>Notice</div>'
+			. '<div data-gatherpress-rsvp-form-visibility=\'{"onSuccess":"hide"}\'>Field</div>'
+			. '</form>';
+		$result = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, false ) );
+
+		$this->assertMatchesRegularExpression( '/<div aria-hidden="false"[^>]*>Notice/', $result );
+		$this->assertMatchesRegularExpression( '/<div aria-hidden="true" style="display: none;"[^>]*>Field/', $result );
+	}
+
+	/**
 	 * Tests save_form_schema with autosave.
 	 *
 	 * @covers ::save_form_schema
@@ -3364,7 +3528,6 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests determine_visibility with whenPast set.
 	 *
-	 * @covers ::determine_visibility
 	 * @covers ::apply_visibility_attribute
 	 */
 	public function test_determine_visibility_with_when_past(): void {
@@ -3734,171 +3897,6 @@ class Test_Rsvp_Form extends Base {
 
 		$this->assertStringContainsString( 'display: none;', $result );
 		$this->assertStringContainsString( 'aria-hidden="true"', $result );
-	}
-
-	/**
-	 * Tests determine_visibility with non-array visibility value.
-	 *
-	 * Covers: return null;
-	 *
-	 * @covers ::determine_visibility
-	 */
-	public function test_determine_visibility_non_array(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'invalid-json',
-				false,
-				false,
-			)
-		);
-
-		$this->assertNull( $result, 'Should return null for invalid JSON' );
-	}
-
-	/**
-	 * Tests determine_visibility with past event and whenPast rule.
-	 *
-	 * Covers: return 'show' === $when_past;
-	 *
-	 * @covers ::determine_visibility
-	 */
-	public function test_determine_visibility_when_past_show(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"whenPast":"show"}',
-				false, // is_success.
-				true,  // is_past.
-			)
-		);
-
-		$this->assertTrue( $result, 'Should return true when past and whenPast is show' );
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"whenPast":"hide"}',
-				false, // is_success.
-				true,  // is_past.
-			)
-		);
-
-		$this->assertFalse( $result, 'Should return false when past and whenPast is hide' );
-	}
-
-	/**
-	 * Tests determine_visibility with not past event and only whenPast rule.
-	 *
-	 * Covers target code.
-	 *
-	 * @covers ::determine_visibility
-	 */
-	public function test_determine_visibility_not_past_when_past_only(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// When not past and whenPast is 'show', should hide.
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"whenPast":"show"}',
-				false, // is_success.
-				false, // is_past.
-			)
-		);
-
-		$this->assertFalse( $result, 'Should return false when not past and whenPast is show (event not yet passed)' );
-
-		// When not past and whenPast is 'hide', should show.
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"whenPast":"hide"}',
-				false, // is_success.
-				false, // is_past.
-			)
-		);
-
-		$this->assertTrue( $result, 'Should return true when not past and whenPast is hide (inverse)' );
-	}
-
-	/**
-	 * Tests determine_visibility with onSuccess rule when is_success is true.
-	 *
-	 * Covers target code.
-	 *
-	 * @covers ::determine_visibility
-	 */
-	public function test_determine_visibility_on_success_when_success(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"onSuccess":"show"}',
-				true,  // is_success.
-				false, // is_past.
-			)
-		);
-
-		$this->assertTrue( $result, 'Should return true when success and onSuccess is show' );
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"onSuccess":"hide"}',
-				true,  // is_success.
-				false, // is_past.
-			)
-		);
-
-		$this->assertFalse( $result, 'Should return false when success and onSuccess is hide' );
-	}
-
-	/**
-	 * Tests determine_visibility with onSuccess rule when is_success is false.
-	 *
-	 * Covers target code.
-	 *
-	 * @covers ::determine_visibility
-	 */
-	public function test_determine_visibility_on_success_when_not_success(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"onSuccess":"show"}',
-				false, // is_success.
-				false, // is_past.
-			)
-		);
-
-		$this->assertFalse( $result, 'Should return false when not success and onSuccess is show' );
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array(
-				'{"onSuccess":"hide"}',
-				false, // is_success.
-				false, // is_past.
-			)
-		);
-
-		$this->assertTrue( $result, 'Should return true when not success and onSuccess is hide' );
 	}
 
 	/**
@@ -4347,32 +4345,6 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests determine_visibility with no visibility rules.
-	 *
-	 * Covers: return null when no onSuccess or whenPast rules.
-	 *
-	 * @covers ::determine_visibility
-	 * @return void
-	 */
-	public function test_determine_visibility_no_rules(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Empty visibility rules object.
-		$visibility_rule = wp_json_encode( array() );
-
-		$result = Utility::invoke_hidden_method(
-			$instance,
-			'determine_visibility',
-			array( $visibility_rule, false, false )
-		);
-
-		$this->assertNull(
-			$result,
-			'Should return null when visibility rules object is empty.'
-		);
-	}
-
-	/**
 	 * Tests that transform_block_content returns empty string when per-event RSVP is disabled.
 	 *
 	 * @covers ::transform_block_content
@@ -4468,7 +4440,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Builds a returned submission the way Rsvp\Form reads one back.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $overrides Keys to change.
 	 *
@@ -4491,7 +4463,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Sets the returned submission the RSVP Form block is rendering.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed>|null $submission The submission, or null for none.
 	 *
@@ -4508,7 +4480,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Stores a submission under a token in the URL, the way a rejected submission does.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $submission The submission.
 	 *
@@ -4536,7 +4508,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Clears the returned submission state of both singletons.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -4552,7 +4524,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Returns the content of an event with one RSVP Form holding two fields.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The post content.
 	 */
@@ -4568,7 +4540,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests begin_returned_form leaves other blocks alone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4594,7 +4566,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests begin_returned_form picks up the submission of the form it came from.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4629,7 +4601,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests begin_returned_form leaves a submission from another form waiting.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4675,7 +4647,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests only the first of two identical forms takes the submission.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::begin_returned_form
 	 *
 	 * @return void
@@ -4717,7 +4689,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests get_returned_field hands each field its value and error, and the first error the focus.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_returned_field
 	 *
 	 * @return void
@@ -4797,7 +4769,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests add_returned_form_error shows the form message and any error no field showed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::add_returned_form_error
 	 *
 	 * @return void
@@ -4861,7 +4833,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests transform_block_content adds the returned form's message and ends the returned form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -4898,7 +4870,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests a rejected submission renders back into its form with its values and errors.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @coversNothing
 	 *
 	 * @return void

@@ -12,6 +12,7 @@ import NO_STATUS from '@src/blocks/rsvp/templates/no-status';
 import NOT_ATTENDING from '@src/blocks/rsvp/templates/not-attending';
 import WAITING_LIST from '@src/blocks/rsvp/templates/waiting-list';
 import PAST from '@src/blocks/rsvp/templates/past';
+import CANCELED from '@src/blocks/rsvp/templates/canceled';
 
 describe( 'RSVP Button with Modal templates', () => {
 	it( 'exports an object with all template keys', () => {
@@ -22,6 +23,7 @@ describe( 'RSVP Button with Modal templates', () => {
 		expect( RSVP_BUTTON_WITH_MODAL_TEMPLATES ).toHaveProperty( 'waiting_list' );
 		expect( RSVP_BUTTON_WITH_MODAL_TEMPLATES ).toHaveProperty( 'not_attending' );
 		expect( RSVP_BUTTON_WITH_MODAL_TEMPLATES ).toHaveProperty( 'past' );
+		expect( RSVP_BUTTON_WITH_MODAL_TEMPLATES ).toHaveProperty( 'canceled' );
 	} );
 
 	it( 'maps no_status key to NO_STATUS template', () => {
@@ -44,10 +46,14 @@ describe( 'RSVP Button with Modal templates', () => {
 		expect( RSVP_BUTTON_WITH_MODAL_TEMPLATES.past ).toBe( PAST );
 	} );
 
-	it( 'has exactly 5 template keys', () => {
+	it( 'maps canceled key to CANCELED template', () => {
+		expect( RSVP_BUTTON_WITH_MODAL_TEMPLATES.canceled ).toBe( CANCELED );
+	} );
+
+	it( 'has exactly 6 template keys', () => {
 		const keys = Object.keys( RSVP_BUTTON_WITH_MODAL_TEMPLATES );
 
-		expect( keys.length ).toBe( 5 );
+		expect( keys.length ).toBe( 6 );
 	} );
 
 	it( 'all template values are arrays', () => {

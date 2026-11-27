@@ -13,7 +13,7 @@ import { useRef } from '@wordpress/element';
  * fully tears down and rebuilds whenever its `blocks` prop's reference
  * changes) causing unnecessary, visible re-renders across the whole grid.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {*} value Value to stabilize.
  *

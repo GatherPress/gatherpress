@@ -42,6 +42,7 @@ The subsystem segment names a single area of the plugin. The current set:
 | `site_message_*` | Messages sent from the Email page in the Events menu. |
 | `settings_*` | Admin settings UI surfaces. |
 | `shadow_*` | Shadow taxonomies (`_<post_type>`) auto-registered for `gatherpress-shadow-source` CPTs and the wiring that attaches them to event-bearing CPTs. |
+| `query_loop_*` | GatherPress's Query Loop handling: the `WP_Query` arguments built for event, shadow-source and calendar Query Loops. |
 | `template_*` | Theme-override-aware template path resolution shared across subsystems (see `Utility::locate_template()`). |
 
 When adding a hook in a subsystem that's not on this list, add the subsystem

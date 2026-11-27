@@ -2,7 +2,7 @@
  * Calendar Day Block Registration
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -14,6 +14,7 @@ import metadata from './block.json';
 import Edit from './edit';
 import save from './save';
 import './style.scss';
+import './filter-layout';
 
 // The gatherpress/calendar-day binding source, which reads the Date Format, is in
 // calendar/bindings.js. A second registration here would win, and ignore the format.

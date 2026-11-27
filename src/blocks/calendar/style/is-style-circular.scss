@@ -1,13 +1,16 @@
 /* ======================================================================
     BLOCK STYLE: Circular
-    Giant bold white cutout numerals with entries floating above.
+    Giant bold theme-contrast numerals; days with entries show a small numeral above them.
     ====================================================================== */
 
 .wp-block-gatherpress-calendar.is-style-circular {
+	color: var(--wp--preset--color--contrast, #000);
+
 	--gatherpress-calendar-column-gap: clamp(0.5rem, 2vw, 1rem);
 	--gatherpress-calendar-header-bg: transparent;
 	--gatherpress-calendar-header-color: var(--wp--preset--color--primary, currentColor);
 	--gatherpress-calendar-day-bg: color-mix(in srgb, currentcolor 8%, transparent);
+	--gatherpress-calendar-day-color: var(--wp--preset--color--contrast, #000);
 	--gatherpress-calendar-day-has-posts-border: transparent;
 	--gatherpress-calendar-day-today-outline: transparent;
 	--gatherpress-calendar-day-today-color: var(--wp--preset--color--base, #fff);
@@ -30,6 +33,9 @@
 		}
 
 		td {
+			// A circle clips its content, so a span shows as a pill in each day.
+			--gatherpress-calendar-span-reach: 0px;
+
 			position: relative;
 			overflow: hidden;
 			align-self: center;
@@ -43,7 +49,7 @@
 			justify-content: center;
 			transition: background-color 0.2s ease, box-shadow 0.2s ease;
 
-			/* Giant bold white cutout day number filling the background */
+			/* Giant bold theme-contrast day number filling the background on days without entries */
 			.gatherpress-calendar__day-number {
 				position: absolute;
 				inset: 0;
@@ -58,12 +64,11 @@
 				font-weight: 900;
 				line-height: 1;
 				letter-spacing: -0.05em;
-				color: var(--wp--preset--color--base, #fff);
 				pointer-events: none;
 				user-select: none;
 			}
 
-			/* Entries float on top of the cutout numeral */
+			/* Entries sit above the background of the circle */
 			.wp-block-gatherpress-calendar-entries {
 				position: relative;
 				z-index: 1;
@@ -80,7 +85,7 @@
 					font-weight: 600;
 					font-size: clamp(0.6875rem, 1.2vw, 0.75rem);
 
-					/* Subtle halo ensures readability over the white cutout numeral */
+					/* A theme-base halo keeps text readable over the day background. */
 					text-shadow:
 						0 0 4px var(--wp--preset--color--base, #fff),
 						0 1px 2px var(--wp--preset--color--base, #fff);
@@ -91,6 +96,30 @@
 				}
 			}
 
+			/*
+			 * On days with entries the numeral leaves the background and becomes a
+			 * small label above them, so entry text never crosses its strokes.
+			 */
+			&.gatherpress--has-posts .gatherpress-calendar__day-number {
+				position: static;
+				flex: none;
+				align-self: center;
+				margin-bottom: 0.125rem;
+				font-size: clamp(0.75rem, 2vw, 1.25rem) !important;
+				font-size: clamp(0.75rem, 2.5cqi, 1.25rem) !important;
+			}
+
+			// The dots style lets a day's spans out (see the day styles); a circle keeps them in.
+			&:has(.wp-block-gatherpress-calendar-entries.is-style-dots) {
+				--gatherpress-calendar-span-reach: 0px;
+
+				overflow: hidden;
+			}
+
+			.gatherpress-calendar__entry:is(.gatherpress--is-multi-day, .gatherpress--is-all-day) {
+				border-radius: var(--gatherpress-entry-track-radius, 4px);
+			}
+
 			&.gatherpress--is-empty {
 				background: transparent;
 				opacity: 0;
@@ -98,7 +127,14 @@
 			}
 
 			&.gatherpress--is-today {
-				background: color-mix(in srgb, currentcolor 23%, transparent);
+				--gatherpress-calendar-title-color: var(--wp--preset--color--base, #fff);
+				--gatherpress-calendar-time-color: var(--wp--preset--color--base, #fff);
+
+				background: color-mix(in srgb, currentcolor 85%, transparent);
+
+				.gatherpress-calendar__day-number {
+					color: var(--wp--preset--color--base, #fff);
+				}
 
 				.wp-block-gatherpress-calendar-entries .gatherpress-calendar__entry {
 					color: var(--wp--preset--color--base, #fff);
@@ -109,19 +145,47 @@
 						color: var(--wp--preset--color--base, #fff);
 					}
 				}
+
+				// The cell is mostly contrast here, so a dot needs a base border to stand out.
+				.wp-block-gatherpress-calendar-entries.is-style-dots .gatherpress-calendar__entry:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) .gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
+					border: 2px solid var(--wp--preset--color--base, #fff);
+				}
 			}
 		}
 	}
 
+	// Dots leave room for the number, so every day of a dots calendar shows it at
+	// one size, centered in the circle with its dots below.
+	&:has(.wp-block-gatherpress-calendar-entries.is-style-dots) .gatherpress-calendar__table td {
+		justify-content: center;
+
+		.wp-block-gatherpress-calendar-entries {
+			flex: none;
+			margin-block-start: 0.25rem;
+		}
+
+		.gatherpress-calendar__day-number {
+			position: static;
+			flex: none;
+			align-self: center;
+			margin-bottom: 0.125rem;
+			font-size: clamp(1rem, 3.5vw, 2rem) !important;
+			font-size: clamp(1rem, 4.5cqi, 2rem) !important;
+		}
+	}
+
 	/* ======================================================================
-		BLOCK STYLE: Dots (centered over the cutout number)
+		BLOCK STYLE: Dots (centered under the day number)
 		====================================================================== */
 	.wp-block-gatherpress-calendar-entries.is-style-dots {
 		justify-content: center;
 
 		.gatherpress-calendar__entry {
 			justify-content: center;
+		}
 
+		// A multi-day or all-day entry is a bar, so only a dot gets these.
+		.gatherpress-calendar__entry:not(.gatherpress--is-multi-day, .gatherpress--is-all-day) {
 			.gatherpress-modal--trigger-open:not(.wp-block-gatherpress-modal *) > * {
 				box-shadow: 0 2px 4px color-mix(in srgb, currentcolor 20%, transparent);
 

@@ -17,6 +17,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
+use GatherPress\Core\Rsvp\Flag\Rest_Api as Flag_Rest_Api;
 use GatherPress\Core\Rsvp\Flag\Setup as Flag_Setup;
 use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
@@ -82,9 +84,11 @@ final class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Abilities::get_instance();
+		Check_In_Registry::get_instance();
 		Cleanup::get_instance();
 		Email::get_instance();
 		Flag_Setup::get_instance();
+		Flag_Rest_Api::get_instance();
 		Form::get_instance();
 		Query::get_instance();
 		Provider_Registry::get_instance();
@@ -116,6 +120,7 @@ final class Setup {
 		// Priority 11 ensures post types are already registered (priority 10) before removing RSVP support.
 		add_action( 'init', array( $this, 'maybe_disable_rsvp' ), 11 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
+		add_action( 'transition_comment_status', array( $this, 'enforce_capacity_on_approval' ), 10, 3 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_set_rsvp_meta_default' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
 		add_filter( 'allowed_block_types_all', array( $this, 'filter_rsvp_block_types' ) );
@@ -253,7 +258,7 @@ final class Setup {
 	 * the event's RSVP session cookie if the magic link was clicked.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Reads the session cookie for `$post_id` instead of the URL token.
+	 * @since 0.37.0 Reads the session cookie for `$post_id` instead of the URL token.
 	 *
 	 * @param int $post_id The event's post ID. Defaults to the current post.
 	 *
@@ -290,6 +295,32 @@ final class Setup {
 		$comment_count = get_comment_count( $post_id );
 
 		return $comment_count['approved'];
+	}
+
+	/**
+	 * Keeps a newly approved RSVP within the event's capacity.
+	 *
+	 * Covers every way a pending RSVP gets approved: the email link, the
+	 * comments screen, and code or REST requests that approve comments.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string     $new_status The new comment status.
+	 * @param string     $old_status The old comment status.
+	 * @param WP_Comment $comment    The comment.
+	 *
+	 * @return void
+	 */
+	public function enforce_capacity_on_approval(
+		string $new_status,
+		string $old_status,
+		WP_Comment $comment
+	): void {
+		if ( 'approved' !== $new_status || 'approved' === $old_status || ! Rsvp::is_comment_type( $comment ) ) {
+			return;
+		}
+
+		( new Rsvp( (int) $comment->comment_post_ID ) )->enforce_capacity( (int) $comment->comment_ID );
 	}
 
 	/**
@@ -400,8 +431,57 @@ final class Setup {
 
 		$this->list_table = new List_Table( array( 'post_type' => $screen_post_type ) );
 
+		$this->redirect_after_action( $this->list_table );
 		$this->setup_rsvp_list_table_screen_options();
 		$this->enqueue_rsvp_admin_assets();
+	}
+
+	/**
+	 * Adds the action result args to the query args core removes.
+	 *
+	 * Core then takes them out of the address bar and out of the table's
+	 * paging and sorting links.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string[] $args Query args core removes.
+	 *
+	 * @return string[] The query args, with the result args.
+	 */
+	public function add_removable_result_args( array $args ): array {
+		return array_values( array_unique( array_merge( $args, List_Table::RESULT_ARGS ) ) );
+	}
+
+	/**
+	 * Processes a row or bulk action, then redirects to the list without it.
+	 *
+	 * Runs before the screen sends output, as edit-comments.php does. The
+	 * browser lands on a URL without the action and its nonce, so a reload
+	 * cannot repeat the action, and the counts on that URL become the notice
+	 * that says what happened.
+	 *
+	 * The result args are also made removable, so core takes them out of the
+	 * address bar and out of the table's paging and sorting links.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param List_Table $list_table The list table for the current screen.
+	 *
+	 * @return void
+	 */
+	protected function redirect_after_action( List_Table $list_table ): void {
+		add_filter( 'removable_query_args', array( $this, 'add_removable_result_args' ) );
+
+		$result = $list_table->process_bulk_action();
+
+		// A wp_redirect filter can cancel the redirect, which leaves the screen
+		// to render as before. Tests stop inside that filter.
+		if ( ! empty( $result ) && wp_safe_redirect( $list_table->get_action_redirect_url( $result ), 303 ) ) {
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+			// @codeCoverageIgnoreStart
+			exit;
+			// @codeCoverageIgnoreEnd
+		}
 	}
 
 	/**
@@ -469,7 +549,6 @@ final class Setup {
 	 * @return void
 	 */
 	public function render_rsvp_admin_page(): void {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
 			wp_die( esc_html__( 'Sorry, you are not allowed to manage RSVPs.', 'gatherpress' ), 403 );
 		}
@@ -478,8 +557,8 @@ final class Setup {
 		// current screen's post type; fall back to a default instance when
 		// called outside that flow (#1849).
 		$rsvp_table  = $this->list_table ?? new List_Table();
-		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
-		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
+		$search_term = Utility::get_request_input( 's' );
+		$status      = Utility::get_request_input( 'status' );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/rsvp/list-table.php', GATHERPRESS_CORE_PATH ),
@@ -489,10 +568,10 @@ final class Setup {
 				'status'      => $status,
 				'post_id'     => $rsvp_table->get_filtered_post_id(),
 				'responses'   => $rsvp_table->get_filtered_responses(),
+				'check_in'    => Check_In_Controls::get_filtered(),
 			),
 			true
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -533,8 +612,7 @@ final class Setup {
 	 * @return void
 	 */
 	public function add_rsvp_screen_options(): void {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_GET['page'] ) || Rsvp::COMMENT_TYPE !== $_GET['page'] ) {
+		if ( Rsvp::COMMENT_TYPE !== Utility::get_http_input( INPUT_GET, 'page' ) ) {
 			return;
 		}
 
@@ -552,7 +630,6 @@ final class Setup {
 		if ( $screen ) {
 			$screen->add_option( 'columns', array() );
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -661,7 +738,7 @@ final class Setup {
 	 * onto `send_headers`, since the page shows that person's RSVP (#1626).
 	 *
 	 * @since 0.34.0
-	 * @since TBD Starts a session cookie and redirects to the event without the token.
+	 * @since 0.37.0 Starts a session cookie and redirects to the event without the token.
 	 *
 	 * @return void
 	 */

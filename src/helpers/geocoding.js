@@ -34,6 +34,38 @@ const ADDRESS_SEARCH_MIN_QUERY_LENGTH_FALLBACK = 3;
 export const GEOCODE_LOCK_NAME = 'gatherpress/venue-geocoding';
 
 /**
+ * Notice ID for a failed geocode, so repeat failures replace one notice.
+ *
+ * @since 0.37.0
+ *
+ * @type {string}
+ */
+export const GEOCODE_NOTICE_ID = 'gatherpress_geocode_failed';
+
+/**
+ * Message shown when a geocode request fails.
+ *
+ * @since 0.37.0
+ *
+ * @param {boolean} unavailable Whether the geocoding service could not be reached.
+ *
+ * @return {string} The translated message.
+ */
+export function geocodeFailedMessage( unavailable = false ) {
+	if ( unavailable ) {
+		return __(
+			'The location service is unavailable, so the venue keeps its saved map location. Try again later.',
+			'gatherpress',
+		);
+	}
+
+	return __(
+		'The address could not be located, so the venue keeps its saved map location.',
+		'gatherpress',
+	);
+}
+
+/**
  * Minimum trimmed query length before calling the address search REST route.
  * Resolved dynamically from the block editor config (PHP source of truth),
  * with a 3-char fallback when the config value is not yet available.
@@ -172,6 +204,7 @@ export function primeGeocodeCache( address, latitude, longitude ) {
  * @return {Promise<Object>} Promise resolving to { latitude, longitude, error }.
  *                           On success: { latitude: string, longitude: string, error: null }
  *                           On error: { latitude: '', longitude: '', error: string }
+ *                           A failed request also sets `unavailable: true`.
  */
 export async function geocodeAddress( address ) {
 	if ( ! address || '' === address.trim() ) {
@@ -240,6 +273,7 @@ export async function geocodeAddress( address ) {
 				error:
 					error.message ||
 					__( 'Geocoding request failed.', 'gatherpress' ),
+				unavailable: true,
 			};
 		} finally {
 			geocodeInFlight.delete( trimmedAddress );

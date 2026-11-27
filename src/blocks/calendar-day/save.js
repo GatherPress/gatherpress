@@ -5,7 +5,7 @@
  * this save component preserves the InnerBlocks template structure.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { InnerBlocks } from '@wordpress/block-editor';

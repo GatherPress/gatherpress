@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -174,6 +175,33 @@ class Test_Form extends Base {
 		$this->assertTrue( $result['success'] );
 		$this->assertStringContainsString( 'RSVP has been submitted successfully', $result['message'] );
 		$this->assertGreaterThan( 0, $result['comment_id'] );
+	}
+
+	/**
+	 * Tests process_rsvp keeps a backslash in the attendee name.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_keeps_backslash_in_author(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$result = Form::get_instance()->process_rsvp(
+			array(
+				'post_id' => $post_id,
+				'author'  => 'D\\Angelo',
+				'email'   => 'dangelo@example.com',
+			)
+		);
+
+		$this->assertSame( 'D\\Angelo', get_comment( $result['comment_id'] )->comment_author );
 	}
 
 	/**
@@ -805,6 +833,39 @@ class Test_Form extends Base {
 	}
 
 	/**
+	 * Tests preprocess_rsvp_comment keeps a backslash in the attendee name.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_keeps_backslash_in_author(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$this->set_post_params(
+			array(
+				'author' => 'O\\Brien',
+				'email'  => 'obrien@example.com',
+			)
+		);
+
+		$result = Form::get_instance()->preprocess_rsvp_comment(
+			array( 'comment_post_ID' => $post_id )
+		);
+
+		$comment = get_comment( wp_insert_comment( $result ) );
+
+		$this->assertSame( 'O\\Brien', $comment->comment_author );
+		$this->assertSame( 'obrien@example.com', $comment->comment_author_email );
+	}
+
+	/**
 	 * Coverage for handle_rsvp_comment_post method.
 	 *
 	 * @covers ::handle_rsvp_comment_post
@@ -854,6 +915,79 @@ class Test_Form extends Base {
 		// Clean up.
 		unset( $_SERVER['REQUEST_METHOD'] );
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Submissions for the capacity test of handle_rsvp_comment_post.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @return array<string, array{0: string, 1: int, 2: int, 3: string}> Approval, capacity, guests, expected status.
+	 */
+	public function data_handle_rsvp_comment_post_capacity(): array {
+		return array(
+			'pending on a full event'            => array( '0', 1, 0, Status::ATTENDING->value ),
+			'approved on a full event'           => array( '1', 1, 0, Status::WAITING_LIST->value ),
+			'approved with room'                 => array( '1', 2, 0, Status::ATTENDING->value ),
+			'approved with guests over capacity' => array( '1', 2, 1, Status::WAITING_LIST->value ),
+		);
+	}
+
+	/**
+	 * Coverage for handle_rsvp_comment_post placing a submission against capacity.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @dataProvider data_handle_rsvp_comment_post_capacity
+	 * @covers ::handle_rsvp_comment_post
+	 *
+	 * @param string $approved The submission's approval value.
+	 * @param int    $capacity The event capacity.
+	 * @param int    $guests   The guests submitted.
+	 * @param string $expected The expected RSVP status.
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_comment_post_capacity(
+		string $approved,
+		int $capacity,
+		int $guests,
+		string $expected
+	): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_capacity', $capacity );
+		update_post_meta( $post_id, 'gatherpress_guest_limit', 1 );
+
+		$attendee = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $post_id,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => '1',
+				'user_id'          => $this->factory->user->create(),
+			)
+		);
+
+		wp_set_object_terms( $attendee, Status::ATTENDING->value, Status::TAXONOMY );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_approved'     => $approved,
+				'comment_author_email' => 'form@example.org',
+			)
+		);
+
+		$this->set_post_params( array( 'gatherpress_rsvp_form_guests' => (string) $guests ) );
+
+		Form::get_instance()->handle_rsvp_comment_post( $comment_id );
+
+		$this->assertSame(
+			$expected,
+			wp_get_object_terms( $comment_id, Status::TAXONOMY, array( 'fields' => 'slugs' ) )[0],
+			'Failed to assert the submission is placed against capacity.'
+		);
 	}
 
 	/**
@@ -1273,6 +1407,46 @@ class Test_Form extends Base {
 		);
 
 		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment with canceled event.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_canceled_event(): void {
+		$post    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$post_id = $post->ID;
+		$this->assertTrue( ( new Event_Status( $post_id ) )->set( 'canceled' ) );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'has been canceled' );
 		$instance->preprocess_rsvp_comment( $comment_data );
 
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
@@ -2886,7 +3060,7 @@ class Test_Form extends Base {
 
 		$data = array(
 			'gatherpress_form_schema_id' => $form_schema_id,
-			'custom_field_1'             => 'Test Value',
+			'custom_field_1'             => 'C:\\Test Value',
 			'custom_field_2'             => '42',
 		);
 
@@ -2901,7 +3075,7 @@ class Test_Form extends Base {
 		$custom_value_1 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true );
 		$custom_value_2 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_2', true );
 
-		$this->assertEquals( 'Test Value', $custom_value_1, 'Custom field 1 should be saved' );
+		$this->assertSame( 'C:\\Test Value', $custom_value_1, 'Custom field 1 should keep its backslash' );
 		$this->assertEquals( '42', $custom_value_2, 'Custom field 2 should be saved' );
 	}
 
@@ -3379,7 +3553,7 @@ class Test_Form extends Base {
 	/**
 	 * Clears the rejected submission the Form singleton keeps for the request.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -3393,7 +3567,7 @@ class Test_Form extends Base {
 	/**
 	 * Mocks the posted values and the referer of an RSVP Form submission.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, string> $post    Posted values keyed by name.
 	 * @param string|false          $referer The page the form was on, or false when unknown.
@@ -3420,7 +3594,7 @@ class Test_Form extends Base {
 	/**
 	 * Mocks the token of a returned submission in the URL.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $token The token.
 	 *
@@ -3440,7 +3614,7 @@ class Test_Form extends Base {
 	/**
 	 * Runs a callback expected to redirect, and returns where it went.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param callable $callback The callback.
 	 *
@@ -3486,7 +3660,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests a no-JavaScript submission missing a required answer goes back to its form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::preprocess_rsvp_comment
 	 * @covers ::return_to_form
 	 * @covers ::get_return_url
@@ -3564,7 +3738,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests a no-JavaScript duplicate RSVP goes back to its form with a form-level message.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::preprocess_rsvp_comment
 	 * @covers ::return_to_form
 	 *
@@ -3613,7 +3787,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests a cancelled redirect falls back to the error page.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::preprocess_rsvp_comment
 	 * @covers ::return_to_form
 	 *
@@ -3639,7 +3813,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests a submission naming a form schema the event no longer has keeps the error page.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::preprocess_rsvp_comment
 	 *
 	 * @return void
@@ -3678,7 +3852,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests get_return_values cuts each value to its field's length limit.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_return_values
 	 *
 	 * @return void
@@ -3737,7 +3911,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests return_to_form leaves the caller to show an error page when the form's page is unknown.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::return_to_form
 	 *
 	 * @return void
@@ -3759,7 +3933,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests get_return_url returns nothing when the page the form was on is unknown.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_return_url
 	 *
 	 * @return void
@@ -3777,7 +3951,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests get_return_url keeps the values the schema names, and replaces old return args.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_return_url
 	 *
 	 * @return void
@@ -3860,7 +4034,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests get_returned_submission reads the token's transient once per request.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_returned_submission
 	 * @covers ::read_returned_submission
 	 *
@@ -3911,7 +4085,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests get_returned_submission fills in what a stored submission lacks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::read_returned_submission
 	 *
 	 * @return void
@@ -3939,7 +4113,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests get_returned_submission ignores a malformed or expired token.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::read_returned_submission
 	 *
 	 * @return void
@@ -3962,7 +4136,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests consume_returned_submission deletes the transient, so it is shown once.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::consume_returned_submission
 	 *
 	 * @return void
@@ -3990,7 +4164,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests prevent_caching_returned_submission adds no-cache headers only to a returned form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prevent_caching_returned_submission
 	 *
 	 * @return void
@@ -4022,7 +4196,7 @@ class Test_Form extends Base {
 	/**
 	 * Tests handle_rsvp_comment_redirect drops the token of an earlier rejection.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::handle_rsvp_comment_redirect
 	 *
 	 * @return void

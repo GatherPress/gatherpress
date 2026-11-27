@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -50,7 +51,7 @@ final class Form {
 	/**
 	 * Query arg carrying the token of a rejected submission back to its form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const RETURN_QUERY_ARG = 'gatherpress_rsvp_form_error';
@@ -58,7 +59,7 @@ final class Form {
 	/**
 	 * Prefix of the transient holding a rejected submission's errors and values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const RETURN_TRANSIENT_PREFIX = 'gatherpress_rsvp_form_return_';
@@ -66,7 +67,7 @@ final class Form {
 	/**
 	 * Seconds a rejected submission waits for its form to load again.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const RETURN_EXPIRATION = 10 * MINUTE_IN_SECONDS;
@@ -76,7 +77,7 @@ final class Form {
 	 *
 	 * Matches the default length limit of a text field.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const RETURN_VALUE_MAX_LENGTH = 1000;
@@ -84,7 +85,7 @@ final class Form {
 	/**
 	 * The rejected submission this request returned to its form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var ReturnedSubmission|null
 	 */
 	private ?array $returned_submission = null;
@@ -92,7 +93,7 @@ final class Form {
 	/**
 	 * Whether the token in the URL has been looked up yet.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	private bool $returned_submission_read = false;
@@ -144,7 +145,7 @@ final class Form {
 	 * @return bool True if this is an RSVP form submission, false otherwise.
 	 */
 	public function is_rsvp_form_submission(): bool {
-		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		// INPUT_SERVER is unreliable under FastCGI.
 		$request_method = isset( $_SERVER['REQUEST_METHOD'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
 			: '';
@@ -153,7 +154,6 @@ final class Form {
 			! empty( Utility::get_http_input( INPUT_POST, 'comment_post_ID' ) ) &&
 			! empty( Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_id' ) )
 		);
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
 	/**
@@ -233,8 +233,31 @@ final class Form {
 			);
 		}
 
-		// Check if event has passed - prevent RSVPs to past events.
 		$event = new Event( $post_id );
+
+		// Prevent RSVPs to canceled events.
+		if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
+			$singular = Utility::post_type_label( 'singular_name', (string) get_post_type( $post_id ) );
+			wp_die(
+				esc_html(
+					sprintf(
+						/* translators: %1$s: Singular post type label, e.g. "event". */
+						__( 'Registration for this %1$s is closed because the %1$s has been canceled.', 'gatherpress' ),
+						strtolower( $singular )
+					)
+				),
+				esc_html(
+					sprintf(
+						/* translators: %s: Singular post type label, e.g. "Event". */
+						__( '%s Has Been Canceled', 'gatherpress' ),
+						$singular
+					)
+				),
+				400
+			);
+		}
+
+		// Check if event has passed - prevent RSVPs to past events.
 		if ( $event->has_event_past() ) {
 			$singular = Utility::post_type_label( 'singular_name', (string) get_post_type( $post_id ) );
 			wp_die(
@@ -303,10 +326,12 @@ final class Form {
 		) {
 			add_filter( 'pre_comment_approved', '__return_zero' );
 
+			// The comment data here is slashed, and wp_insert_comment() unslashes
+			// it, so the raw input is slashed to keep its backslashes.
 			$comment_data['user_id']              = 0;
 			$comment_data['comment_author_url']   = '';
-			$comment_data['comment_author']       = $author;
-			$comment_data['comment_author_email'] = $email;
+			$comment_data['comment_author']       = wp_slash( $author );
+			$comment_data['comment_author_email'] = wp_slash( $email );
 		}
 
 		return $comment_data;
@@ -343,7 +368,8 @@ final class Form {
 				),
 			);
 
-			// Add custom fields to data.
+			// Add custom fields to data. The field names are not known up front,
+			// so this walks $_POST instead of reading one name at a time.
 			foreach ( $_POST as $key => $value ) {
 				if ( str_starts_with( $key, 'gatherpress_custom_' ) ) {
 					$data[ $key ] = $value;
@@ -356,6 +382,9 @@ final class Form {
 
 			// Process all fields.
 			$this->process_fields( $comment_id, $data );
+
+			// A logged-in RSVP can be approved on creation, which fires no status change.
+			( new Rsvp( (int) get_comment( $comment_id )?->comment_post_ID ) )->enforce_capacity( $comment_id );
 
 			// The email creates the token when it goes out.
 			Email::get_instance()->queue_confirmation( $comment_id );
@@ -409,7 +438,7 @@ final class Form {
 	 * Returns without redirecting when the page the form was on is unknown,
 	 * so the caller can fall back to an error page.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int                   $post_id      The event post ID.
 	 * @param array<string, string> $field_errors Error messages keyed by field name.
@@ -441,7 +470,7 @@ final class Form {
 	 * token, and only the token goes in the URL, so a name or email address
 	 * never ends up in browser history or server logs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int                   $post_id      The event post ID.
 	 * @param array<string, string> $field_errors Error messages keyed by field name.
@@ -488,7 +517,7 @@ final class Form {
 	 * schema. Each value is cut to its field's length limit, 1000 characters
 	 * unless the field allows more, so a refused submission stays small.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $post_id        The event post ID.
 	 * @param string $form_schema_id The submitted form-schema id.
@@ -534,7 +563,7 @@ final class Form {
 	 * Looked up once per request, since the headers need it before the form
 	 * renders and deletes its transient.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return ReturnedSubmission|null The submission, or null when there is none.
 	 */
@@ -550,7 +579,7 @@ final class Form {
 	/**
 	 * Reads the rejected submission whose token is in the URL.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return ReturnedSubmission|null The submission, or null when the token is missing, malformed or expired.
 	 */
@@ -580,7 +609,7 @@ final class Form {
 	 * It is shown once, so a later visit to the same URL, from history or a
 	 * shared link, finds nothing.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -597,7 +626,7 @@ final class Form {
 	 * included, so no cache may keep a copy of it. Page cache plugins
 	 * look for `DONOTCACHEPAGE` rather than the headers.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, string|false> $headers The headers about to be sent.
 	 *
@@ -674,8 +703,10 @@ final class Form {
 			);
 		}
 
-		// Prepare comment data.
-		$comment_data = $this->prepare_comment_data( $post_id, $author, $email );
+		// Prepare comment data. wp_filter_comment() and wp_insert_comment()
+		// expect slashed data, as wp_new_comment() passes it, so slash it to
+		// keep backslashes.
+		$comment_data = wp_slash( $this->prepare_comment_data( $post_id, $author, $email ) );
 
 		// Run WordPress-native comment filters so sites can honor
 		// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
@@ -773,6 +804,7 @@ final class Form {
 		);
 
 		// Set remote IP if available.
+		// INPUT_SERVER is unreliable under FastCGI.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 
@@ -939,8 +971,9 @@ final class Form {
 			}
 
 			// Save the sanitized field value with prefix to avoid conflicts.
+			// update_comment_meta() unslashes, so slash to keep backslashes.
 			$meta_key = 'gatherpress_custom_' . sanitize_key( $field_name );
-			update_comment_meta( $comment_id, $meta_key, $sanitized_value );
+			update_comment_meta( $comment_id, $meta_key, wp_slash( $sanitized_value ) );
 		}
 	}
 
