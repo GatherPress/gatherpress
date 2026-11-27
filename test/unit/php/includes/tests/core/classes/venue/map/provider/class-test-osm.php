@@ -402,6 +402,45 @@ class Test_OSM extends Base {
 	}
 
 	/**
+	 * Filtered marker colors are checked, with the defaults as fallback.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::normalize_marker_colors
+	 *
+	 * @return void
+	 */
+	public function test_normalize_marker_colors(): void {
+		$osm = new OSM();
+
+		$this->assertSame(
+			OSM::DEFAULT_MARKER_COLORS,
+			Utility::invoke_hidden_method( $osm, 'normalize_marker_colors', array( 'oops' ) ),
+			'Failed to assert a value that is not an array keeps the defaults.'
+		);
+		$this->assertSame(
+			array(
+				'border'  => '#aabbcc',
+				'fill'    => '#0000ff',
+				'outline' => '#1e1e1e',
+				'center'  => '#ffffff',
+			),
+			Utility::invoke_hidden_method(
+				$osm,
+				'normalize_marker_colors',
+				array(
+					array(
+						'border'  => '#ABC',
+						'fill'    => '#0000FF',
+						'outline' => 'red',
+					),
+				)
+			),
+			'Failed to assert colors are expanded, lowercased and checked.'
+		);
+	}
+
+	/**
 	 * A six-digit hex color allocates its RGB color.
 	 *
 	 * @since TBD

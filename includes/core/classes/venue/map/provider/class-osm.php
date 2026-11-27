@@ -463,17 +463,31 @@ final class OSM extends Base {
 		 *     @type string $center  Dot in the middle. Default `#ffffff`.
 		 * }
 		 */
-		$filtered = apply_filters( 'gatherpress_static_map_marker_colors', self::DEFAULT_MARKER_COLORS );
-		$colors   = array();
+		return self::normalize_marker_colors(
+			apply_filters( 'gatherpress_static_map_marker_colors', self::DEFAULT_MARKER_COLORS )
+		);
+	}
 
-		if ( ! is_array( $filtered ) ) {
-			$filtered = self::DEFAULT_MARKER_COLORS;
-		}
+	/**
+	 * Check filtered marker colors, falling back to the defaults.
+	 *
+	 * A filter callback can return any type, so a result that is not an
+	 * array gives the default marker. Three-digit colors are expanded, so
+	 * `#fff` for a white part still matches the default.
+	 *
+	 * @since TBD
+	 *
+	 * @param mixed $filtered The value returned by the marker colors filter.
+	 *
+	 * @return array<string, string> Lowercase six-digit hex colors keyed like `DEFAULT_MARKER_COLORS`.
+	 */
+	private static function normalize_marker_colors( mixed $filtered ): array {
+		$filtered = is_array( $filtered ) ? $filtered : array();
+		$colors   = array();
 
 		foreach ( self::DEFAULT_MARKER_COLORS as $key => $default ) {
 			$color = is_string( $filtered[ $key ] ?? null ) ? (string) sanitize_hex_color( $filtered[ $key ] ) : '';
 
-			// Expand `#fff` to `#ffffff`, so a short default still matches the default.
 			$colors[ $key ] = $color
 				? strtolower( (string) preg_replace( '/^#(.)(.)(.)$/', '#$1$1$2$2$3$3', $color ) )
 				: $default;
