@@ -395,12 +395,14 @@ capability sees everything, anyone without it sees the masked version.
 
 Without the capability, a viewer gets:
 
-- **Anonymous response**: name "Anonymous", no email, no profile URL, no user
-  ID, and the default avatar. This applies to `get_comment()` readers
+- **Anonymous response**: name "Anonymous", no email, no profile URL, and the
+  default avatar. This applies to `get_comment()` readers
   (`Rsvp\Query::prepare_rsvp_comment()`), the comments REST `author` field
   (`Rsvp\Query::mask_anonymous_rsvp_rest_author()`), the RSVP response record
   (`Rsvp\Response\Serializer::to_array()`), and avatars
-  (`Blocks\Rsvp_Response::modify_avatar_for_gatherpress_rsvp()`).
+  (`Blocks\Rsvp_Response::modify_avatar_for_gatherpress_rsvp()`). The REST
+  `author` field and the response record also withhold the user ID, but a
+  `get_comment()` reader still gets the stored `user_id`.
 - **Response identified only by email**: name "Attendee" and no identifier, so
   the address is not published.
 

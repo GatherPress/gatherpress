@@ -603,31 +603,6 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
-	 * Creates an RSVP comment for a new user.
-	 *
-	 * @since TBD
-	 *
-	 * @param bool $anonymous Whether the responder asked to stay anonymous.
-	 *
-	 * @return array{0: int, 1: int} The user ID and the comment ID.
-	 */
-	private function create_rsvp_comment( bool $anonymous = false ): array {
-		$user_id    = $this->factory()->user->create();
-		$comment_id = $this->factory()->comment->create(
-			array(
-				'user_id'      => $user_id,
-				'comment_type' => 'gatherpress_rsvp',
-			)
-		);
-
-		if ( $anonymous ) {
-			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', '1' );
-		}
-
-		return array( $user_id, $comment_id );
-	}
-
-	/**
 	 * Tests that a regular RSVP gets the responder's own avatar from core.
 	 *
 	 * @since 0.33.0
@@ -664,6 +639,52 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
+	 * Tests that a viewer who can manage RSVPs sees an anonymous responder's avatar.
+	 *
+	 * @since 0.33.0
+	 * @covers ::modify_avatar_for_gatherpress_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_modify_avatar_for_gatherpress_rsvp_admin_view(): void {
+		list( $user_id, $comment_id ) = $this->create_rsvp_comment( true );
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame(
+			get_avatar_url( $user_id ),
+			get_avatar_url( get_comment( $comment_id ) ),
+			'Admin should see actual user avatar for anonymous RSVP'
+		);
+	}
+
+	/**
+	 * Tests avatar modification for non-RSVP comments.
+	 *
+	 * @since 0.33.0
+	 * @covers ::modify_avatar_for_gatherpress_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_modify_avatar_for_non_rsvp_comment(): void {
+		$instance   = Rsvp_Response::get_instance();
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'comment_type' => 'comment',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+		$args       = array( 'url' => 'original-url' );
+		$result     = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
+
+		$this->assertEquals(
+			'original-url',
+			$result['url'],
+			'Avatar URL should remain unchanged for non-RSVP comments'
+		);
+	}
+
+	/**
 	 * Tests that the masked avatar falls back to the default size when none is passed.
 	 *
 	 * @since TBD
@@ -684,26 +705,6 @@ class Test_Rsvp_Response extends Base {
 
 		$this->assertSame( get_avatar_url( '', array( 'force_default' => true ) ), $result['url'] );
 		$this->assertFalse( $result['found_avatar'] );
-	}
-
-	/**
-	 * Tests that a viewer who can manage RSVPs sees an anonymous responder's avatar.
-	 *
-	 * @since 0.33.0
-	 * @covers ::modify_avatar_for_gatherpress_rsvp
-	 *
-	 * @return void
-	 */
-	public function test_modify_avatar_for_gatherpress_rsvp_admin_view(): void {
-		list( $user_id, $comment_id ) = $this->create_rsvp_comment( true );
-
-		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
-
-		$this->assertSame(
-			get_avatar_url( $user_id ),
-			get_avatar_url( get_comment( $comment_id ) ),
-			'Admin should see actual user avatar for anonymous RSVP'
-		);
 	}
 
 	/**
@@ -747,29 +748,29 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
-	 * Tests avatar modification for non-RSVP comments.
+	 * Tests that an RSVP with no account and no email gets the site's default avatar.
 	 *
-	 * @since 0.33.0
+	 * @since TBD
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
 	 */
-	public function test_modify_avatar_for_non_rsvp_comment(): void {
-		$instance   = Rsvp_Response::get_instance();
+	public function test_modify_avatar_for_accountless_rsvp_uses_site_default(): void {
+		update_option( 'avatar_default', 'identicon' );
+
 		$comment_id = $this->factory()->comment->create(
 			array(
-				'comment_type' => 'comment',
+				'user_id'              => 0,
+				'comment_author_email' => '',
+				'comment_type'         => 'gatherpress_rsvp',
 			)
 		);
-		$comment    = get_comment( $comment_id );
-		$args       = array( 'url' => 'original-url' );
-		$result     = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
+		$url        = (string) get_avatar_url( get_comment( $comment_id ) );
 
-		$this->assertEquals(
-			'original-url',
-			$result['url'],
-			'Avatar URL should remain unchanged for non-RSVP comments'
-		);
+		delete_option( 'avatar_default' );
+
+		$this->assertStringContainsString( 'd=identicon', $url, 'The site default avatar should be used.' );
+		$this->assertStringNotContainsString( 'd=mm', $url, 'The mystery avatar should not be forced.' );
 	}
 
 	/**
@@ -1046,5 +1047,30 @@ class Test_Rsvp_Response extends Base {
 
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
+	}
+
+	/**
+	 * Creates an RSVP comment for a new user.
+	 *
+	 * @since TBD
+	 *
+	 * @param bool $anonymous Whether the responder asked to stay anonymous.
+	 *
+	 * @return array{0: int, 1: int} The user ID and the comment ID.
+	 */
+	private function create_rsvp_comment( bool $anonymous = false ): array {
+		$user_id    = $this->factory()->user->create();
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'user_id'      => $user_id,
+				'comment_type' => 'gatherpress_rsvp',
+			)
+		);
+
+		if ( $anonymous ) {
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', '1' );
+		}
+
+		return array( $user_id, $comment_id );
 	}
 }
