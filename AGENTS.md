@@ -279,7 +279,7 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
     - ✅ Good (in `GatherPress\Core\Event\Admin_List`): `use GatherPress\Core\Venue\Setup as Venue_Setup;` → `Venue_Setup::get_instance()`
     - ❌ Bad (silently shadows the local `Event\Setup`): `use GatherPress\Core\Venue\Setup;` → `Setup::get_instance()`
     - Within one subsystem (e.g. `Event\Admin_List` referencing `Event\Query`), no alias needed.
-- **Class body opens with a blank line**: Every `class|trait|interface Foo {` declaration is followed by an empty line before the first member, matching WordPress core's house style. Don't let the first docblock or `use` statement sit flush against the opening brace.
+- **Class body opens with a blank line**: Every `class|trait|interface Foo {` declaration is followed by an empty line before the first member, matching WordPress core's house style. Don't let the first docblock or `use` statement sit flush against the opening brace. This applies to test classes under `test/` too. PHPCS does not flag a missing blank line, so check new classes by eye.
     - ✅ Good:
 
         ```php
