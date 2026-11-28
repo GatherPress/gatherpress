@@ -813,4 +813,37 @@ class Test_Rules extends Base {
 		);
 		$this->assertTrue( $rules->change_from( $tomorrow, array( $new( $tomorrow ) ) ) );
 	}
+
+	/**
+	 * A row that fails to save puts the previous rows back and reports the failure.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::write
+	 * @covers ::replace_rows
+	 *
+	 * @return void
+	 */
+	public function test_write_restores_on_failure(): void {
+		$post_id = $this->event();
+		$rules   = ( new Event( $post_id ) )->rules();
+
+		$rules->replace( array( $this->row() ) );
+
+		$before = $this->stored( $post_id );
+		$calls  = 0;
+		$fail   = static function ( $check, $object_id, $meta_key ) use ( &$calls ) {
+			// The second row of the new write fails; the restore after it succeeds.
+			return Rules::META_KEY === $meta_key && 2 === ++$calls ? false : $check;
+		};
+
+		// Priority 11: after the rule guard at 10, which lets the write through.
+		add_filter( 'add_post_metadata', $fail, 11, 3 );
+		$result = $rules->replace( array( $this->row( array( 'starts_on' => '2027-01-08' ) ), $this->row() ) );
+		remove_filter( 'add_post_metadata', $fail, 11 );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'gatherpress_rules_not_saved', $result->get_error_code() );
+		$this->assertSame( $before, $this->stored( $post_id ), 'The schedule is as it was.' );
+	}
 }

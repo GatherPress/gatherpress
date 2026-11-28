@@ -143,7 +143,6 @@ final class Rules {
 	 * and the rules this change ends share one new change ID.
 	 *
 	 * @since TBD
-	 * @since TBD    Reads the persisted rules and checks the new rules' timezones too.
 	 *
 	 * @param string            $date The first local date of the new schedule, as `Y-m-d`. On a published
 	 *                                event it must be after today in the event's timezone and in each
@@ -370,7 +369,6 @@ final class Rules {
 	 * The event's saved date as a rule of one date, for an event without rules.
 	 *
 	 * @since TBD
-	 * @since TBD    Refuses a timed saved date with seconds, which a rule can't keep.
 	 *
 	 * @param string $change_id The change's ID.
 	 *
@@ -416,40 +414,65 @@ final class Rules {
 	 * Save rows as the event's rules, then move its saved dates to the series' first date.
 	 *
 	 * Rows that aren't valid rules, which a later version may have written,
-	 * are kept as they were.
+	 * are kept as they were. If a row can't be saved, the rows from before
+	 * are put back, so a failed write never leaves the schedule half written.
 	 *
 	 * @since TBD
-	 * @since TBD    Slashes the rows, so values with backslashes are kept.
 	 *
 	 * @param array<int, array<string, mixed>> $rows The rows, already validated.
 	 *
-	 * @return bool True once saved.
+	 * @return bool|WP_Error True once saved, or an error if the rows couldn't be saved.
 	 */
-	protected function write( array $rows ): bool {
-		$post_id = $this->event->post->ID ?? 0;
-		$unknown = array();
-
-		foreach ( (array) get_post_meta( $post_id, self::META_KEY, false ) as $row ) {
-			if ( null === Rule::from_meta( $row ) ) {
-				$unknown[] = $row;
-			}
-		}
+	protected function write( array $rows ): bool|WP_Error {
+		$post_id  = $this->event->post->ID ?? 0;
+		$previous = (array) get_post_meta( $post_id, self::META_KEY, false );
+		$unknown  = array_filter( $previous, static fn( mixed $row ): bool => null === Rule::from_meta( $row ) );
 
 		self::$writing[ $post_id ] = true;
 
 		try {
-			delete_post_meta( $post_id, self::META_KEY );
+			$saved = $this->replace_rows( $post_id, array_merge( array_values( $unknown ), $rows ) );
 
-			foreach ( array_merge( $unknown, $rows ) as $row ) {
-				// Slashed, since `add_post_meta()` unslashes.
-				add_post_meta( $post_id, self::META_KEY, wp_slash( $row ) );
+			if ( ! $saved ) {
+				$this->replace_rows( $post_id, $previous );
 			}
 		} finally {
 			unset( self::$writing[ $post_id ] );
 		}
 
 		$this->rules = null;
+
+		if ( ! $saved ) {
+			return new WP_Error(
+				'gatherpress_rules_not_saved',
+				__( 'The repeat rules could not be saved, so the schedule was left as it was.', 'gatherpress' )
+			);
+		}
+
 		$this->sync_saved_dates( $post_id );
+
+		return true;
+	}
+
+	/**
+	 * Replace the stored rows of the rule key.
+	 *
+	 * @since TBD
+	 *
+	 * @param int               $post_id The event's post ID.
+	 * @param array<int, mixed> $rows    The rows to store.
+	 *
+	 * @return bool True if every row was saved.
+	 */
+	protected function replace_rows( int $post_id, array $rows ): bool {
+		delete_post_meta( $post_id, self::META_KEY );
+
+		foreach ( $rows as $row ) {
+			// Slashed, since `add_post_meta()` unslashes.
+			if ( false === add_post_meta( $post_id, self::META_KEY, wp_slash( $row ) ) ) {
+				return false;
+			}
+		}
 
 		return true;
 	}
@@ -530,7 +553,6 @@ final class Rules {
 	 * so the date must be after the latest of them.
 	 *
 	 * @since TBD
-	 * @since TBD    Also checks the new rules' timezones.
 	 *
 	 * @param DateTimeImmutable                $date The local date.
 	 * @param array<int, array<string, mixed>> $rows The new rules, as validated meta rows.
