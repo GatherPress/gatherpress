@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
+use GatherPress\Core\Event\Rules;
 use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -846,5 +847,32 @@ class Test_Meta extends Base {
 		$this->assertSame( $meta, $hide( $at_protected ), 'An Editor sees the location.' );
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The repeat rule meta registers as read-only rows, hidden on protected events.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_registers_the_rule_meta(): void {
+		unregister_post_meta( Event::POST_TYPE, Rules::META_KEY );
+
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
+
+		$this->assertArrayHasKey( Rules::META_KEY, $meta );
+		$this->assertFalse( $meta[ Rules::META_KEY ]['single'], 'One meta row per rule.' );
+		$this->assertSame( 'object', $meta[ Rules::META_KEY ]['type'] );
+		$this->assertSame( '__return_false', $meta[ Rules::META_KEY ]['auth_callback'], 'Read-only for now.' );
+		$this->assertSame(
+			array( 'change_id', 'starts_on', 'ends_on', 'rrule', 'is_all_day', 'times', 'timezone', 'duration' ),
+			array_keys( $meta[ Rules::META_KEY ]['show_in_rest']['schema']['properties'] )
+		);
+		$this->assertContains( Rules::META_KEY, Meta::PASSWORD_PROTECTED_META, 'Rules reveal dates.' );
 	}
 }

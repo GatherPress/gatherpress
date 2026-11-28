@@ -40,6 +40,7 @@ The three RSVP taxonomies are on *comments*, not posts, because an RSVP is a com
 | `gatherpress_datetime_start_gmt`, `gatherpress_datetime_end_gmt` | UTC equivalents |
 | `gatherpress_timezone`, `gatherpress_show_timezone` | The event's zone, and whether to print it |
 | `gatherpress_is_all_day` | All-day events skip the time entirely |
+| `gatherpress_rule` | Repeat rules, one meta row per rule. See [Repeat rules](#repeat-rules) |
 | `gatherpress_enable_rsvp` | Whether RSVPs are open |
 | `gatherpress_enable_anonymous_rsvp` | Whether a person may hide their name |
 | `gatherpress_enable_open_rsvp` | Whether logged-out visitors may RSVP by email |
@@ -135,6 +136,35 @@ An event post is a series, and an occurrence is one of its dates. Without repeat
 - The static `Occurrences::recurrence_id( $start, $is_all_day )` builds a key: the local start as `Ymd\THis` (the RFC 5545 `RECURRENCE-ID` form), or the local date as `Ymd` for an all-day occurrence.
 
 Each occurrence carries its series post ID, its key, its start and end in the event's timezone, whether it lasts all day, and its status (an event status slug, so `is_canceled()` works per date). Today the one occurrence is read from the event's saved dates, in the event's own timezone rather than a viewer's preference, and takes the event's status. The `gatherpress_event_occurrences`, `gatherpress_event_occurrence_by_key` and `gatherpress_event_primary_occurrence` filters let repeat rules supply more dates without callers changing.
+
+### Repeat rules
+
+An event repeats when it has `gatherpress_rule` meta: one row per rule, read through `Event::rules()`. Once an event has rules, they decide its dates and the event's saved datetimes are not read for occurrences. An event without rules is a series of one, as above.
+
+```php
+array(
+	'change_id'  => 'b9e2…',                 // the schedule change that created the rule
+	'starts_on'  => '2026-12-11',             // local date, always a date of the series
+	'ends_on'    => null,                     // local date, inclusive; null means open-ended
+	'rrule'      => 'FREQ=MONTHLY;BYDAY=2FR', // the date pattern only; null means only starts_on
+	'is_all_day' => false,
+	'times'      => array( '20:00' ),         // local times of day; empty when all day
+	'timezone'   => 'America/New_York',
+	'duration'   => 120,                      // minutes; whole days of 1440 when all day
+)
+```
+
+`rrule` supports a strict subset of RFC 5545, listed in `Rules::FREQUENCIES` and `Rules::WEEKDAYS`:
+
+- `FREQ`: `DAILY`, `WEEKLY`, `MONTHLY` or `YEARLY`, with an optional `INTERVAL`
+- `BYDAY`: for `WEEKLY`, one or more weekdays. For `MONTHLY`, one ordinal weekday, `1` to `4` or `-1` for the last, such as `2FR`
+- `BYMONTHDAY`: for `MONTHLY`, `1` to `31`. A month without that day is skipped
+
+A rule ends on `ends_on`, so `UNTIL` and `COUNT` are not accepted. A part the pattern leaves out comes from `starts_on`: a weekly rule repeats on its weekday, a monthly one on its day of the month. A row that isn't a valid rule, or whose pattern can never produce a date after `starts_on`, is left out. `Rule::rrule()` returns the pattern in one canonical form.
+
+Each occurrence is built from its own local date and time in the rule's timezone, so a clock change on one date never shifts the dates after it. A time in a spring-forward gap starts after the gap, and its key uses that shifted start. An all-day occurrence ends at 23:59:59 local on its last day.
+
+The meta is read-only for now: it registers with `show_in_rest`, but nothing writes it except code calling `add_post_meta()`. Writing rules, keeping the series' span in the events table, and expanding dates in `WP_Query` come next, so lists and calendars still show a series by its saved dates.
 
 ## REST endpoints
 

@@ -56,6 +56,14 @@ final class Occurrences {
 	const MAX_UTC_OFFSET_HOURS = 14;
 
 	/**
+	 * Most occurrences one range returns.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const MAX_OCCURRENCES = 1000;
+
+	/**
 	 * The event's one occurrence without repeat rules, once worked out.
 	 *
 	 * False until it is, and null if the event has no start.
@@ -99,8 +107,21 @@ final class Occurrences {
 	 * @return Occurrence[] The occurrences.
 	 */
 	public function in_range( DateTimeInterface $from, DateTimeInterface $to ): array {
-		$single      = $this->single();
-		$occurrences = ( $single && $single->start < $to && $single->end >= $from ) ? array( $single ) : array();
+		$rules = $this->event->rules()->all();
+
+		if ( $rules ) {
+			$occurrences = array();
+
+			foreach ( $rules as $rule ) {
+				$from_rule   = $rule->occurrences( $from, $to, $this->post_id(), $this->status() );
+				$occurrences = array_merge( $occurrences, $from_rule );
+			}
+
+			$occurrences = array_slice( self::merge( $occurrences ), 0, self::MAX_OCCURRENCES );
+		} else {
+			$single      = $this->single();
+			$occurrences = ( $single && $single->start < $to && $single->end >= $from ) ? array( $single ) : array();
+		}
 
 		/**
 		 * Lets repeat rules supply an event's dates within a range.
@@ -140,8 +161,21 @@ final class Occurrences {
 	 * @return Occurrence|null The occurrence, or null if the event has none with that key.
 	 */
 	public function find( string $recurrence_id ): ?Occurrence {
-		$single     = $this->single();
-		$occurrence = ( $single && $single->recurrence_id === $recurrence_id ) ? $single : null;
+		$occurrence = null;
+		$rules      = $this->event->rules()->all();
+
+		foreach ( $rules as $rule ) {
+			$occurrence = $rule->find( $recurrence_id, $this->post_id(), $this->status() );
+
+			if ( $occurrence ) {
+				break;
+			}
+		}
+
+		if ( ! $rules ) {
+			$single     = $this->single();
+			$occurrence = ( $single && $single->recurrence_id === $recurrence_id ) ? $single : null;
+		}
 
 		/**
 		 * Lets repeat rules supply the occurrence for a key.
@@ -179,7 +213,8 @@ final class Occurrences {
 	 * @return Occurrence|null The occurrence, or null if the event has none.
 	 */
 	public function primary(): ?Occurrence {
-		$occurrence = $this->single();
+		$rules      = $this->event->rules()->all();
+		$occurrence = $rules ? $this->primary_from_rules( $rules ) : $this->single();
 
 		/**
 		 * Lets repeat rules pick a series' primary occurrence.
@@ -239,6 +274,84 @@ final class Occurrences {
 	}
 
 	/**
+	 * The primary occurrence of a series with rules.
+	 *
+	 * The earliest date that hasn't ended across the rules, or the latest one
+	 * that has when every date has ended.
+	 *
+	 * @since TBD
+	 *
+	 * @param Rule[] $rules The event's rules.
+	 *
+	 * @return Occurrence|null The occurrence, or null if the rules produce none.
+	 *
+	 * @throws Exception If a date cannot be built.
+	 */
+	protected function primary_from_rules( array $rules ): ?Occurrence {
+		$now      = new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) );
+		$upcoming = array();
+		$ended    = array();
+
+		foreach ( $rules as $rule ) {
+			$upcoming[] = $rule->next_occurrence( $now, $this->post_id(), $this->status() );
+			$ended[]    = $rule->previous_occurrence( $now, $this->post_id(), $this->status() );
+		}
+
+		$upcoming = self::merge( array_filter( $upcoming ) );
+
+		if ( $upcoming ) {
+			return $upcoming[0];
+		}
+
+		$ended = self::merge( array_filter( $ended ) );
+
+		return $ended ? end( $ended ) : null;
+	}
+
+	/**
+	 * Sort occurrences by start and count one that two rules both produce once.
+	 *
+	 * Occurrences with the same key and the same start are the same date. The
+	 * same key with different starts, from rules in different timezones, are
+	 * two dates, so both are kept.
+	 *
+	 * @since TBD
+	 *
+	 * @param Occurrence[] $occurrences The occurrences.
+	 *
+	 * @return Occurrence[] The occurrences in start order.
+	 */
+	protected static function merge( array $occurrences ): array {
+		$unique = array();
+
+		foreach ( $occurrences as $occurrence ) {
+			$unique[ $occurrence->recurrence_id . '|' . $occurrence->start->getTimestamp() ] ??= $occurrence;
+		}
+
+		$unique = array_values( $unique );
+
+		usort(
+			$unique,
+			static function ( Occurrence $a, Occurrence $b ): int {
+				return $a->start <=> $b->start;
+			}
+		);
+
+		return $unique;
+	}
+
+	/**
+	 * The status every occurrence takes for now: the event's status.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The event status slug.
+	 */
+	protected function status(): string {
+		return ( new Status( $this->post_id() ) )->get();
+	}
+
+	/**
 	 * The event's one occurrence without repeat rules, from its saved dates.
 	 *
 	 * The key and local times use the event's own timezone, not a viewer's
@@ -271,7 +384,7 @@ final class Occurrences {
 		$is_all_day = $this->event->is_all_day();
 
 		$key          = self::recurrence_id( $start, $is_all_day );
-		$status       = ( new Status( $this->post_id() ) )->get();
+		$status       = $this->status();
 		$this->single = new Occurrence( $this->post_id(), $key, $start, $end, $is_all_day, $status );
 
 		return $this->single;

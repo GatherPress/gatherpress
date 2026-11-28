@@ -13,6 +13,7 @@ use DateTimeZone;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Occurrence;
 use GatherPress\Core\Event\Occurrences;
+use GatherPress\Core\Event\Rules;
 use GatherPress\Core\Event\Status;
 use GatherPress\Tests\Base;
 
@@ -557,6 +558,172 @@ class Test_Occurrences extends Base {
 		$this->assertNull(
 			$this->occurrences( $post_id )->on_day( $this->utc( '2026-12-11' ) ),
 			'The original date no longer has it.'
+		);
+	}
+
+	/**
+	 * Add a rule row to an event.
+	 *
+	 * @since TBD
+	 *
+	 * @param int                  $post_id The event post ID.
+	 * @param array<string, mixed> $changes Fields to replace or add.
+	 *
+	 * @return void
+	 */
+	protected function add_rule( int $post_id, array $changes = array() ): void {
+		add_post_meta(
+			$post_id,
+			Rules::META_KEY,
+			array_merge(
+				array(
+					'starts_on' => '2026-12-11',
+					'rrule'     => 'FREQ=MONTHLY;BYDAY=2FR',
+					'times'     => array( '20:00' ),
+					'timezone'  => 'America/New_York',
+					'duration'  => 120,
+				),
+				$changes
+			)
+		);
+	}
+
+	/**
+	 * With rules, a range holds every date they produce, merged in start order.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::in_range
+	 * @covers ::merge
+	 * @covers ::status
+	 *
+	 * @return void
+	 */
+	public function test_in_range_with_rules(): void {
+		$post_id = $this->event();
+
+		$this->add_rule( $post_id );
+		$this->add_rule(
+			$post_id,
+			array(
+				'starts_on' => '2026-12-14',
+				'rrule'     => 'FREQ=WEEKLY;BYDAY=MO',
+				'ends_on'   => '2026-12-28',
+			)
+		);
+		// The same dates as the first rule: counted once.
+		$this->add_rule( $post_id );
+		// Same wall-clock key in another timezone: a different date, kept.
+		$this->add_rule(
+			$post_id,
+			array(
+				'rrule'    => null,
+				'timezone' => 'Europe/Berlin',
+			)
+		);
+
+		$keys = array_map(
+			static fn( Occurrence $o ): string => $o->recurrence_id . ' ' . $o->start->getTimezone()->getName(),
+			$this->occurrences( $post_id )->in_range( $this->utc( '2026-12-01' ), $this->utc( '2027-01-15' ) )
+		);
+
+		$this->assertSame(
+			array(
+				'20261211T200000 Europe/Berlin',
+				'20261211T200000 America/New_York',
+				'20261214T200000 America/New_York',
+				'20261221T200000 America/New_York',
+				'20261228T200000 America/New_York',
+				'20270108T200000 America/New_York',
+			),
+			$keys
+		);
+		$first = $this->occurrences( $post_id )->in_range( $this->utc( '2026-12-01' ), $this->utc( '2027-01-15' ) )[0];
+
+		$this->assertSame( 'scheduled', $first->status, 'Each date takes the event status.' );
+	}
+
+	/**
+	 * With rules, find looks a key up in them, not in the saved dates.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::find
+	 *
+	 * @return void
+	 */
+	public function test_find_with_rules(): void {
+		$post_id = $this->event();
+
+		$this->add_rule(
+			$post_id,
+			array(
+				'starts_on' => '2027-01-04',
+				'rrule'     => 'FREQ=WEEKLY;BYDAY=MO',
+			)
+		);
+		$this->add_rule( $post_id, array( 'starts_on' => '2027-01-08' ) );
+
+		$this->assertSame(
+			'20270208T200000',
+			$this->occurrences( $post_id )->find( '20270208T200000' )->recurrence_id
+		);
+		$this->assertSame(
+			'20270212T200000',
+			$this->occurrences( $post_id )->find( '20270212T200000' )->recurrence_id,
+			'A key only the second rule produces.'
+		);
+		$this->assertNull(
+			$this->occurrences( $post_id )->find( '20261211T200000' ),
+			'The saved date is not read once the event has rules.'
+		);
+	}
+
+	/**
+	 * With rules, the primary occurrence is the next one, or the last once all have ended.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::primary
+	 * @covers ::primary_from_rules
+	 *
+	 * @return void
+	 */
+	public function test_primary_with_rules(): void {
+		$upcoming = $this->event();
+		$today    = current_datetime();
+
+		$this->add_rule(
+			$upcoming,
+			array(
+				'starts_on' => $today->modify( '-30 days' )->format( 'Y-m-d' ),
+				'rrule'     => 'FREQ=DAILY;INTERVAL=7',
+				'timezone'  => 'UTC',
+				'times'     => array( '00:00' ),
+				'duration'  => 1,
+			)
+		);
+
+		$primary = $this->occurrences( $upcoming )->primary();
+
+		$this->assertNotNull( $primary );
+		$this->assertGreaterThanOrEqual( time(), $primary->end->getTimestamp(), 'The next date that has not ended.' );
+		$this->assertLessThanOrEqual( time() + 7 * DAY_IN_SECONDS, $primary->start->getTimestamp() );
+
+		$ended = $this->event();
+
+		$this->add_rule(
+			$ended,
+			array(
+				'starts_on' => '2020-01-10',
+				'ends_on'   => '2020-03-31',
+			)
+		);
+
+		$this->assertSame(
+			'20200313T200000',
+			$this->occurrences( $ended )->primary()->recurrence_id,
+			'Once every date has ended, the last one.'
 		);
 	}
 }

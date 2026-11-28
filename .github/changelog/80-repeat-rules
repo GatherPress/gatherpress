@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Events can now carry repeat rules in `gatherpress_rule` post meta, one row per rule, and `Event::occurrences()` expands them into every date of the series: daily, weekly, monthly (by day or by an ordinal weekday such as the second Friday) and yearly patterns, several times of day, all-day rules and per-rule timezones. `Event::rules()` reads them. Nothing writes rules yet, so sites see no change.

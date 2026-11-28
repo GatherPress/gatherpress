@@ -13,6 +13,7 @@ use DateTimeZone;
 // Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
 // Event::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event\Rules;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
@@ -3763,5 +3764,20 @@ class Test_Event extends Base {
 		$this->assertSame( '', $protected->get_public_venue_information()['address'], 'Nor does an Editor.' );
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * An event hands out its repeat rules.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rules
+	 *
+	 * @return void
+	 */
+	public function test_rules(): void {
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		$this->assertInstanceOf( Rules::class, ( new Event( $post_id ) )->rules() );
 	}
 }
