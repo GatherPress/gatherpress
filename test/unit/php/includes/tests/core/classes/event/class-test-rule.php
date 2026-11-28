@@ -738,9 +738,9 @@ class Test_Rule extends Base {
 		);
 
 		$this->assertSame(
-			array( '20260308T033000', '20260308T033000' ),
+			array( '20260308T033000' ),
 			$this->keys( $rule, '2026-03-08', '2026-03-09' ),
-			'The rule reports both; Occurrences counts them once.'
+			'The rule reports the shared instant once.'
 		);
 	}
 
@@ -967,5 +967,36 @@ class Test_Rule extends Base {
 		);
 
 		$this->assertSame( array( '20261211T090000', '20261211T200000', '20261212T090000' ), $keys );
+	}
+
+	/**
+	 * A gap-day collision counts once toward the limit, so the limit still returns that many dates.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences
+	 * @covers ::occurrences_on
+	 *
+	 * @return void
+	 */
+	public function test_occurrences_limit_counts_a_collision_once(): void {
+		// On Mar 8, 02:30 doesn't exist and starts at 03:30, the same instant as 03:30.
+		$rule = $this->rule(
+			array(
+				'starts_on' => '2026-03-07',
+				'rrule'     => 'FREQ=DAILY',
+				'times'     => array( '02:30', '03:30', '04:00' ),
+				'duration'  => 15,
+			)
+		);
+		$keys = array_map(
+			static fn( Occurrence $occurrence ): string => $occurrence->recurrence_id,
+			$rule->occurrences( $this->utc( '2026-03-07' ), $this->utc( '2026-04-07' ), 7, 'scheduled', 5 )
+		);
+
+		$this->assertSame(
+			array( '20260307T023000', '20260307T033000', '20260307T040000', '20260308T033000', '20260308T040000' ),
+			$keys
+		);
 	}
 }
