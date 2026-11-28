@@ -29,6 +29,11 @@
 
 - [`gatherpress_register_rsvp_check_in_states`](gatherpress_register_rsvp_check_in_states.md) Fires so plugins can register check-in states.
 
+## class-cleanup.php
+
+- [`gatherpress_venue_map_cleanup_in_use_files`](gatherpress_venue_map_cleanup_in_use_files.md) Filters the list of in-use static-map image filenames before garbage collection.
+- [`gatherpress_venue_map_cleanup_scan_batch_size`](gatherpress_venue_map_cleanup_scan_batch_size.md) Filters how many venues have their map data read per batch when finding the static maps in use.
+
 ## class-email.php
 
 - [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
@@ -39,6 +44,7 @@
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
 - [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
+- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) This filter is documented in includes/core/classes/event/class-event.php
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -64,10 +70,6 @@
 - [`gatherpress_geocode_rate_limit_per_minute`](gatherpress_geocode_rate_limit_per_minute.md) Filter the per-user requests-per-minute ceiling for the
 - [`gatherpress_log_geocoding_errors`](gatherpress_log_geocoding_errors.md) Filters whether to write a PHP error-log line when Photon returns a body
 - [`gatherpress_photon_api_url`](gatherpress_photon_api_url.md) Filters the Photon API base URL used for geocoding and address search.
-
-## class-html-renderer.php
-
-- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
 
 ## class-import.php
 
@@ -210,6 +212,6 @@
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

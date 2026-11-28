@@ -1,10 +1,7 @@
 # gatherpress_datetime_separator
 
 
-Filter the separator between start and end dates/times.
-
-
-outside an event.
+This filter is documented in includes/core/classes/event/class-event.php
 
 ## Auto-generated Example
 
@@ -12,11 +9,11 @@ outside an event.
 add_filter(
    'gatherpress_datetime_separator',
     function(
-        $separator,
+        string,
         GatherPress\Event $event = null
     ) {
         // Your code here.
-        return $separator;
+        return string;
     },
     10,
     2
@@ -25,15 +22,10 @@ add_filter(
 
 ## Parameters
 
-- `$separator` Other variable names: `string     $separator The separator set on the block, or the translated 'to' when it sets none.`, `$separator____separator`
+- `string` $separator The separator set on the block, or the translated 'to' when it sets none. Other variable names: `$separator____separator`, `$separator`
 - *`GatherPress\Event|null`* `$event` The event, or null where there is none, such as the editor settings
 
 ## Files
-
-- [includes/core/classes/blocks/event-date/class-html-renderer.php:262](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/event-date/class-html-renderer.php#L262)
-```php
-apply_filters( 'gatherpress_datetime_separator', $separator, $this->event )
-```
 
 - [includes/core/classes/event/class-event.php:342](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L342)
 ```php
@@ -42,6 +34,11 @@ apply_filters(
 			'' === $separator ? __( 'to', 'gatherpress' ) : $separator,
 			$event
 		)
+```
+
+- [includes/core/classes/blocks/event-date/class-html-renderer.php:262](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/event-date/class-html-renderer.php#L262)
+```php
+apply_filters( 'gatherpress_datetime_separator', $separator, $this->event )
 ```
 
 
