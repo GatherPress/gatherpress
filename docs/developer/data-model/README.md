@@ -245,18 +245,21 @@ Every event post type has a `gatherpress_repeat` REST field, which the editor re
 
 Reading it describes the schedule as one pattern:
 
-- `pattern`: the rule that applies today, or the first one to come. When every rule has ended, the last one.
-- `scheduled`: a rule starting after the current one, such as a change from next month.
-- `ended`: whether every rule has ended.
-- `showable`: whether one pattern can show the schedule. It's false for several rules applying at once, several times of day, or a rule in another timezone than the event.
+- `pattern`: the first rule with dates from tomorrow on, the first date an edit can change. When every rule is history, the last one.
+- `scheduled`: a second such rule, starting after the first ends, such as a change from next month.
+- `ended`: whether every rule is history.
+- `showable`: whether one pattern can show the schedule. It's false for more than two live rules, two that run at once, several times of day, or a rule in another timezone than the event.
 
 Each pattern has `starts_on`, `ends_on`, `frequency`, `interval`, `weekdays`, `month_day`, `ordinal_weekday`, `times`, `duration`, `is_all_day` and `timezone`. A password-protected event hides it like its dates.
 
-Writing it takes `{ "pattern": { … } | null, "from": "Y-m-d" }`. A pattern has `frequency`, and optionally `interval`, `weekdays`, `month_day` or `ordinal_weekday`, `ends_on`, `times` and `duration`. The time of day and length default to the event's dates in the same request.
+Writing it takes `{ "pattern": { … } | null, "from": "Y-m-d", "scheduled": null }`. A bare `null` is rejected; `{ "pattern": null }` stops the event repeating. A pattern has `frequency`, and optionally `interval`, `weekdays`, `month_day` or `ordinal_weekday`, `ends_on`, `times` and `duration`. The time of day and length default to the event's dates in the same request.
 
-- An event that hasn't started gets its rules replaced, starting on its start date. A null pattern stops it repeating.
-- A published event that has started changes from `from`, tomorrow in its timezone by default. The new rule starts on its first matching date on or after `from`, so every other Thursday from a Saturday starts on the next Thursday. A null pattern stops it repeating from `from`.
-- A pattern equal to the current rule changes nothing, and one that only moves the end date ends the current rule there.
+- An event that wasn't both published and started before the request gets its rules replaced, starting on its start date, so a first publish keeps the dates entered.
+- A published event that has started changes from `from`, tomorrow in its timezone by default. A new weekly or monthly pattern must name its days, and a yearly one keeps the series' anniversary. The new rule starts on its first matching date on or after `from`, so every other Thursday from a Saturday starts on the next Thursday.
+- A pattern equal to the current rule changes nothing. Bringing its end date earlier ends it there, and extending or clearing the end continues its cycle, so every other week stays aligned.
+- A scheduled change is kept through an edit to the current pattern, unless `scheduled` is null.
+- An event without the editor's `gatherpress_datetime`, such as one imported, uses its saved dates.
+- Two saves at once write in turn, and the later one wins.
 
 The save is checked on `rest_pre_insert_{post_type}`, before anything is saved, so a schedule that can't be written fails the request with `gatherpress_invalid_repeat` and leaves the post as it was. Autosaves don't carry the field, and rules aren't revisioned, so a preview or a restored revision doesn't change the schedule.
 

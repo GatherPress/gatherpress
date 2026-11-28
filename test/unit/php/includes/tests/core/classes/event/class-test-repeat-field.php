@@ -238,6 +238,7 @@ class Test_Repeat_Field extends Base {
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 * @covers ::register
+	 * @covers ::schema
 	 *
 	 * @return void
 	 */
@@ -284,6 +285,7 @@ class Test_Repeat_Field extends Base {
 	 * @covers ::has_started
 	 * @covers ::describe_schedule
 	 * @covers ::describe
+	 * @covers ::datetime_payload
 	 *
 	 * @return void
 	 */
@@ -370,7 +372,8 @@ class Test_Repeat_Field extends Base {
 	 *
 	 * @covers ::apply
 	 * @covers ::rows_of
-	 * @covers ::without_change_ids
+	 * @covers ::without_change_id
+	 * @covers ::plan_replace
 	 *
 	 * @return void
 	 */
@@ -402,7 +405,9 @@ class Test_Repeat_Field extends Base {
 	 * @covers ::first_date
 	 * @covers ::today
 	 * @covers ::describe_schedule
-	 * @covers ::group_of
+	 * @covers ::grouped
+	 * @covers ::change_or_less
+	 * @covers ::change_row
 	 *
 	 * @return void
 	 */
@@ -436,8 +441,8 @@ class Test_Repeat_Field extends Base {
 			$this->rules( $post_id ),
 			'The current rule ends today and the new one starts tomorrow.'
 		);
-		$this->assertSame( array( '19:00' ), $schedule['pattern']['times'], 'The rule that applies today.' );
-		$this->assertSame( array( '20:00' ), $schedule['scheduled']['times'], 'The change to come.' );
+		$this->assertSame( array( '20:00' ), $schedule['pattern']['times'], 'The rule from tomorrow on.' );
+		$this->assertNull( $schedule['scheduled'], 'The rule ending today is history.' );
 	}
 
 	/**
@@ -479,9 +484,10 @@ class Test_Repeat_Field extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::apply
-	 * @covers ::active_row
 	 * @covers ::same_pattern
-	 * @covers ::move_end
+	 * @covers ::change_or_less
+	 * @covers ::change_row
+	 * @covers ::day_after
 	 *
 	 * @return void
 	 */
@@ -630,7 +636,7 @@ class Test_Repeat_Field extends Base {
 	 * @covers ::plan_change
 	 * @covers ::change_date
 	 * @covers ::first_date
-	 * @covers ::no_dates
+	 * @covers ::change_row
 	 *
 	 * @return void
 	 */
@@ -682,14 +688,30 @@ class Test_Repeat_Field extends Base {
 				$plan(
 					$started,
 					array(
+						'from'    => $this->day( 5 ),
 						'pattern' => array(
 							'frequency' => 'WEEKLY',
-							'ends_on'   => $this->day( -1 ),
+							'weekdays'  => array( $this->weekday( $this->day( 6 ) ) ),
+							'ends_on'   => $this->day( 5 ),
 						),
 					)
 				)
 			),
-			'A pattern ending before the change date has no dates.'
+			'A pattern ending on the change date, repeating the day after, has no dates.'
+		);
+		$this->assertSame(
+			'The repeating schedule has no dates on or after the change date.',
+			$plan(
+				$started,
+				array(
+					'from'    => $this->day( 5 ),
+					'pattern' => array(
+						'frequency' => 'WEEKLY',
+						'weekdays'  => array( $this->weekday( $this->day( 6 ) ) ),
+						'ends_on'   => $this->day( 5 ),
+					),
+				)
+			)->get_error_message()
 		);
 		$this->assertSame(
 			'gatherpress_invalid_repeat',
@@ -730,7 +752,6 @@ class Test_Repeat_Field extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::apply
-	 * @covers ::active_row
 	 *
 	 * @return void
 	 */
@@ -753,6 +774,11 @@ class Test_Repeat_Field extends Base {
 
 		$this->assertCount( 2, $rules );
 		$this->assertStringStartsWith( $this->day( -3 ) . ' open one date', $rules[0], 'The past date is kept.' );
+
+		$schedule = $this->schedule( $post_id );
+
+		$this->assertTrue( $schedule['showable'], 'The kept date is history, not a second rule.' );
+		$this->assertSame( array( 'MO' ), $schedule['pattern']['weekdays'] );
 	}
 
 	/**
@@ -760,7 +786,7 @@ class Test_Repeat_Field extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::group_of
+	 * @covers ::grouped
 	 * @covers ::plan_replace
 	 * @covers ::rrule
 	 * @covers ::request_dates
@@ -769,8 +795,6 @@ class Test_Repeat_Field extends Base {
 	 */
 	public function test_helper_edges(): void {
 		$instance = Repeat_Field::get_instance();
-		$today    = new DateTimeImmutable( $this->day( 0 ), new DateTimeZone( 'UTC' ) );
-		$ended    = Rule::from_meta( $this->rule_row( $this->day( -30 ), array( 'ends_on' => $this->day( -1 ) ) ) );
 		$dates    = array(
 			'start'      => new DateTimeImmutable( $this->day( 5 ) . ' 19:00', new DateTimeZone( 'America/New_York' ) ),
 			'timezone'   => 'America/New_York',
@@ -778,10 +802,9 @@ class Test_Repeat_Field extends Base {
 			'duration'   => 60,
 		);
 
-		$this->assertSame( 'ended', Utility::invoke_hidden_method( $instance, 'group_of', array( $ended, $today ) ) );
 		$this->assertInstanceOf(
 			WP_Error::class,
-			Utility::invoke_hidden_method( $instance, 'plan_replace', array( array( 'frequency' => 'X' ), $dates ) )
+			Utility::invoke_hidden_method( $instance, 'plan_replace', array( 0, array( 'frequency' => 'X' ), $dates ) )
 		);
 		$this->assertSame(
 			'FREQ=MONTHLY;BYMONTHDAY=11',
@@ -799,5 +822,305 @@ class Test_Repeat_Field extends Base {
 		$no_dates = Utility::invoke_hidden_method( $instance, 'request_dates', array( 0, new WP_REST_Request() ) );
 
 		$this->assertNull( $no_dates );
+	}
+
+	/**
+	 * A started series with an end date can extend or clear it, and keeps its every-other-week cycle.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::change_or_less
+	 * @covers ::change_row
+	 *
+	 * @return void
+	 */
+	public function test_extending_and_clearing_the_end(): void {
+		$post_id = $this->started_series( 14 );
+		$weekday = $this->weekday( $this->day( -14 ) );
+		$pattern = array(
+			'frequency' => 'WEEKLY',
+			'interval'  => 2,
+			'weekdays'  => array( $weekday ),
+			'times'     => array( '19:00' ),
+			'duration'  => 90,
+		);
+
+		// Make the series every other week, ending in a month, as a draft, then publish it.
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			)
+		);
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				$this->rule_row(
+					$this->day( -14 ),
+					array(
+						'rrule'   => 'FREQ=WEEKLY;INTERVAL=2;BYDAY=' . $weekday,
+						'ends_on' => $this->day( 30 ),
+					)
+				),
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$extended = array( 'pattern' => $pattern + array( 'ends_on' => $this->day( 60 ) ) );
+
+		$this->save( $post_id, array( Repeat_Field::FIELD => $extended ) );
+
+		$rules = ( new Event( $post_id ) )->rules()->all();
+		$last  = end( $rules );
+		$gap   = (int) ( new DateTimeImmutable( $this->day( -14 ) ) )->diff( $last->starts_on )->days;
+
+		$this->assertSame( $this->day( 60 ), $last->ends_on->format( 'Y-m-d' ), 'The end is extended.' );
+		$this->assertSame( 0, $gap % 14, 'The cycle stays every other week from the first date.' );
+
+		$this->save( $post_id, array( Repeat_Field::FIELD => array( 'pattern' => $pattern ) ) );
+
+		$rules = ( new Event( $post_id ) )->rules()->all();
+
+		$this->assertNull( end( $rules )->ends_on, 'The end is cleared.' );
+	}
+
+	/**
+	 * A first publish with a past start, in one request, replaces the rules from the date entered.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::has_started
+	 * @covers ::validate
+	 * @covers ::update_value
+	 *
+	 * @return void
+	 */
+	public function test_first_publish_keeps_the_entered_date(): void {
+		$post_id = $this->event( 'draft', 30 );
+		$date    = $this->day( -7 );
+
+		$this->save(
+			$post_id,
+			array(
+				'status'            => 'publish',
+				'meta'              => array( 'gatherpress_datetime' => $this->datetime_json( $date ) ),
+				Repeat_Field::FIELD => array(
+					'pattern' => array(
+						'frequency' => 'WEEKLY',
+						'weekdays'  => array( $this->weekday( $date ) ),
+					),
+				),
+			)
+		);
+
+		$this->assertSame( 'publish', get_post_status( $post_id ) );
+		$this->assertStringStartsWith( "{$date} open", $this->rules( $post_id )[0], 'It starts on the date entered.' );
+		$this->assertCount( 1, $this->rules( $post_id ) );
+	}
+
+	/**
+	 * A yearly change keeps the series' anniversary, and a weekly or monthly change must name its days.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::first_date
+	 * @covers ::names_its_days
+	 * @covers ::change_row
+	 *
+	 * @return void
+	 */
+	public function test_change_days(): void {
+		$post_id = $this->started_series( 14 );
+		$first   = new DateTimeImmutable( $this->day( -14 ) );
+
+		$this->save( $post_id, array( Repeat_Field::FIELD => array( 'pattern' => array( 'frequency' => 'YEARLY' ) ) ) );
+
+		$rules = ( new Event( $post_id ) )->rules()->all();
+
+		$this->assertSame(
+			$first->modify( '+1 year' )->format( 'Y-m-d' ),
+			end( $rules )->starts_on->format( 'Y-m-d' )
+		);
+
+		foreach ( array( 'WEEKLY', 'MONTHLY' ) as $frequency ) {
+			$no_days  = array( 'pattern' => array( 'frequency' => $frequency ) );
+			$response = $this->save( $post_id, array( Repeat_Field::FIELD => $no_days ) );
+
+			$this->assertSame( 400, $response->get_status(), $frequency . ' without its days.' );
+		}
+	}
+
+	/**
+	 * An event with only its saved dates, as an import leaves it, can be made to repeat.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::request_dates
+	 * @covers ::datetime_payload
+	 *
+	 * @return void
+	 */
+	public function test_event_without_the_editor_json(): void {
+		$post_id = $this->event();
+
+		delete_post_meta( $post_id, 'gatherpress_datetime' );
+		$daily    = array( 'pattern' => array( 'frequency' => 'DAILY' ) );
+		$response = $this->save( $post_id, array( Repeat_Field::FIELD => $daily ) );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertStringStartsWith( $this->day( 7 ) . ' open FREQ=DAILY 19:00', $this->rules( $post_id )[0] );
+	}
+
+	/**
+	 * An invalid timezone in the request is refused, not an error page.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::request_dates
+	 *
+	 * @return void
+	 */
+	public function test_invalid_timezone(): void {
+		$post_id  = $this->event();
+		$json     = wp_json_encode(
+			array(
+				'dateTimeStart' => $this->day( 7 ) . ' 19:00:00',
+				'dateTimeEnd'   => $this->day( 7 ) . ' 20:00:00',
+				'timezone'      => 'Mars/Olympus_Mons',
+			)
+		);
+		$response = $this->save(
+			$post_id,
+			array(
+				'meta'              => array( 'gatherpress_datetime' => $json ),
+				Repeat_Field::FIELD => array( 'pattern' => array( 'frequency' => 'DAILY' ) ),
+			)
+		);
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'gatherpress_invalid_repeat', $response->get_data()['code'] );
+	}
+
+	/**
+	 * A scheduled change is kept through an edit to the current pattern, unless the request drops it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::plan_change
+	 * @covers ::with_scheduled
+	 * @covers ::change_or_less
+	 * @covers ::change_row
+	 *
+	 * @return void
+	 */
+	public function test_scheduled_change_is_kept(): void {
+		$post_id = $this->started_series( 14 );
+		$monday  = array(
+			'frequency' => 'WEEKLY',
+			'weekdays'  => array( 'MO' ),
+			'times'     => array( '20:00' ),
+		);
+
+		// Schedule a change for 20 days out.
+		$this->save(
+			$post_id,
+			array(
+				Repeat_Field::FIELD => array(
+					'from'    => $this->day( 20 ),
+					'pattern' => $monday,
+				),
+			)
+		);
+
+		$scheduled = $this->schedule( $post_id )['scheduled'];
+
+		$this->assertNotNull( $scheduled );
+
+		// Change the current pattern's time from tomorrow, saying nothing about the scheduled change.
+		$current = array(
+			'frequency' => 'WEEKLY',
+			'weekdays'  => array( $this->weekday( $this->day( -14 ) ) ),
+			'times'     => array( '18:00' ),
+		);
+
+		$this->save( $post_id, array( Repeat_Field::FIELD => array( 'pattern' => $current ) ) );
+
+		$after = $this->schedule( $post_id );
+
+		$this->assertSame( array( '18:00' ), $after['pattern']['times'] ?? null, 'Changed from tomorrow.' );
+		$this->assertSame( $scheduled['starts_on'], $after['scheduled']['starts_on'] ?? null, 'Kept.' );
+
+		$this->save(
+			$post_id,
+			array(
+				Repeat_Field::FIELD => array(
+					'pattern'   => $current + array( 'duration' => 60 ),
+					'scheduled' => null,
+				),
+			)
+		);
+
+		$this->assertNull( $this->schedule( $post_id )['scheduled'], 'Null drops it.' );
+	}
+
+	/**
+	 * Creating an event through REST with the field saves its rules.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::validate
+	 * @covers ::update_value
+	 *
+	 * @return void
+	 */
+	public function test_create_with_the_field(): void {
+		$request = new WP_REST_Request( 'POST', '/wp/v2/' . get_post_type_object( Event::POST_TYPE )->rest_base );
+
+		$request->set_body_params(
+			array(
+				'title'             => 'Created',
+				'status'            => 'draft',
+				'meta'              => array( 'gatherpress_datetime' => $this->datetime_json( $this->day( 3 ) ) ),
+				Repeat_Field::FIELD => array( 'pattern' => array( 'frequency' => 'DAILY' ) ),
+			)
+		);
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 201, $response->get_status() );
+		$created = $this->rules( $response->get_data()['id'] );
+
+		$this->assertStringStartsWith( $this->day( 3 ) . ' open FREQ=DAILY', $created[0] );
+	}
+
+	/**
+	 * A change starting no earlier than the scheduled one only keeps the scheduled one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::with_scheduled
+	 *
+	 * @return void
+	 */
+	public function test_with_scheduled_edges(): void {
+		$instance  = Repeat_Field::get_instance();
+		$scheduled = Rule::from_meta( $this->rule_row( $this->day( 10 ), array( 'change_id' => 'kept' ) ) );
+		$row       = Utility::invoke_hidden_method( $instance, 'without_change_id', array( $scheduled->to_meta() ) );
+		$later     = array_merge( $row, array( 'starts_on' => $this->day( 12 ) ) );
+
+		$this->assertSame(
+			array( $row ),
+			Utility::invoke_hidden_method( $instance, 'with_scheduled', array( $later, $scheduled ) ),
+			'Only the scheduled rule is left.'
+		);
+		$this->assertSame(
+			array( $later ),
+			Utility::invoke_hidden_method( $instance, 'with_scheduled', array( $later, null ) ),
+			'Without a scheduled rule, the new one alone.'
+		);
 	}
 }
