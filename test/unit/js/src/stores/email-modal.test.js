@@ -29,6 +29,34 @@ describe( 'Email Modal store', () => {
 
 			expect( isSaving ).toBe( false );
 		} );
+
+		it( 'has no change by default', () => {
+			expect( select( STORE_NAME ).getChange() ).toBeNull();
+		} );
+	} );
+
+	describe( 'change', () => {
+		const change = { keys: [ 'venue' ], headline: 'The venue changed.' };
+
+		it( 'keeps the change the modal opens for, and drops it on close', () => {
+			dispatch( STORE_NAME ).openModal( change );
+
+			expect( select( STORE_NAME ).getChange() ).toEqual( change );
+
+			dispatch( STORE_NAME ).closeModal();
+
+			expect( select( STORE_NAME ).getChange() ).toBeNull();
+		} );
+
+		it( 'ignores a click event passed as the argument', () => {
+			// The panel button passes `openModal` as its `onClick`.
+			dispatch( STORE_NAME ).openModal( { type: 'click' } );
+
+			expect( select( STORE_NAME ).isModalOpen() ).toBe( true );
+			expect( select( STORE_NAME ).getChange() ).toBeNull();
+
+			dispatch( STORE_NAME ).closeModal();
+		} );
 	} );
 
 	describe( 'selectors', () => {

@@ -192,6 +192,157 @@ class Test_Email extends Base {
 	}
 
 	/**
+	 * Check that a change message queues attending and waiting list apart from not attending.
+	 *
+	 * @covers ::send_change_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_change_emails_queues_each_group(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$payload = array(
+			'post_id' => $post_id,
+			'message' => 'Moved',
+			'subject' => 'Changed',
+		);
+
+		$this->assertTrue(
+			Email::get_instance()->send_change_emails(
+				$post_id,
+				array(
+					'attending'     => true,
+					'waiting_list'  => false,
+					'not_attending' => true,
+				),
+				'Moved',
+				'Changed'
+			)
+		);
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Mailer::JOB_HOOK,
+				array(
+					Email::CHANGE_TYPE,
+					array_merge(
+						$payload,
+						array(
+							'send' => array(
+								'attending'    => true,
+								'waiting_list' => false,
+							),
+						)
+					),
+					Mailer::FIRST_BATCH,
+				)
+			),
+			'Attending goes through the change type.'
+		);
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Mailer::JOB_HOOK,
+				array(
+					Email::EVENT_TYPE,
+					array_merge( $payload, array( 'send' => array( 'not_attending' => true ) ) ),
+					Mailer::FIRST_BATCH,
+				)
+			),
+			'Not attending goes through the event update type, which follows the opt-in.'
+		);
+	}
+
+	/**
+	 * Check that a change message to nobody queues nothing, and a refused job reports failure.
+	 *
+	 * @covers ::send_change_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_change_emails_without_groups_or_cron(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$email   = Email::get_instance();
+		$fail    = static fn(): bool => false;
+
+		$this->assertTrue(
+			$email->send_change_emails(
+				$post_id,
+				array(
+					'attending'     => false,
+					'waiting_list'  => false,
+					'not_attending' => false,
+				),
+				'Moved',
+				''
+			)
+		);
+		$this->assertFalse( (bool) wp_next_scheduled( Mailer::JOB_HOOK ) );
+
+		add_filter( 'pre_schedule_event', $fail );
+
+		$this->assertFalse(
+			$email->send_change_emails(
+				$post_id,
+				array(
+					'attending'     => false,
+					'waiting_list'  => true,
+					'not_attending' => false,
+				),
+				'Moved',
+				''
+			)
+		);
+		$this->assertFalse(
+			$email->send_change_emails(
+				$post_id,
+				array(
+					'attending'     => false,
+					'waiting_list'  => false,
+					'not_attending' => true,
+				),
+				'Moved',
+				''
+			)
+		);
+
+		remove_filter( 'pre_schedule_event', $fail );
+	}
+
+	/**
+	 * Check that the change type reaches only attending and waiting list, whatever the payload asks.
+	 *
+	 * @covers ::get_change_email_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_get_change_email_rsvps(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp    = new Rsvp( $post_id );
+
+		$rsvp->save( 'yes@example.test', 'attending' );
+		$rsvp->save( 'no@example.test', 'not_attending' );
+
+		$recipients = Utility::invoke_hidden_method(
+			Email::get_instance(),
+			'get_change_email_rsvps',
+			array(
+				array(
+					'post_id' => $post_id,
+					'send'    => array(
+						'attending'     => true,
+						'waiting_list'  => true,
+						'not_attending' => true,
+					),
+				),
+			)
+		);
+
+		$this->assertSame( array( 'yes@example.test' ), array_column( $recipients, 'email' ) );
+		$this->assertSame(
+			array(),
+			Utility::invoke_hidden_method( Email::get_instance(), 'get_change_email_rsvps', array( array() ) )
+		);
+	}
+
+	/**
 	 * Check that only the promoted RSVP is picked, and only while it is attending.
 	 *
 	 * Invoked directly because xdebug does not trace same-class helpers

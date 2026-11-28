@@ -284,6 +284,11 @@ final class Rest_Api {
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'send' ),
 					),
+					'change'  => array(
+						'required'          => false,
+						'type'              => 'boolean',
+						'sanitize_callback' => 'rest_sanitize_boolean',
+					),
 				),
 			),
 		);
@@ -576,15 +581,33 @@ final class Rest_Api {
 	 * It checks the user's capability to edit posts before initiating the email sending process.
 	 * If the user doesn't have the required capability, the method returns a response with 'success' set to false.
 	 *
+	 * With `change`, the message is about the change the last save detected.
+	 * `Event\Change::send()` decides who gets it and refuses when there is no
+	 * such change, so the request cannot skip the opt-in on its own.
+	 *
 	 * @since 0.34.0
+	 * @since TBD Accepts `change`.
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
+	 * @return WP_REST_Response|WP_Error The response indicating the success of the email scheduling process,
+	 *                                   or a WP_Error when a change message has no change to send.
 	 */
-	public function email( WP_REST_Request $request ): WP_REST_Response {
-		$params   = $request->get_params();
+	public function email( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$params = $request->get_params();
+
+		if ( ! empty( $params['change'] ) ) {
+			$result = Change::get_instance()->send(
+				intval( $params['post_id'] ),
+				! empty( $params['send']['not_attending'] ),
+				$params['message'] ?? '',
+				$params['subject'] ?? ''
+			);
+
+			return is_wp_error( $result ) ? $result : new WP_REST_Response( array( 'success' => $result ) );
+		}
+
 		$response = array(
 			'success' => Email::get_instance()->send_emails(
 				intval( $params['post_id'] ),

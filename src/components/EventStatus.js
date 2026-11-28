@@ -12,6 +12,15 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import { getStatusDescription, getStatusOptions } from '../helpers/event-status';
 
 /**
+ * The ID of the event status select, so other controls can move focus to it.
+ *
+ * @since TBD
+ *
+ * @type {string}
+ */
+export const EVENT_STATUS_ID = 'gatherpress-event-status';
+
+/**
  * EventStatus component.
  *
  * Operational status of an event, offering whatever statuses PHP publishes.
@@ -47,6 +56,7 @@ const EventStatus = () => {
 	return (
 		<SelectControl
 			__next40pxDefaultSize
+			id={ EVENT_STATUS_ID }
 			label={ __( 'Event status', 'gatherpress' ) }
 			value={ status }
 			onChange={ updateStatus }

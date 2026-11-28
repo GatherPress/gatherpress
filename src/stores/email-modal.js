@@ -9,16 +9,28 @@ import { createReduxStore, register } from '@wordpress/data';
 const DEFAULT_STATE = {
 	isOpen: false,
 	isSaving: false,
+	change: null,
 };
 
 /**
  * Actions for the email modal store.
  */
 const actions = {
-	openModal() {
+	/**
+	 * Open the modal, optionally for the change the last save detected.
+	 *
+	 * @since 0.33.0
+	 * @since TBD Accepts the change.
+	 *
+	 * @param {Object|null} change Optional. The `gatherpress_change` REST field of the saved event.
+	 *
+	 * @return {Object} The action.
+	 */
+	openModal( change = null ) {
 		return {
 			type: 'SET_MODAL_OPEN',
 			isOpen: true,
+			change: change?.keys ? change : null,
 		};
 	},
 
@@ -26,6 +38,7 @@ const actions = {
 		return {
 			type: 'SET_MODAL_OPEN',
 			isOpen: false,
+			change: null,
 		};
 	},
 
@@ -48,6 +61,19 @@ const selectors = {
 	isSaving( state ) {
 		return state.isSaving;
 	},
+
+	/**
+	 * The change the open modal is about.
+	 *
+	 * @since TBD
+	 *
+	 * @param {Object} state Store state.
+	 *
+	 * @return {Object|null} The change, or null for an ordinary event update.
+	 */
+	getChange( state ) {
+		return state.change;
+	},
 };
 
 /**
@@ -61,6 +87,7 @@ const reducer = ( state = DEFAULT_STATE, action ) => {
 			return {
 				...state,
 				isOpen: action.isOpen,
+				change: action.change,
 			};
 		case 'SET_SAVING':
 			return {
