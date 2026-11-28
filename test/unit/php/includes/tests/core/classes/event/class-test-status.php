@@ -20,6 +20,7 @@ use WP_Term;
  * @coversDefaultClass \GatherPress\Core\Event\Status
  */
 class Test_Status extends Base {
+
 	/**
 	 * The defaults cover Schema.org's vocabulary and each carries what the
 	 * standards need.

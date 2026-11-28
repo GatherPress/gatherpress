@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Geocoding\Query
  */
 class Test_Query extends Base {
+
 	/**
 	 * Addresses and how they should reach the geocoder.
 	 *
