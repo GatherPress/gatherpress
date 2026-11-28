@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Repeat rules can now be written through `Event::rules()`: `replace()` for drafts, `change_from()` to change a schedule from a future date while keeping the dates before it, and `stop()`. The event's saved dates follow the series' first date, and direct writes of the `gatherpress_rule` meta are refused.

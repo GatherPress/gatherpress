@@ -94,6 +94,70 @@ class Test_Rule extends Base {
 	}
 
 	/**
+	 * A rule's meta row is canonical and reads back as the same rule.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::to_meta
+	 *
+	 * @return void
+	 */
+	public function test_to_meta(): void {
+		$rule = $this->rule(
+			array(
+				'change_id' => 'abc',
+				'ends_on'   => '2027-06-30',
+				'rrule'     => 'freq=weekly;byday=fr,mo',
+				'times'     => array( '20:00', '09:30' ),
+			)
+		);
+		$row  = $rule->to_meta();
+
+		$this->assertSame(
+			array(
+				'change_id'  => 'abc',
+				'starts_on'  => '2026-12-11',
+				'ends_on'    => '2027-06-30',
+				'rrule'      => 'FREQ=WEEKLY;BYDAY=MO,FR',
+				'is_all_day' => false,
+				'times'      => array( '09:30', '20:00' ),
+				'timezone'   => 'America/New_York',
+				'duration'   => 120,
+			),
+			$row
+		);
+		$this->assertSame( $row, Rule::from_meta( $row )->to_meta(), 'The row reads back unchanged.' );
+		$this->assertNull( $this->rule()->to_meta()['ends_on'], 'An open-ended rule has no end date.' );
+	}
+
+	/**
+	 * The first occurrence is on the start date, at the earliest time.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::first_occurrence
+	 *
+	 * @return void
+	 */
+	public function test_first_occurrence(): void {
+		$timed = $this->rule( array( 'times' => array( '20:00', '09:30' ) ) )->first_occurrence( 7, 'scheduled' );
+
+		$this->assertSame( '20261211T093000', $timed->recurrence_id );
+		$this->assertSame( 7, $timed->series_post_id );
+
+		$all_day = $this->rule(
+			array(
+				'is_all_day' => true,
+				'times'      => array(),
+				'duration'   => 2880,
+			)
+		)->first_occurrence( 7, 'scheduled' );
+
+		$this->assertSame( '20261211', $all_day->recurrence_id );
+		$this->assertSame( '2026-12-12 23:59:59', $all_day->end->format( 'Y-m-d H:i:s' ) );
+	}
+
+	/**
 	 * A valid row becomes a rule with its fields, defaults and canonical pattern.
 	 *
 	 * @since TBD
