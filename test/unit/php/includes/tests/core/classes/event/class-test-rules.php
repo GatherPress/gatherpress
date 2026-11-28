@@ -694,4 +694,123 @@ class Test_Rules extends Base {
 		$this->assertSame( array( false ), $results, 'A write to another post during the rule write is refused.' );
 		$this->assertSame( array(), $this->stored( $other ) );
 	}
+
+	/**
+	 * A change reads the persisted rules, not ones another `Rules` object has since rewritten.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::all
+	 * @covers ::change_from
+	 * @covers ::end_before
+	 *
+	 * @return void
+	 */
+	public function test_change_from_reads_persisted_rules(): void {
+		$post_id = $this->event();
+		$stale   = ( new Event( $post_id ) )->rules();
+
+		$this->assertSame( array(), $stale->all() );
+		( new Event( $post_id ) )->rules()->replace( array( $this->row() ) );
+		$this->assertTrue( $stale->stop( '2099-01-01' ) );
+
+		$rows = $this->stored( $post_id );
+
+		$this->assertCount( 1, $rows );
+		$this->assertSame(
+			array( 'FREQ=MONTHLY;BYDAY=2FR', '2098-12-31' ),
+			array( $rows[0]['rrule'], $rows[0]['ends_on'] ),
+			'The rule the other object wrote is ended, not lost.'
+		);
+	}
+
+	/**
+	 * A timed saved date with seconds can't be kept as a rule, so the change is refused.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::change_from
+	 * @covers ::end_before
+	 * @covers ::seed
+	 *
+	 * @return void
+	 */
+	public function test_seed_refuses_seconds(): void {
+		$post_id = $this->event( 'publish' );
+
+		$this->save_dates( $post_id, '2020-03-05 18:00:30', '2020-03-05 20:30:45' );
+
+		$this->assertSame(
+			'gatherpress_rules_saved_date',
+			( new Event( $post_id ) )->rules()->stop( '2099-01-01' )->get_error_code()
+		);
+		$this->assertSame( array(), $this->stored( $post_id ) );
+		$this->assertSame(
+			array( '2020-03-05 18:00:30', '2020-03-05 20:30:45' ),
+			array_slice( $this->saved( $post_id ), 0, 2 ),
+			'The saved date is unchanged.'
+		);
+	}
+
+	/**
+	 * A write keeps backslashes in the rows it keeps.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::write
+	 *
+	 * @return void
+	 */
+	public function test_write_keeps_backslashes(): void {
+		$post_id = $this->event();
+		$unknown = $this->row(
+			array(
+				'rrule' => 'FREQ=MONTHLY;BYMONTHDAY=-1',
+				'note'  => 'C:\plans',
+			)
+		);
+
+		add_filter( 'gatherpress_rule_meta_write_allowed', '__return_true' );
+		add_post_meta( $post_id, Rules::META_KEY, wp_slash( $unknown ) );
+		remove_filter( 'gatherpress_rule_meta_write_allowed', '__return_true' );
+
+		( new Event( $post_id ) )->rules()->replace( array( $this->row() ) );
+
+		$this->assertSame( $unknown, get_post_meta( $post_id, Rules::META_KEY, false )[0] );
+	}
+
+	/**
+	 * Today also counts in a new rule's timezone, so a new rule can't start on a day already under way there.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::change_from
+	 * @covers ::is_after_today
+	 *
+	 * @return void
+	 */
+	public function test_today_in_a_new_rules_timezone(): void {
+		$post_id = $this->event( 'publish' );
+
+		$this->save_dates( $post_id, '2020-03-05 18:00:00', '2020-03-05 20:00:00' );
+		update_post_meta( $post_id, 'gatherpress_timezone', 'Pacific/Pago_Pago' );
+
+		$rules      = ( new Event( $post_id ) )->rules();
+		$kiritimati = new DateTimeZone( 'Pacific/Kiritimati' );
+		$today      = wp_date( 'Y-m-d', null, $kiritimati );
+		$tomorrow   = wp_date( 'Y-m-d', time() + DAY_IN_SECONDS, $kiritimati );
+		$new        = static fn( string $date ): array => array(
+			'starts_on' => $date,
+			'rrule'     => 'FREQ=DAILY',
+			'times'     => array( '00:00' ),
+			'timezone'  => 'Pacific/Kiritimati',
+			'duration'  => 60,
+		);
+
+		$this->assertSame(
+			'gatherpress_rules_past_change',
+			$rules->change_from( $today, array( $new( $today ) ) )->get_error_code()
+		);
+		$this->assertTrue( $rules->change_from( $tomorrow, array( $new( $tomorrow ) ) ) );
+	}
 }
