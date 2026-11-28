@@ -1796,31 +1796,61 @@ class Test_Event_Query extends Base {
 	 */
 	public function test_get_date_query_resolves_presets(): void {
 		$instance = Event_Query::get_instance();
-		$now      = current_datetime();
-		$next     = $now->modify( 'first day of next month' );
-		$expected = array(
-			'this_month' => array(
-				'year'     => (int) $now->format( 'Y' ),
-				'monthnum' => (int) $now->format( 'n' ),
+		$timezone = wp_timezone();
+		$cases    = array(
+			'mid-year'               => array(
+				new \DateTimeImmutable( '2026-06-15 14:30:00', $timezone ),
+				array(
+					'this_month' => array(
+						'year'     => 2026,
+						'monthnum' => 6,
+					),
+					'next_month' => array(
+						'year'     => 2026,
+						'monthnum' => 7,
+					),
+					'this_year'  => array( 'year' => 2026 ),
+					'last_year'  => array( 'year' => 2025 ),
+				),
 			),
-			'next_month' => array(
-				'year'     => (int) $next->format( 'Y' ),
-				'monthnum' => (int) $next->format( 'n' ),
+			'december into new year' => array(
+				new \DateTimeImmutable( '2026-12-31 23:59:59', $timezone ),
+				array(
+					'this_month' => array(
+						'year'     => 2026,
+						'monthnum' => 12,
+					),
+					'next_month' => array(
+						'year'     => 2027,
+						'monthnum' => 1,
+					),
+					'this_year'  => array( 'year' => 2026 ),
+					'last_year'  => array( 'year' => 2025 ),
+				),
 			),
-			'this_year'  => array( 'year' => (int) $now->format( 'Y' ) ),
-			'last_year'  => array( 'year' => (int) $now->format( 'Y' ) - 1 ),
+			'january 31st'           => array(
+				new \DateTimeImmutable( '2027-01-31 08:00:00', $timezone ),
+				array(
+					'next_month' => array(
+						'year'     => 2027,
+						'monthnum' => 2,
+					),
+				),
+			),
 		);
 
-		foreach ( $expected as $range => $date_query ) {
-			$this->assertSame(
-				$date_query,
-				Utility::invoke_hidden_method(
-					$instance,
-					'get_date_query',
-					array( array( 'gatherpress_date_range' => $range ) )
-				),
-				sprintf( 'The %s preset should resolve from today.', $range )
-			);
+		foreach ( $cases as $label => list( $now, $expected ) ) {
+			foreach ( $expected as $range => $date_query ) {
+				$this->assertSame(
+					$date_query,
+					Utility::invoke_hidden_method(
+						$instance,
+						'get_date_query',
+						array( array( 'gatherpress_date_range' => $range ), $now )
+					),
+					sprintf( 'The %s preset should resolve from %s.', $range, $label )
+				);
+			}
 		}
 	}
 
@@ -1928,6 +1958,16 @@ class Test_Event_Query extends Base {
 			'wrong format'    => array( array( 'gatherpress_date_after' => '03/01/2026' ), array() ),
 			'relative string' => array( array( 'gatherpress_date_after' => 'next month' ), array() ),
 			'not a string'    => array( array( 'gatherpress_date_after' => array( '2026-03-01' ) ), array() ),
+			'null byte'       => array(
+				array(
+					'gatherpress_date_after'  => "2026-03-01\0",
+					'gatherpress_date_before' => '2026-03-31',
+				),
+				array(
+					'before'    => '2026-03-31',
+					'inclusive' => true,
+				),
+			),
 		);
 
 		foreach ( $cases as $label => list( $params, $expected ) ) {
@@ -1959,9 +1999,15 @@ class Test_Event_Query extends Base {
 			),
 		);
 
-		$result = $instance->query_loop_block_query_vars( array(), $block );
+		$year_before = (int) current_datetime()->format( 'Y' ) - 1;
+		$result      = $instance->query_loop_block_query_vars( array(), $block );
+		$year_after  = (int) current_datetime()->format( 'Y' ) - 1;
 
-		$this->assertSame( array( 'year' => (int) current_datetime()->format( 'Y' ) - 1 ), $result['date_query'] );
+		// Either year is right if the call straddles midnight on New Year's Eve.
+		$this->assertContains(
+			$result['date_query'],
+			array( array( 'year' => $year_before ), array( 'year' => $year_after ) )
+		);
 
 		$block->context = array(
 			'query' => array( 'gatherpress_event_query' => 'past' ),

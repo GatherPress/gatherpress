@@ -286,12 +286,13 @@ final class Event_Query {
 	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed> $params Block query attributes or REST request params.
+	 * @param array<string, mixed>   $params Block query attributes or REST request params.
+	 * @param DateTimeImmutable|null $now    The current date in the site timezone. Defaults to now.
 	 *
 	 * @return array<string, int|string|bool> A `date_query` clause, or an empty array when no range is set.
 	 */
-	protected function get_date_query( array $params ): array {
-		$now  = current_datetime();
+	protected function get_date_query( array $params, ?DateTimeImmutable $now = null ): array {
+		$now  = $now ?? current_datetime();
 		$next = $now->modify( 'first day of next month' );
 
 		return match ( $params['gatherpress_date_range'] ?? '' ) {
@@ -333,7 +334,12 @@ final class Event_Query {
 
 		foreach ( $bounds as $arg => $key ) {
 			$value = $params[ $key ] ?? '';
-			$date  = is_string( $value ) ? DateTimeImmutable::createFromFormat( '!Y-m-d', $value ) : false;
+
+			// Checking the shape first also keeps a null byte from reaching
+			// createFromFormat(), which throws on one since PHP 8.0.21.
+			$date = is_string( $value ) && 1 === preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value )
+				? DateTimeImmutable::createFromFormat( '!Y-m-d', $value )
+				: false;
 
 			// The round trip rejects overflowing dates such as 2026-02-31.
 			if ( false !== $date && $date->format( 'Y-m-d' ) === $value ) {
