@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Tag_Processor
  */
 class Test_Tag_Processor extends Base {
+
 	/**
 	 * Every token, closers included, reports where it starts in the input.
 	 *
