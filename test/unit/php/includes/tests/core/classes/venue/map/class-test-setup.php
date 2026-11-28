@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Venue\Map;
 
 use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Cleanup;
 use GatherPress\Core\Venue\Map\Manager;
 use GatherPress\Core\Venue\Map\Prewarm;
 use GatherPress\Core\Venue\Map\Rest_Api;
@@ -25,7 +26,7 @@ class Test_Setup extends Base {
 
 	/**
 	 * Map\Setup is the hub for the venue map subsystem — its
-	 * `instantiate_classes()` is what wires Manager / Map / Prewarm /
+	 * `instantiate_classes()` is what wires Manager / Cleanup / Map / Prewarm /
 	 * Rest_Api so `Venue\Setup` can hand off in one line. Per-sibling
 	 * proof-of-construction via each one's distinctive
 	 * `setup_hooks()`-registered callback. Catches the case where a
@@ -44,6 +45,11 @@ class Test_Setup extends Base {
 				'init',
 				array( Manager::get_instance(), 'do_register_action' ),
 				0,
+			),
+			Cleanup::class  => array(
+				Cleanup::CRON_ACTION,
+				array( Cleanup::get_instance(), 'run_scheduled' ),
+				10,
 			),
 			Map::class      => array(
 				'wp_after_insert_post',

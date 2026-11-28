@@ -12,6 +12,7 @@ use GatherPress\Core\Venue\Map\Cleanup;
 use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Cleanup.
@@ -491,7 +492,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_get_in_use_basenames_multipage_scan(): void {
 		$batch_filter = static fn() => 1;
-		add_filter( 'gatherpress_venue_map_gc_scan_batch_size', $batch_filter );
+		add_filter( 'gatherpress_venue_map_cleanup_scan_batch_size', $batch_filter );
 
 		$venue1   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$venue2   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
@@ -502,7 +503,7 @@ class Test_Cleanup extends Base {
 
 		$in_use = Cleanup::get_instance()->get_in_use_basenames();
 
-		remove_filter( 'gatherpress_venue_map_gc_scan_batch_size', $batch_filter );
+		remove_filter( 'gatherpress_venue_map_cleanup_scan_batch_size', $batch_filter );
 
 		$this->assertArrayHasKey( 'batch-1-osm-roadmap-15-800-400.png', $in_use );
 		$this->assertArrayHasKey( 'batch-2-osm-roadmap-15-800-400.png', $in_use );
@@ -719,5 +720,65 @@ class Test_Cleanup extends Base {
 		$this->assertSame( 1, $result['failed'] );
 		$this->assertSame( 0, $result['deleted'] );
 		$this->assertSame( array(), $result['files'], 'A file that was not deleted is not listed.' );
+	}
+
+	/**
+	 * Tests the constructor wires the schedule and the cron callback.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::__construct
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks(): void {
+		$instance = Cleanup::get_instance();
+
+		Utility::invoke_hidden_method( $instance, '__construct' );
+
+		$this->assertSame( 10, has_action( 'init', array( $instance, 'schedule' ) ) );
+		$this->assertSame( 10, has_action( Cleanup::CRON_ACTION, array( $instance, 'run_scheduled' ) ) );
+	}
+
+	/**
+	 * Tests the weekly cleanup is scheduled once.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::schedule
+	 *
+	 * @return void
+	 */
+	public function test_schedule(): void {
+		wp_clear_scheduled_hook( Cleanup::CRON_ACTION );
+
+		Cleanup::get_instance()->schedule();
+		$first = wp_next_scheduled( Cleanup::CRON_ACTION );
+
+		Cleanup::get_instance()->schedule();
+
+		$this->assertNotFalse( $first );
+		$this->assertSame( 'weekly', wp_get_schedule( Cleanup::CRON_ACTION ) );
+		$this->assertSame( $first, wp_next_scheduled( Cleanup::CRON_ACTION ), 'A second call should not reschedule.' );
+
+		wp_clear_scheduled_hook( Cleanup::CRON_ACTION );
+	}
+
+	/**
+	 * Tests the scheduled run deletes orphaned images.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::run_scheduled
+	 *
+	 * @return void
+	 */
+	public function test_run_scheduled_deletes_orphans(): void {
+		$path = $this->create_map_file( 'scheduled-osm-roadmap-15-800-400.png', time() - 600 );
+
+		Cleanup::get_instance()->run_scheduled();
+
+		$this->assertFileDoesNotExist( $path );
 	}
 }

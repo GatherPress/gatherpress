@@ -19,8 +19,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
-use GatherPress\Core\Venue\Map\Cleanup;
-use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -126,30 +124,6 @@ final class Rest_Api {
 				'args'                => array_merge(
 					array( 'id' => $id_arg ),
 					self::route_args()
-				),
-			)
-		);
-
-		register_rest_route(
-			GATHERPRESS_REST_NAMESPACE,
-			'/venue-map/cleanup',
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'rest_cleanup' ),
-				'permission_callback' => static function (): bool {
-					return current_user_can( 'manage_options' );
-				},
-				'args'                => array(
-					'apply' => array(
-						'type'        => 'boolean',
-						'default'     => false,
-						'description' => __( 'Whether to delete orphaned files. Default is a dry run.', 'gatherpress' ),
-					),
-					'limit' => array(
-						'type'        => 'integer',
-						'default'     => Cleanup::DEFAULT_LIMIT,
-						'description' => __( 'Maximum number of files to unlink in one run.', 'gatherpress' ),
-					),
 				),
 			)
 		);
@@ -336,41 +310,5 @@ final class Rest_Api {
 			),
 			200
 		);
-	}
-
-	/**
-	 * Clean up unused venue static-map images from a REST request.
-	 *
-	 * @since TBD
-	 *
-	 * @param WP_REST_Request $request The REST request.
-	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
-	 *
-	 * @return WP_REST_Response|WP_Error Cleanup summary or error.
-	 */
-	public function rest_cleanup( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$apply     = (bool) $request->get_param( 'apply' );
-		$raw_limit = $request->get_param( 'limit' );
-		$limit     = ! empty( $raw_limit ) ? (int) $raw_limit : Cleanup::DEFAULT_LIMIT;
-
-		$result = Cleanup::get_instance()->sweep( ! $apply, $limit );
-
-		if ( $result['locked'] ) {
-			return new WP_Error(
-				'gatherpress_cleanup_locked',
-				__( 'A static-map cleanup pass is currently in progress.', 'gatherpress' ),
-				array( 'status' => 409 )
-			);
-		}
-
-		if ( ! $result['success'] ) {
-			return new WP_Error(
-				'gatherpress_cleanup_failed',
-				__( 'The static maps directory could not be read.', 'gatherpress' ),
-				array( 'status' => 500 )
-			);
-		}
-
-		return new WP_REST_Response( $result );
 	}
 }

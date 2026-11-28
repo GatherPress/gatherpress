@@ -33,12 +33,20 @@ class Cleanup {
 	use Singleton;
 
 	/**
+	 * Cron action for the weekly cleanup.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const CRON_ACTION = 'gatherpress_venue_map_cleanup';
+
+	/**
 	 * Transient key used to prevent concurrent cleanup passes.
 	 *
 	 * @since TBD
 	 * @var string
 	 */
-	const LOCK_TRANSIENT = 'gatherpress_venue_map_gc_lock';
+	const LOCK_TRANSIENT = 'gatherpress_venue_map_cleanup_lock';
 
 	/**
 	 * Time-to-live for the concurrency lock in seconds.
@@ -79,6 +87,53 @@ class Cleanup {
 	 * @var string
 	 */
 	const FILENAME_REGEX = '/^[a-z0-9_.-]+-\d+-\d+-\d+(@\d+x)?\.png$/i';
+
+	/**
+	 * Class constructor.
+	 *
+	 * @since TBD
+	 */
+	protected function __construct() {
+		$this->setup_hooks();
+	}
+
+	/**
+	 * Set up hooks for the weekly cleanup.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'schedule' ) );
+		add_action( self::CRON_ACTION, array( $this, 'run_scheduled' ) );
+	}
+
+	/**
+	 * Schedule the weekly cleanup if it is not scheduled yet.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function schedule(): void {
+		if ( wp_next_scheduled( self::CRON_ACTION ) ) {
+			return;
+		}
+
+		wp_schedule_event( time(), 'weekly', self::CRON_ACTION );
+	}
+
+	/**
+	 * Delete orphaned static map images on the weekly schedule.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function run_scheduled(): void {
+		$this->sweep( false );
+	}
 
 	/**
 	 * Check if a filename matches the static map naming convention.
@@ -132,8 +187,16 @@ class Cleanup {
 			return array();
 		}
 
-		$in_use     = array();
-		$batch_size = (int) apply_filters( 'gatherpress_venue_map_gc_scan_batch_size', self::SCAN_BATCH_SIZE );
+		$in_use = array();
+
+		/**
+		 * Filters how many venues are read per batch when finding the static maps in use.
+		 *
+		 * @since TBD
+		 *
+		 * @param int $batch_size Number of venues read per batch.
+		 */
+		$batch_size = (int) apply_filters( 'gatherpress_venue_map_cleanup_scan_batch_size', self::SCAN_BATCH_SIZE );
 		$page       = 1;
 
 		while ( true ) {
@@ -193,7 +256,7 @@ class Cleanup {
 		 *
 		 * @param array<string, bool> $in_use Map of in-use image basenames.
 		 */
-		return (array) apply_filters( 'gatherpress_venue_map_gc_in_use_files', $in_use );
+		return (array) apply_filters( 'gatherpress_venue_map_cleanup_in_use_files', $in_use );
 	}
 
 	/**
