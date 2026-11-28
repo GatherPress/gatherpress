@@ -156,11 +156,11 @@ array(
 
 `rrule` supports a strict subset of RFC 5545, listed in `Rules::FREQUENCIES` and `Rules::WEEKDAYS`:
 
-- `FREQ`: `DAILY`, `WEEKLY`, `MONTHLY` or `YEARLY`, with an optional `INTERVAL`
+- `FREQ`: `DAILY`, `WEEKLY`, `MONTHLY` or `YEARLY`, with an optional `INTERVAL` up to 1000. Weeks start on Monday
 - `BYDAY`: for `WEEKLY`, one or more weekdays. For `MONTHLY`, one ordinal weekday, `1` to `4` or `-1` for the last, such as `2FR`
 - `BYMONTHDAY`: for `MONTHLY`, `1` to `31`. A month without that day is skipped
 
-A rule ends on `ends_on`, so `UNTIL` and `COUNT` are not accepted. A part the pattern leaves out comes from `starts_on`: a weekly rule repeats on its weekday, a monthly one on its day of the month. A row that isn't a valid rule, or whose pattern can never produce a date after `starts_on`, is left out. `Rule::rrule()` returns the pattern in one canonical form.
+A rule ends on `ends_on`, so `UNTIL` and `COUNT` are not accepted, and an occurrence lasts at most 366 days. A part the pattern leaves out comes from `starts_on`: a weekly rule repeats on its weekday, a monthly one on its day of the month. A row that isn't a valid rule, or whose pattern can never produce a date after `starts_on`, is left out. `Rule::rrule()` returns the pattern in one canonical form.
 
 Each occurrence is built from its own local date and time in the rule's timezone, so a clock change on one date never shifts the dates after it. A time in a spring-forward gap starts after the gap, and its key uses that shifted start. An all-day occurrence ends at 23:59:59 local on its last day.
 

@@ -233,6 +233,8 @@ class Test_Rule extends Base {
 			'INTERVAL=2',
 			'FREQ=WEEKLY;INTERVAL=x',
 			'FREQ=WEEKLY;INTERVAL=0',
+			'FREQ=YEARLY;INTERVAL=1001',
+			'FREQ=YEARLY;INTERVAL=99999999999999999999',
 			'FREQ=WEEKLY;BYDAY=XX',
 			'FREQ=WEEKLY;BYDAY=MO,MO',
 			'FREQ=WEEKLY;BYMONTHDAY=3',
@@ -604,14 +606,15 @@ class Test_Rule extends Base {
 		$rule = $this->rule(
 			array(
 				'starts_on' => '2026-12-16',
-				'rrule'     => 'FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE',
+				'rrule'     => 'FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE,SU',
 			)
 		);
 
-		// Wed Dec 16 starts the week of Mon Dec 14. Every other week skips Dec 21.
+		// Wed Dec 16 is in the week of Mon Dec 14, which ends on Sun Dec 20, so
+		// Dec 20 counts. A Sunday week start would put Dec 20 in the skipped week.
 		$this->assertSame(
-			array( '20261216T200000', '20261228T200000', '20261230T200000' ),
-			$this->keys( $rule, '2026-12-01', '2027-01-04' )
+			array( '20261216T200000', '20261220T200000', '20261228T200000', '20261230T200000', '20270103T200000' ),
+			$this->keys( $rule, '2026-12-01', '2027-01-05' )
 		);
 	}
 
@@ -699,6 +702,7 @@ class Test_Rule extends Base {
 
 		$this->assertCount( Rule::MAX_DATES, $keys );
 		$this->assertSame( '20260101T200000', $keys[0], 'The earliest dates are kept.' );
+		$this->assertSame( '20280926T200000', end( $keys ), 'The thousandth date, 999 days in.' );
 	}
 
 	/**

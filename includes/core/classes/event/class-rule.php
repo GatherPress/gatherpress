@@ -79,6 +79,17 @@ final class Rule {
 	const MAX_DURATION = 527040;
 
 	/**
+	 * Largest `INTERVAL` a rule accepts.
+	 *
+	 * Keeps period arithmetic within integers: a huge interval would push a
+	 * date past what PHP can represent.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const MAX_INTERVAL = 1000;
+
+	/**
 	 * The date pattern: `DAILY`, `WEEKLY`, `MONTHLY`, `YEARLY`, or null for one date.
 	 *
 	 * @since TBD
@@ -842,7 +853,7 @@ final class Rule {
 			$parts['interval'] = ctype_digit( $values['INTERVAL'] ) ? (int) $values['INTERVAL'] : 0;
 		}
 
-		if ( ! $parts['frequency'] || 1 > $parts['interval'] ) {
+		if ( ! $parts['frequency'] || 1 > $parts['interval'] || self::MAX_INTERVAL < $parts['interval'] ) {
 			return null;
 		}
 
