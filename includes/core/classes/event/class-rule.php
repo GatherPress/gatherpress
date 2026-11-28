@@ -716,19 +716,27 @@ final class Rule {
 	 */
 	protected static function parse_row( array $row ): ?array {
 		$starts_on = self::parse_date( $row['starts_on'] ?? null );
-		$has_end   = isset( $row['ends_on'] );
-		$ends_on   = $has_end ? self::parse_date( $row['ends_on'] ) : null;
-		$timezone  = is_string( $row['timezone'] ?? null ) ? $row['timezone'] : '';
-		$pattern   = self::parse_rrule( $row['rrule'] ?? null );
-		$times     = self::parse_times( $row['times'] ?? array() );
 
-		if (
-			! $starts_on
-			|| ( $has_end && ( ! $ends_on || $ends_on < $starts_on ) )
-			|| ! Validate::timezone( $timezone )
-			|| null === $pattern
-			|| null === $times
-		) {
+		if ( ! $starts_on ) {
+			return null;
+		}
+
+		$ends_on = null;
+
+		// The end date is optional, but one that is given must be a date on or after the start.
+		if ( isset( $row['ends_on'] ) ) {
+			$ends_on = self::parse_date( $row['ends_on'] );
+
+			if ( ! $ends_on || $ends_on < $starts_on ) {
+				return null;
+			}
+		}
+
+		$timezone = is_string( $row['timezone'] ?? null ) ? $row['timezone'] : '';
+		$pattern  = self::parse_rrule( $row['rrule'] ?? null );
+		$times    = self::parse_times( $row['times'] ?? array() );
+
+		if ( null === $pattern || null === $times || ! Validate::timezone( $timezone ) ) {
 			return null;
 		}
 
