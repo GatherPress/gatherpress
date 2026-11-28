@@ -7,7 +7,7 @@ import moment from 'moment';
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Notice } from '@wordpress/components';
+import { Notice, PanelRow } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
@@ -16,8 +16,8 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import {
 	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
-} from '../helpers/datetime';
-import { EVENT_STATUS_ID } from './EventStatus';
+} from '../../helpers/datetime';
+import { EVENT_STATUS_ID } from '../EventStatus';
 
 /**
  * Offer to mark a published event as Rescheduled when its start moves.
@@ -82,23 +82,27 @@ const RescheduledOffer = () => {
 		document.getElementById( EVENT_STATUS_ID )?.focus();
 	};
 
+	// A panel row, as the date controls use, gives the gap to the status
+	// select's help text.
 	return (
-		<Notice
-			status="info"
-			isDismissible={ false }
-			actions={ [
-				{
-					label: __( 'Mark as Rescheduled', 'gatherpress' ),
-					onClick: markRescheduled,
-					variant: 'secondary',
-				},
-			] }
-		>
-			{ __(
-				'The start changed. Do you want to set the event status to Rescheduled?',
-				'gatherpress',
-			) }
-		</Notice>
+		<PanelRow>
+			<Notice
+				status="info"
+				isDismissible={ false }
+				actions={ [
+					{
+						label: __( 'Mark as Rescheduled', 'gatherpress' ),
+						onClick: markRescheduled,
+						variant: 'secondary',
+					},
+				] }
+			>
+				{ __(
+					'The start changed. Do you want to set the event status to Rescheduled?',
+					'gatherpress',
+				) }
+			</Notice>
+		</PanelRow>
 	);
 };
 

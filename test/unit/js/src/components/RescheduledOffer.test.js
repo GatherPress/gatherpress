@@ -33,6 +33,7 @@ jest.mock( '@wordpress/components', () => ( {
 			) ) }
 		</div>
 	),
+	PanelRow: ( { children } ) => <div>{ children }</div>,
 	SelectControl: () => null,
 } ) );
 
