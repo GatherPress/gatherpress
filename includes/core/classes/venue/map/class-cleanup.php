@@ -87,7 +87,7 @@ class Cleanup {
 	 * @since TBD
 	 * @var string
 	 */
-	const FILENAME_REGEX = '/^[a-z0-9_.-]+-\d+-\d+-\d+(@\d+x)?\.png$/i';
+	const FILENAME_REGEX = '/^[a-z0-9_.-]+-\d+-\d+-\d+(-[0-9a-f]{8})?(@\d+x)?\.png$/i';
 
 	/**
 	 * Class constructor.
@@ -152,8 +152,9 @@ class Cleanup {
 	 * Check if a filename matches the static map naming convention.
 	 *
 	 * Only filenames conforming to `{slug}-{zoom}-{width}-{height}.png`
-	 * (including provider, map type segments, and optional retina `@2x` suffix)
-	 * are considered valid static map images.
+	 * (including provider, map type segments, the optional eight-character
+	 * map hash from `Saved_Image::versioned()`, and an optional retina `@2x`
+	 * suffix) are considered valid static map images.
 	 *
 	 * @since TBD
 	 *
@@ -187,20 +188,22 @@ class Cleanup {
 	 *
 	 * Scans all post types declaring `gatherpress-venue-information` support across
 	 * all post statuses, collecting image URLs stored under `Map::META_KEY` and
-	 * legacy `gatherpress_venue_static_map` meta.
+	 * legacy `gatherpress_venue_static_map` meta. Images queued in a delayed
+	 * `Saved_Image::DELETE_CRON_ACTION` event also count as in use, so they stay
+	 * for the full delay.
 	 *
 	 * @since TBD
 	 *
 	 * @return array<string, bool> Map of in-use image basenames to true.
 	 */
 	public function get_in_use_basenames(): array {
-		$types = get_post_types_by_support( Venue::SUPPORT );
+		// A replaced image waits a week in a delete event for cached pages, so keep it until then.
+		$in_use = array_fill_keys( array_map( 'wp_basename', Saved_Image::queued_urls() ), true );
+		$types  = get_post_types_by_support( Venue::SUPPORT );
 
 		if ( empty( $types ) ) {
-			return array();
+			return $in_use;
 		}
-
-		$in_use = array();
 
 		/**
 		 * Filters how many venues are read per batch when finding the static maps in use.

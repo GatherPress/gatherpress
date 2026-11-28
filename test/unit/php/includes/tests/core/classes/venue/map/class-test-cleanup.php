@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map\Cleanup;
 use GatherPress\Core\Venue\Map\Map;
+use GatherPress\Core\Venue\Map\Saved_Image;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -116,6 +117,8 @@ class Test_Cleanup extends Base {
 			'vondelpark-amsterdam-52.362100_4.882900-osm-roadmap-16-600-300@2x.png',
 			'venue-37.774929_-122.419416-google-satellite-12-600-300.png',
 			'venue-37.774929_-122.419416-google-satellite-12-600-300@2x.png',
+			'vondelpark-amsterdam-52.362100_4.882900-osm-roadmap-16-600-300-fa55badd.png',
+			'vondelpark-amsterdam-52.362100_4.882900-osm-roadmap-16-600-300-fa55badd@2x.png',
 		);
 
 		foreach ( $valid as $filename ) {
@@ -147,6 +150,8 @@ class Test_Cleanup extends Base {
 			'venue-abc.png',
 			'../../wp-config.php',
 			'something-else-15-800-400.jpg',
+			'venue-osm-roadmap-15-800-400-1a2b3c4z.png',
+			'venue-osm-roadmap-15-800-400-1a2b3c4.png',
 		);
 
 		foreach ( $invalid as $filename ) {
@@ -794,5 +799,73 @@ class Test_Cleanup extends Base {
 		Cleanup::get_instance()->run_scheduled();
 
 		$this->assertFileDoesNotExist( $path );
+	}
+
+	/**
+	 * Tests a replaced image waiting in a delayed delete event is kept until that event runs.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_in_use_basenames
+	 * @covers ::sweep
+	 *
+	 * @return void
+	 */
+	public function test_sweep_keeps_images_queued_for_delayed_delete(): void {
+		$name = 'replaced-0.000000_0.000000-osm-roadmap-15-800-400-1a2b3c4d.png';
+		$path = $this->create_map_file( $name, time() - 600 );
+		$url  = Saved_Image::url( $name );
+		$when = time() + WEEK_IN_SECONDS;
+
+		wp_schedule_single_event( $when, Saved_Image::DELETE_CRON_ACTION, array( array( $url ), $when ) );
+
+		try {
+			$this->assertArrayHasKey( $name, Cleanup::get_instance()->get_in_use_basenames() );
+
+			$result = Cleanup::get_instance()->sweep( false );
+
+			$this->assertFileExists( $path );
+			$this->assertSame( 0, $result['orphans'] );
+		} finally {
+			wp_clear_scheduled_hook( Saved_Image::DELETE_CRON_ACTION, array( array( $url ), $when ) );
+		}
+
+		$result = Cleanup::get_instance()->sweep( false );
+
+		$this->assertFileDoesNotExist( $path, 'Once the event is gone, the image is an orphan.' );
+		$this->assertSame( 1, $result['deleted'] );
+	}
+
+	/**
+	 * Tests queued images still count as in use when no post type supports venues.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_in_use_basenames
+	 *
+	 * @return void
+	 */
+	public function test_get_in_use_basenames_keeps_queued_without_venue_support(): void {
+		$name  = 'queued-0.000000_0.000000-osm-roadmap-15-800-400-1a2b3c4d.png';
+		$url   = Saved_Image::url( $name );
+		$when  = time() + WEEK_IN_SECONDS;
+		$types = get_post_types_by_support( Venue::SUPPORT );
+
+		wp_schedule_single_event( $when, Saved_Image::DELETE_CRON_ACTION, array( array( $url ), $when ) );
+
+		foreach ( $types as $type ) {
+			remove_post_type_support( $type, Venue::SUPPORT );
+		}
+
+		try {
+			$basenames = Cleanup::get_instance()->get_in_use_basenames();
+		} finally {
+			foreach ( $types as $type ) {
+				add_post_type_support( $type, Venue::SUPPORT );
+			}
+			wp_clear_scheduled_hook( Saved_Image::DELETE_CRON_ACTION, array( array( $url ), $when ) );
+		}
+
+		$this->assertSame( array( $name => true ), $basenames );
 	}
 }
