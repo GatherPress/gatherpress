@@ -146,7 +146,8 @@ final class Rules {
 	 *
 	 * @param string            $date The first local date of the new schedule, as `Y-m-d`. On a published
 	 *                                event it must be after today in the event's timezone and in each
-	 *                                rule's, so nothing that has happened, or is happening today, changes.
+	 *                                current and new rule's, so nothing that has happened, or is happening
+	 *                                today, changes.
 	 * @param array<int, mixed> $rows The new rules, as meta rows, each starting on or after `$date`.
 	 *
 	 * @return bool|WP_Error True once saved, or why the change was refused.
@@ -164,7 +165,10 @@ final class Rules {
 		$change_id = wp_generate_uuid4();
 		$rows      = $this->prepare( $rows, $change_id, $from );
 
-		if ( ! is_wp_error( $rows ) && $this->is_published() && ! $this->is_after_today( $from ) ) {
+		// Read the persisted rules, not ones another `Rules` object has since rewritten.
+		$this->rules = null;
+
+		if ( ! is_wp_error( $rows ) && $this->is_published() && ! $this->is_after_today( $from, $rows ) ) {
 			$rows = new WP_Error(
 				'gatherpress_rules_past_change',
 				__( 'A published event can only change its schedule from tomorrow on.', 'gatherpress' )
@@ -369,7 +373,8 @@ final class Rules {
 	 * @param string $change_id The change's ID.
 	 *
 	 * @return Rule[]|WP_Error The rule, none when the event has no saved date, or an error if the saved
-	 *                         date can't be a rule, such as one lasting longer than `Rule::MAX_DURATION`.
+	 *                         date can't be a rule, such as one lasting longer than `Rule::MAX_DURATION`
+	 *                         or one with seconds.
 	 */
 	protected function seed( string $change_id ): array|WP_Error {
 		$data = $this->event->get_saved_datetime();
@@ -396,7 +401,10 @@ final class Rules {
 			)
 		);
 
-		return $rule ? array( $rule ) : new WP_Error(
+		// A rule keeps whole minutes, so a timed date with seconds would change.
+		$is_exact = $is_all_day || '0000' === $start->format( 's' ) . $end->format( 's' );
+
+		return $rule && $is_exact ? array( $rule ) : new WP_Error(
 			'gatherpress_rules_saved_date',
 			__( "The event's saved date can't be kept as a repeat rule, so its schedule can't change.", 'gatherpress' )
 		);
@@ -406,38 +414,65 @@ final class Rules {
 	 * Save rows as the event's rules, then move its saved dates to the series' first date.
 	 *
 	 * Rows that aren't valid rules, which a later version may have written,
-	 * are kept as they were.
+	 * are kept as they were. If a row can't be saved, the rows from before
+	 * are put back, so a failed write never leaves the schedule half written.
 	 *
 	 * @since TBD
 	 *
 	 * @param array<int, array<string, mixed>> $rows The rows, already validated.
 	 *
-	 * @return bool True once saved.
+	 * @return bool|WP_Error True once saved, or an error if the rows couldn't be saved.
 	 */
-	protected function write( array $rows ): bool {
-		$post_id = $this->event->post->ID ?? 0;
-		$unknown = array();
-
-		foreach ( (array) get_post_meta( $post_id, self::META_KEY, false ) as $row ) {
-			if ( null === Rule::from_meta( $row ) ) {
-				$unknown[] = $row;
-			}
-		}
+	protected function write( array $rows ): bool|WP_Error {
+		$post_id  = $this->event->post->ID ?? 0;
+		$previous = (array) get_post_meta( $post_id, self::META_KEY, false );
+		$unknown  = array_filter( $previous, static fn( mixed $row ): bool => null === Rule::from_meta( $row ) );
 
 		self::$writing[ $post_id ] = true;
 
 		try {
-			delete_post_meta( $post_id, self::META_KEY );
+			$saved = $this->replace_rows( $post_id, array_merge( array_values( $unknown ), $rows ) );
 
-			foreach ( array_merge( $unknown, $rows ) as $row ) {
-				add_post_meta( $post_id, self::META_KEY, $row );
+			if ( ! $saved ) {
+				$this->replace_rows( $post_id, $previous );
 			}
 		} finally {
 			unset( self::$writing[ $post_id ] );
 		}
 
 		$this->rules = null;
+
+		if ( ! $saved ) {
+			return new WP_Error(
+				'gatherpress_rules_not_saved',
+				__( 'The repeat rules could not be saved, so the schedule was left as it was.', 'gatherpress' )
+			);
+		}
+
 		$this->sync_saved_dates( $post_id );
+
+		return true;
+	}
+
+	/**
+	 * Replace the stored rows of the rule key.
+	 *
+	 * @since TBD
+	 *
+	 * @param int               $post_id The event's post ID.
+	 * @param array<int, mixed> $rows    The rows to store.
+	 *
+	 * @return bool True if every row was saved.
+	 */
+	protected function replace_rows( int $post_id, array $rows ): bool {
+		delete_post_meta( $post_id, self::META_KEY );
+
+		foreach ( $rows as $row ) {
+			// Slashed, since `add_post_meta()` unslashes.
+			if ( false === add_post_meta( $post_id, self::META_KEY, wp_slash( $row ) ) ) {
+				return false;
+			}
+		}
 
 		return true;
 	}
@@ -512,21 +547,23 @@ final class Rules {
 	}
 
 	/**
-	 * Whether a local date is after today in the event's timezone and in each rule's.
+	 * Whether a local date is after today in the event's timezone and in each current and new rule's.
 	 *
 	 * Today can be a day further on in one rule's timezone than in another,
 	 * so the date must be after the latest of them.
 	 *
 	 * @since TBD
 	 *
-	 * @param DateTimeImmutable $date The local date.
+	 * @param DateTimeImmutable                $date The local date.
+	 * @param array<int, array<string, mixed>> $rows The new rules, as validated meta rows.
 	 *
 	 * @return bool True if the date is tomorrow or later everywhere the event happens.
 	 */
-	protected function is_after_today( DateTimeImmutable $date ): bool {
+	protected function is_after_today( DateTimeImmutable $date, array $rows ): bool {
 		$timezones = array( new DateTimeZone( Utility::normalize_timezone_string( $this->event->get_timezone() ) ) );
+		$new       = array_filter( array_map( array( Rule::class, 'from_meta' ), $rows ) );
 
-		foreach ( $this->all() as $rule ) {
+		foreach ( array_merge( $this->all(), $new ) as $rule ) {
 			$timezones[] = $rule->timezone;
 		}
 
