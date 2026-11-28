@@ -265,6 +265,16 @@ The save is checked on `rest_pre_insert_{post_type}`, before anything is saved, 
 
 Direct writes of `gatherpress_rule` through `add_post_meta()`, `update_post_meta()` and `delete_post_meta()` are refused. Writes to a revision, `delete_post_meta_by_key()`, and imports that set `WP_IMPORTING`, such as the WordPress Importer, are let through, and the `gatherpress_rule_meta_write_allowed` filter can allow others. The meta is read-only through REST.
 
+### A page for each date
+
+Each date of a repeating event has a URL: the event's link plus the date's recurrence ID, `/event/<slug>/<Ymd\THis>/`, the form events.wordpress.org already publishes. Without pretty permalinks it's a `gatherpress_occurrence` query arg. The page is the event's page showing that date, through `Event\Current_Occurrence`, and its canonical is the date's URL. Lists and the calendar link each repeating row to its date's page, since `post_type_link` adds the current date's ID. An event without rules keeps its plain link.
+
+- `/event/<slug>/<Ymd>/` goes to that day's date with a 301, and so does a full ID whose time moved on the same day.
+- An ID the series no longer has, within its dates, goes to the next date with a 302, or to the series page when no date follows. The `gatherpress_removed` arg makes the page say the bookmarked date is no longer on the schedule.
+- A malformed ID, or one outside the series' dates, is a 404.
+
+Nothing is stored for this, so the notice can't say when or why a date was removed. Recorded aliases, the per-date calendar endpoints, and listing a day's several showtimes are still to come.
+
 ## REST endpoints
 
 Everything is under the `gatherpress/v1` namespace, defined as `GATHERPRESS_REST_NAMESPACE`.
