@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Events have a `gatherpress_repeat` REST field that reads an event's repeating schedule as one pattern and saves it with the post, changing a started series from a future date so its past dates stay as they were.
