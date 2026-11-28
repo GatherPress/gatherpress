@@ -289,18 +289,21 @@ final class Rule {
 			}
 
 			foreach ( $this->occurrences_on( $date, $post_id, $status ) as $occurrence ) {
+				// A day a timezone skipped, such as Samoa's 2011-12-30, lands on the next one.
+				$id = $occurrence->recurrence_id . '|' . $occurrence->start->getTimestamp();
+
 				if ( $occurrence->start < $to && $occurrence->end >= $from ) {
-					$occurrences[] = $occurrence;
+					$occurrences[ $id ] = $occurrence;
 				}
 			}
 
 			// Dates come in order, so once there are enough, later ones can't be earlier.
 			if ( count( $occurrences ) >= $limit ) {
-				return array_slice( $occurrences, 0, $limit );
+				return array_slice( array_values( $occurrences ), 0, $limit );
 			}
 		}
 
-		return $occurrences;
+		return array_values( $occurrences );
 	}
 
 	/**
