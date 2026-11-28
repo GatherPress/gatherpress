@@ -214,6 +214,14 @@ class Test_Occurrences extends Base {
 			$this->occurrences( $no_date )->in_range( $from, $to ),
 			'An event without a start has no dates.'
 		);
+
+		$occurrences = $this->occurrences( $no_date );
+		$this->assertNull( $occurrences->find( '20261211T200000' ) );
+		$this->assertNull( $occurrences->find( '20261211T200000' ), 'A second lookup reuses the empty result.' );
+		$this->assertNull(
+			$occurrences->on_day( $this->utc( '2026-12-11' ) ),
+			'An event without dates has nothing on any day.'
+		);
 	}
 
 	/**
@@ -343,6 +351,11 @@ class Test_Occurrences extends Base {
 
 		$this->assertSame( $other, $this->occurrences( $post_id )->find( '20261218T200000' ) );
 		$this->assertNull( $this->occurrences( $post_id )->find( '20261225T200000' ) );
+		$this->assertSame(
+			'20261211T200000',
+			$this->occurrences( $post_id )->find( '20261211T200000' )->recurrence_id,
+			'A key the filter does not handle keeps the one date.'
+		);
 	}
 
 	/**
@@ -487,5 +500,62 @@ class Test_Occurrences extends Base {
 		);
 
 		$this->assertSame( $morning, $this->occurrences( $post_id )->on_day( $this->utc( '2026-12-11' ) ) );
+	}
+
+	/**
+	 * Keys and local times use the event's timezone, whatever the viewer's preference.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::single
+	 * @covers ::find
+	 * @covers ::on_day
+	 *
+	 * @return void
+	 */
+	public function test_keys_ignore_the_viewer_timezone(): void {
+		$post_id = $this->event();
+		$viewer  = static fn() => 'UTC';
+
+		add_filter( 'gatherpress_timezone', $viewer );
+
+		try {
+			$occurrence = $this->occurrences( $post_id )->find( '20261211T200000' );
+			$on_day     = $this->occurrences( $post_id )->on_day( $this->utc( '2026-12-11' ) );
+		} finally {
+			remove_filter( 'gatherpress_timezone', $viewer );
+		}
+
+		$this->assertNotNull( $occurrence, 'The event-local key still finds the date.' );
+		$this->assertSame( 'America/New_York', $occurrence->start->getTimezone()->getName() );
+		$this->assertSame( '20261211T200000', $on_day->recurrence_id, 'The event-local date still finds it.' );
+	}
+
+	/**
+	 * A moved occurrence keeps its original key and is found on the day it now starts.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::on_day
+	 *
+	 * @return void
+	 */
+	public function test_on_day_finds_a_moved_occurrence_by_its_start(): void {
+		$post_id = $this->event();
+		$zone    = new DateTimeZone( 'America/New_York' );
+		$moved   = new Occurrence(
+			$post_id,
+			'20261211T200000',
+			new DateTimeImmutable( '2026-12-13 20:00:00', $zone ),
+			new DateTimeImmutable( '2026-12-13 22:00:00', $zone )
+		);
+
+		add_filter( 'gatherpress_event_occurrences', static fn() => array( $moved ) );
+
+		$this->assertSame( $moved, $this->occurrences( $post_id )->on_day( $this->utc( '2026-12-13' ) ) );
+		$this->assertNull(
+			$this->occurrences( $post_id )->on_day( $this->utc( '2026-12-11' ) ),
+			'The original date no longer has it.'
+		);
 	}
 }

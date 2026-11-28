@@ -134,7 +134,7 @@ An event post is a series, and an occurrence is one of its dates. Without repeat
 - `primary()` returns the occurrence a series shows by default: the first that has not ended, preferring one that is not canceled, or the last when all have ended.
 - The static `Occurrences::recurrence_id( $start, $all_day )` builds a key: the local start as `Ymd\THis` (the RFC 5545 `RECURRENCE-ID` form), or the local date as `Ymd` for an all-day occurrence.
 
-Each occurrence carries its series post ID, its key, its start and end in the event's timezone, whether it lasts all day, and its status (an event status slug, so `is_canceled()` works per date). Today the one occurrence is read from the events table and takes the event's status. The `gatherpress_event_occurrences`, `gatherpress_event_occurrence` and `gatherpress_event_primary_occurrence` filters let repeat rules supply more dates without callers changing.
+Each occurrence carries its series post ID, its key, its start and end in the event's timezone, whether it lasts all day, and its status (an event status slug, so `is_canceled()` works per date). Today the one occurrence is read from the event's saved dates, in the event's own timezone rather than a viewer's preference, and takes the event's status. The `gatherpress_event_occurrences`, `gatherpress_event_occurrence` and `gatherpress_event_primary_occurrence` filters let repeat rules supply more dates without callers changing.
 
 ## REST endpoints
 

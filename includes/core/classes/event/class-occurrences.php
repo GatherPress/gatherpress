@@ -22,7 +22,7 @@ use GatherPress\Core\Utility;
  * Class Occurrences.
  *
  * The one place callers ask for an event's dates, through `Event::occurrences()`.
- * Every event is a series of one today, read from the events table. Repeat
+ * Every event is a series of one today, read from its saved dates. Repeat
  * rules plug in later through the filters here, so callers don't change when
  * they do.
  *
@@ -197,7 +197,8 @@ final class Occurrences {
 		$to   = ( new DateTimeImmutable( $day->format( 'Y-m-d' ), $utc ) )->modify( '+1 day +' . $offset );
 
 		foreach ( $this->in_range( $from, $to ) as $occurrence ) {
-			if ( str_starts_with( $occurrence->recurrence_id, $date ) ) {
+			// The start, not the key: a moved occurrence keeps its original key.
+			if ( $occurrence->start->format( self::ALL_DAY_KEY_FORMAT ) === $date ) {
 				return $occurrence;
 			}
 		}
@@ -217,7 +218,10 @@ final class Occurrences {
 	}
 
 	/**
-	 * The event's one occurrence without repeat rules, from the events table.
+	 * The event's one occurrence without repeat rules, from its saved dates.
+	 *
+	 * The key and local times use the event's own timezone, not a viewer's
+	 * preference, so the same date always gets the same key.
 	 *
 	 * @since TBD
 	 *
@@ -238,7 +242,7 @@ final class Occurrences {
 		}
 
 		$utc      = new DateTimeZone( 'UTC' );
-		$timezone = new DateTimeZone( Utility::normalize_timezone_string( (string) $datetime['timezone'] ) );
+		$timezone = new DateTimeZone( Utility::normalize_timezone_string( $this->event->get_timezone() ) );
 		$start    = ( new DateTimeImmutable( $datetime['datetime_start_gmt'], $utc ) )->setTimezone( $timezone );
 		$end      = empty( $datetime['datetime_end_gmt'] )
 			? $start

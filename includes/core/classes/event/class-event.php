@@ -889,6 +889,26 @@ class Event {
 	}
 
 	/**
+	 * The event's own timezone, as saved.
+	 *
+	 * Unlike the timezone in `get_datetime()`, this is not passed through the
+	 * `gatherpress_timezone` filter, so a viewer's timezone preference never
+	 * changes it. Anything that identifies a date, such as an occurrence key,
+	 * reads it from here.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The saved timezone, or the site's when none valid is saved.
+	 */
+	public function get_timezone(): string {
+		$timezone = $this->post
+			? (string) get_post_meta( $this->post->ID, Utility::prefix_key( 'timezone' ), true )
+			: '';
+
+		return Validate::timezone( $timezone ) ? $timezone : sanitize_text_field( wp_timezone_string() );
+	}
+
+	/**
 	 * Retrieves event timing and adjusts timezone based on user preferences or site settings.
 	 *
 	 * Fetches the event's start and end dates/times (local and GMT) along with

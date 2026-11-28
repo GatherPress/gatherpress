@@ -576,6 +576,48 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * The saved timezone ignores a viewer's timezone preference and falls back to the site's.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_timezone
+	 *
+	 * @return void
+	 */
+	public function test_get_timezone(): void {
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$viewer  = static fn() => 'Asia/Tokyo';
+
+		update_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
+		add_filter( 'gatherpress_timezone', $viewer );
+
+		try {
+			$this->assertSame( 'America/New_York', ( new Event( $post_id ) )->get_timezone() );
+			$this->assertSame(
+				'Asia/Tokyo',
+				( new Event( $post_id ) )->get_datetime()['timezone'],
+				'The display timezone still follows the filter.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_timezone', $viewer );
+		}
+
+		update_post_meta( $post_id, 'gatherpress_timezone', 'Not/A_Zone' );
+		$this->assertSame(
+			wp_timezone_string(),
+			( new Event( $post_id ) )->get_timezone(),
+			'An invalid saved timezone falls back to the site.'
+		);
+
+		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+		$this->assertSame(
+			wp_timezone_string(),
+			( new Event( $post ) )->get_timezone(),
+			'A post that is not an event uses the site.'
+		);
+	}
+
+	/**
 	 * Coverage for get_datetime method with partially missing meta.
 	 *
 	 * Events created before #2054 seeded a default datetime, and events built
