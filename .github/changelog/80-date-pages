@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Each date of a repeating event has its own page, which lists and the calendar link to, and a link to a date the schedule no longer has goes to the next date with a notice.
