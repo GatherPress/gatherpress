@@ -384,6 +384,9 @@ final class Repeat_Field {
 	/**
 	 * Plan replacing the rules of an event that hasn't started.
 	 *
+	 * The rule takes its time and length from the event's dates in the
+	 * request, ignoring any in the pattern, so it always matches them.
+	 *
 	 * @since TBD
 	 *
 	 * @param int                       $post_id The event's post ID, or 0.
@@ -396,7 +399,9 @@ final class Repeat_Field {
 		$rows = array();
 
 		if ( null !== $pattern ) {
-			$row = $this->valid_row( $this->row( $pattern, $dates, $dates['start']->format( Rule::DATE_FORMAT ) ) );
+			// The event's own dates give the time and length; those in the pattern are only for a change.
+			$pattern = array_diff_key( $pattern, array_flip( array( 'times', 'duration' ) ) );
+			$row     = $this->valid_row( $this->row( $pattern, $dates, $dates['start']->format( Rule::DATE_FORMAT ) ) );
 
 			if ( is_wp_error( $row ) ) {
 				return $row;
