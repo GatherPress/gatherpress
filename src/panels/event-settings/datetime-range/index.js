@@ -2,6 +2,7 @@
  * Internal dependencies
  */
 import DateTimeRange from '../../../components/DateTimeRange';
+import RepeatSchedule from '../../../components/RepeatSchedule';
 import ShowTimezone from '../../../components/ShowTimezone';
 import EventStatus from '../../../components/EventStatus';
 
@@ -19,6 +20,9 @@ const DateTimeRangePanel = () => {
 	return (
 		<>
 			<DateTimeRange />
+			<section>
+				<RepeatSchedule />
+			</section>
 			{ /* Belongs to the event rather than to a block, and the Event
 			     Date block already carries its own Append time zone toggle. */ }
 			<section>

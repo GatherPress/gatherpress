@@ -19,6 +19,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  */
 import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
+import { useIsStartedSeries } from '../helpers/repeat';
 import {
 	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
@@ -43,6 +44,8 @@ import { getSettings } from '@wordpress/date';
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeEnd = () => {
+	// A started series' first date is history, so it can't be picked.
+	const frozen = useIsStartedSeries();
 	// An all-day event has no time to pick, and shows only its date.
 	const { dateTimeEnd, isAllDay } = useSelect(
 		( select ) => ( {
@@ -98,6 +101,7 @@ const DateTimeEnd = () => {
 							// button's name; name it with the label and the date.
 							<Button
 								id="gatherpress-datetime-end"
+								disabled={ frozen }
 								aria-labelledby="gatherpress-datetime-end-label gatherpress-datetime-end-value"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }

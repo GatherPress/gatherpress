@@ -19,6 +19,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  */
 import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
+import { useIsStartedSeries } from '../helpers/repeat';
 import {
 	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
@@ -45,6 +46,8 @@ import { getSettings } from '@wordpress/date';
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeStart = () => {
+	// A started series' first date is history, so it can't be picked.
+	const frozen = useIsStartedSeries();
 	const dateTimeStart = useSelect(
 		( select ) => select( 'gatherpress/datetime' ).getDateTimeStart(),
 		[],
@@ -112,6 +115,7 @@ const DateTimeStart = () => {
 							// button's name; name it with the label and the date.
 							<Button
 								id="gatherpress-datetime-start"
+								disabled={ frozen }
 								aria-labelledby="gatherpress-datetime-start-label gatherpress-datetime-start-value"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }
