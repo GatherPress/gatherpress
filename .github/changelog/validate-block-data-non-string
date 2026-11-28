@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Return a 400 instead of a fatal error when the RSVP status endpoint receives block data that is not a string, or the RSVP form endpoint receives an email that is not a string.

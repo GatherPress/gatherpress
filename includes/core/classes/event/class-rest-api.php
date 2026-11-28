@@ -428,7 +428,8 @@ final class Rest_Api {
 					'email'                            => array(
 						'required'          => true,
 						'validate_callback' => function ( $param ) {
-							return is_email( $param );
+							// is_email() calls strlen(), which throws on an array such as `email[]=x`.
+							return is_string( $param ) && is_email( $param );
 						},
 					),
 					'gatherpress_form_schema_id'       => array(

@@ -302,6 +302,20 @@ class Test_Validate extends Base {
 	}
 
 	/**
+	 * Block data that is not a string is invalid instead of a TypeError.
+	 *
+	 * @since TBD
+	 * @covers ::block_data
+	 *
+	 * @return void
+	 */
+	public function test_block_data_rejects_non_string(): void {
+		$this->assertFalse( Validate::block_data( array( 'a' => 1 ) ) );
+		$this->assertFalse( Validate::block_data( 123 ) );
+		$this->assertFalse( Validate::block_data( null ) );
+	}
+
+	/**
 	 * A signature is a 64-character lowercase hex string, nothing else.
 	 *
 	 * @covers ::block_signature

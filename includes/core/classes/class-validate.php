@@ -238,12 +238,19 @@ final class Validate {
 	 * (`blockName`, `attrs`, `innerBlocks`) exist and are of the correct types.
 	 *
 	 * @since 0.33.0
+	 * @since TBD    Accepts any type and returns false for one that isn't a string.
 	 *
-	 * @param string $param The JSON string representing block data.
+	 * @param mixed $param The JSON string representing block data. Any other
+	 *                     type, such as an array sent as `block_data[a]=1`,
+	 *                     is invalid.
 	 *
 	 * @return bool True if the block data is valid, false otherwise.
 	 */
-	public static function block_data( string $param ): bool {
+	public static function block_data( mixed $param ): bool {
+		if ( ! is_string( $param ) ) {
+			return false;
+		}
+
 		$decoded = json_decode( $param, true );
 
 		// Combined guard: bail when JSON decoded to null, when any of the
