@@ -12,7 +12,9 @@ use DateTimeImmutable;
 use DateTimeZone;
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Occurrence_Index;
+use GatherPress\Core\Event\Occurrences;
 use GatherPress\Core\Event\Rules;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -283,7 +285,19 @@ class Test_Occurrence_Index extends Base {
 		// Nothing is indexed until the index is built.
 		$this->assertSame( array(), $this->rows( $timed ) );
 
+		$ready_while_expanding = array();
+		$watch                 = static function ( array $occurrences ) use ( $index, &$ready_while_expanding ): array {
+			$ready_while_expanding[] = $index->is_ready();
+
+			return $occurrences;
+		};
+
+		add_filter( 'gatherpress_event_occurrences', $watch );
 		$index->maybe_install();
+		remove_filter( 'gatherpress_event_occurrences', $watch );
+
+		$this->assertNotEmpty( $ready_while_expanding );
+		$this->assertNotContains( true, $ready_while_expanding, 'Not ready until every series is expanded.' );
 
 		$this->assertTrue( $index->is_ready() );
 		$this->assertSame(
@@ -661,6 +675,172 @@ class Test_Occurrence_Index extends Base {
 	}
 
 	/**
+	 * A month with more dates than the read cap is read in pieces, so none are lost.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::insert
+	 * @covers ::next_cursor
+	 *
+	 * @return void
+	 */
+	public function test_more_dates_than_the_cap(): void {
+		$post_id = $this->event();
+		$times   = array();
+
+		for ( $minutes = 0; $minutes < 1440; $minutes += 30 ) {
+			$times[] = sprintf( '%02d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
+		}
+
+		$one_month = static fn(): int => 1;
+
+		add_filter( 'gatherpress_occurrence_index_horizon', $one_month );
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				$this->row(
+					array(
+						'starts_on' => $this->soon( 1 )->format( 'Y-m-d' ),
+						'rrule'     => 'FREQ=DAILY',
+						'times'     => $times,
+						'duration'  => 20,
+					)
+				),
+			)
+		);
+		remove_filter( 'gatherpress_occurrence_index_horizon', $one_month );
+
+		$this->assertGreaterThanOrEqual( 48 * 27, count( $this->keys( $post_id ) ), '48 a day for about a month.' );
+	}
+
+	/**
+	 * A failed copy leaves the index unready and keeps the lock, so the next try waits out the timeout.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::maybe_install
+	 * @covers ::copy_events
+	 *
+	 * @return void
+	 */
+	public function test_install_after_a_failed_copy(): void {
+		global $wpdb;
+
+		$index = Occurrence_Index::get_instance();
+		$break = static fn( string $query ): string => str_contains( $query, 'SELECT e.post_id' ) ? 'NOT SQL' : $query;
+
+		delete_option( Occurrence_Index::SCHEMA_OPTION );
+		delete_option( Occurrence_Index::LOCK_OPTION );
+		add_filter( 'query', $break );
+		$suppressed = $wpdb->suppress_errors( true );
+		$index->maybe_install();
+		$wpdb->suppress_errors( $suppressed );
+		remove_filter( 'query', $break );
+
+		$this->assertFalse( $index->is_ready() );
+		$this->assertNotFalse( get_option( Occurrence_Index::LOCK_OPTION ), 'The lock stays until it times out.' );
+		$this->assertFalse( Utility::get_hidden_property( $index, 'building' ) );
+	}
+
+	/**
+	 * The helpers, called directly for each of their paths.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::lock
+	 * @covers ::copy_events
+	 * @covers ::expand_repeating
+	 * @covers ::rebuild_from
+	 * @covers ::insert
+	 * @covers ::insert_rows
+	 * @covers ::next_cursor
+	 * @covers ::utc
+	 *
+	 * @return void
+	 */
+	public function test_helpers(): void {
+		$index = Occurrence_Index::get_instance();
+
+		delete_option( Occurrence_Index::LOCK_OPTION );
+		$this->assertTrue( Utility::invoke_hidden_method( $index, 'lock' ), 'A free lock.' );
+		$this->assertFalse( Utility::invoke_hidden_method( $index, 'lock' ), 'A held lock.' );
+		update_option( Occurrence_Index::LOCK_OPTION, (string) ( time() - Occurrence_Index::LOCK_TIMEOUT - 1 ), false );
+		$this->assertTrue( Utility::invoke_hidden_method( $index, 'lock' ), 'An abandoned lock.' );
+		delete_option( Occurrence_Index::LOCK_OPTION );
+
+		$this->assertTrue( Utility::invoke_hidden_method( $index, 'copy_events' ), 'Nothing to copy is still a copy.' );
+
+		$draft  = $this->event();
+		$series = $this->event( 'publish' );
+
+		$this->assertNull( Utility::invoke_hidden_method( $index, 'rebuild_from', array( new Event( $draft ) ) ) );
+		$this->assertNull(
+			Utility::invoke_hidden_method( $index, 'rebuild_from', array( new Event( $series ) ) ),
+			'No rules.'
+		);
+
+		( new Event( $series ) )->rules()->replace(
+			array( $this->row( array( 'starts_on' => $this->soon( 1 )->format( 'Y-m-d' ) ) ) )
+		);
+		$index->delete( $series );
+
+		$this->assertNull(
+			Utility::invoke_hidden_method( $index, 'rebuild_from', array( new Event( $series ) ) ),
+			'Not indexed yet.'
+		);
+
+		Utility::invoke_hidden_method( $index, 'expand_repeating' );
+
+		$this->assertEquals(
+			$this->utc_today(),
+			Utility::invoke_hidden_method( $index, 'rebuild_from', array( new Event( $series ) ) ),
+			'From today once indexed ahead.'
+		);
+
+		Utility::invoke_hidden_method( $index, 'insert_rows', array( array() ) );
+		$utc   = Utility::invoke_hidden_method( $index, 'utc', array( '2026-12-01 10:00:00' ) );
+		$later = $utc->modify( '+1 day' );
+
+		$this->assertSame( 'UTC', $utc->getTimezone()->getName() );
+		$this->assertSame(
+			$later,
+			Utility::invoke_hidden_method( $index, 'next_cursor', array( array(), $utc, $later ) ),
+			'A short batch moves to the range end.'
+		);
+
+		$event = new Event( $series );
+		$first = $event->occurrences()->in_range( $this->soon( 1 ), $this->soon( 9 ) )[0];
+		$full  = array_fill( 0, Occurrences::MAX_OCCURRENCES, $first );
+		$start = $first->start->setTimezone( new DateTimeZone( 'UTC' ) );
+
+		$this->assertEquals(
+			$start,
+			Utility::invoke_hidden_method( $index, 'next_cursor', array( $full, $start->modify( '-1 day' ), $later ) ),
+			'A full batch continues from its last date.'
+		);
+		$this->assertSame(
+			$later,
+			Utility::invoke_hidden_method( $index, 'next_cursor', array( $full, $start, $later ) ),
+			"A full batch that can't move forward moves to the range's end."
+		);
+
+		$index->delete( $series );
+		Utility::invoke_hidden_method( $index, 'insert', array( $event, $this->soon( 1 ), $this->soon( 9 ) ) );
+
+		$this->assertCount( 2, $this->keys( $series ), 'Two weekly dates in eight days.' );
+	}
+
+	/**
+	 * Midnight today, in UTC.
+	 *
+	 * @since TBD
+	 *
+	 * @return DateTimeImmutable The moment.
+	 */
+	protected function utc_today(): DateTimeImmutable {
+		return new DateTimeImmutable( 'today', new DateTimeZone( 'UTC' ) );
+	}
+
+	/**
 	 * A rebuild queued inside switch_to_blog() runs on the site the meta was written on.
 	 *
 	 * @since TBD
@@ -678,6 +858,8 @@ class Test_Occurrence_Index extends Base {
 		$start   = $this->soon( 7 );
 
 		switch_to_blog( $site_id );
+		// The plugin isn't network-active here, so the new site's tables are created as activation would.
+		Utility::invoke_hidden_method( Core_Setup::get_instance(), 'create_tables' );
 		$index->maybe_install();
 
 		$post_id = $this->event();
