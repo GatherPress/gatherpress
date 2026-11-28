@@ -871,21 +871,28 @@ class Test_Cleanup extends Base {
 	}
 
 	/**
-	 * Tests a stored URL with a query string still marks its file as in use.
+	 * Tests a stored URL with a query string still marks its file as in use, so a sweep keeps it.
 	 *
 	 * @since TBD
 	 *
 	 * @covers ::get_in_use_basenames
+	 * @covers ::sweep
 	 *
 	 * @return void
 	 */
 	public function test_get_in_use_basenames_strips_query_strings(): void {
 		$venue = $this->factory()->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$name  = 'query-osm-roadmap-15-800-400-1a2b3c4d.png';
+		$path  = $this->create_map_file( $name, time() - 600 );
 
 		add_post_meta( $venue, Map::META_KEY, array( 'url' => Saved_Image::url( $name ) . '?v=1' ) );
 
 		$this->assertArrayHasKey( $name, Cleanup::get_instance()->get_in_use_basenames() );
+
+		$result = Cleanup::get_instance()->sweep( false );
+
+		$this->assertFileExists( $path );
+		$this->assertSame( 0, $result['orphans'] );
 	}
 
 	/**
