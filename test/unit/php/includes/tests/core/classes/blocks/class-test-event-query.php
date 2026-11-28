@@ -2096,25 +2096,6 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_date_range_limits_query_results(): void {
-		$year      = (int) current_datetime()->format( 'Y' );
-		$last_year = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-		$older     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-
-		( new Event( $last_year->ID ) )->save_datetimes(
-			array(
-				'datetime_start' => sprintf( '%d-06-15 10:00:00', $year - 1 ),
-				'datetime_end'   => sprintf( '%d-06-15 12:00:00', $year - 1 ),
-				'timezone'       => 'UTC',
-			)
-		);
-		( new Event( $older->ID ) )->save_datetimes(
-			array(
-				'datetime_start' => sprintf( '%d-06-15 10:00:00', $year - 2 ),
-				'datetime_end'   => sprintf( '%d-06-15 12:00:00', $year - 2 ),
-				'timezone'       => 'UTC',
-			)
-		);
-
 		$block          = $this->createMock( \WP_Block::class );
 		$block->context = array(
 			'query' => array(
@@ -2123,7 +2104,28 @@ class Test_Event_Query extends Base {
 			),
 		);
 
-		$args  = Event_Query::get_instance()->query_loop_block_query_vars( array( 'fields' => 'ids' ), $block );
+		// Build the query first and date the events from the year it resolved,
+		// so the test never depends on the clock between the two steps.
+		$args      = Event_Query::get_instance()->query_loop_block_query_vars( array( 'fields' => 'ids' ), $block );
+		$year      = (int) $args['date_query']['year'];
+		$last_year = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$older     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		( new Event( $last_year->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => sprintf( '%d-06-15 10:00:00', $year ),
+				'datetime_end'   => sprintf( '%d-06-15 12:00:00', $year ),
+				'timezone'       => 'UTC',
+			)
+		);
+		( new Event( $older->ID ) )->save_datetimes(
+			array(
+				'datetime_start' => sprintf( '%d-06-15 10:00:00', $year - 1 ),
+				'datetime_end'   => sprintf( '%d-06-15 12:00:00', $year - 1 ),
+				'timezone'       => 'UTC',
+			)
+		);
+
 		$posts = ( new \WP_Query( $args ) )->posts;
 
 		$this->assertContains( $last_year->ID, $posts );
