@@ -3,7 +3,7 @@
  * REST API for the check-in state of an RSVP.
  *
  * @package GatherPress\Core\Rsvp\Flag
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Rsvp\Flag;
@@ -24,7 +24,7 @@ use WP_REST_Server;
  *
  * Sets the check-in state of an RSVP from the RSVP screen, without a page load.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Rest_Api {
 
@@ -36,7 +36,7 @@ final class Rest_Api {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -45,7 +45,7 @@ final class Rest_Api {
 	/**
 	 * Set up hooks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -56,7 +56,7 @@ final class Rest_Api {
 	/**
 	 * Registers the check-in route.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -92,7 +92,7 @@ final class Rest_Api {
 	/**
 	 * Sets the check-in state of an approved RSVP.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_REST_Request $request The request, with the RSVP `id` and the `state`.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request

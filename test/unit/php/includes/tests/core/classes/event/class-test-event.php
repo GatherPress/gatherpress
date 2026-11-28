@@ -204,7 +204,7 @@ class Test_Event extends Base {
 	/**
 	 * A start-only display has no end, and no time zone when the block turns it off.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::get_display_datetime_parts
 	 *

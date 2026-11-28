@@ -3,7 +3,7 @@
  * The check-in states an RSVP can have.
  *
  * @package GatherPress\Core\Rsvp\Flag
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Rsvp\Flag;
@@ -21,7 +21,7 @@ use GatherPress\Core\Traits\Singleton;
  * `gatherpress_register_rsvp_check_in_states` action. An RSVP with none of the
  * registered states is not recorded.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Check_In_Registry {
 
@@ -33,7 +33,7 @@ final class Check_In_Registry {
 	/**
 	 * The filter value for an RSVP without a check-in state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -42,7 +42,7 @@ final class Check_In_Registry {
 	/**
 	 * The Dashicon of an RSVP without a check-in state: a dash.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -51,7 +51,7 @@ final class Check_In_Registry {
 	/**
 	 * The registered state classes, keyed by flag slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var array<string, class-string<Check_In_State>>
 	 */
@@ -60,7 +60,7 @@ final class Check_In_Registry {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -70,7 +70,7 @@ final class Check_In_Registry {
 	/**
 	 * Set up hooks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -82,7 +82,7 @@ final class Check_In_Registry {
 	/**
 	 * Registers a check-in state.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $state_class A class that extends `Check_In_State`.
 	 *
@@ -109,7 +109,7 @@ final class Check_In_Registry {
 	/**
 	 * Gets the registered states.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, class-string<Check_In_State>> State classes, keyed by flag slug.
 	 */
@@ -120,7 +120,7 @@ final class Check_In_Registry {
 	/**
 	 * Gets the check-in state of an RSVP.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -141,7 +141,7 @@ final class Check_In_Registry {
 	/**
 	 * Removes every check-in state from an RSVP, so it is not recorded.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $rsvp_id The RSVP comment ID.
 	 *
@@ -160,7 +160,7 @@ final class Check_In_Registry {
 	/**
 	 * Gets the choices of the RSVP screen: each registered state, then not recorded.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<array{value: string, label: string, icon: string}> The choices.
 	 */
@@ -179,7 +179,7 @@ final class Check_In_Registry {
 	/**
 	 * Describes a check-in state for the RSVP screen.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param Check_In_State|null $state The state, or null for not recorded.
 	 *
@@ -204,7 +204,7 @@ final class Check_In_Registry {
 	/**
 	 * Sets the check-in state of an RSVP.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int    $rsvp_id The RSVP comment ID.
 	 * @param string $value   A registered state's slug, or `not-recorded`.
@@ -224,7 +224,7 @@ final class Check_In_Registry {
 	/**
 	 * Registers the check-in states of core.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -236,7 +236,7 @@ final class Check_In_Registry {
 	/**
 	 * Fires the action that lets plugins register check-in states.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -259,7 +259,7 @@ final class Check_In_Registry {
 		 * The full state contract and a worked example live in the
 		 * RSVP developer guide (`docs/developer/rsvp/README.md`).
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param Check_In_Registry $registry The check-in state registry.
 		 */

@@ -3,7 +3,7 @@
  * Vocabulary of the operational statuses an event can be in.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Event;
@@ -31,13 +31,13 @@ use WP_Term;
  * the vocabulary itself, for callers that have no event to hand, such as
  * the REST schema, the editor settings and the taxonomy's default term.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Status {
 	/**
 	 * Schema.org value published for a status that names none of its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const DEFAULT_SCHEMA = 'EventScheduled';
@@ -45,7 +45,7 @@ final class Status {
 	/**
 	 * RFC 5545 value published for a status that names none of its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const DEFAULT_ICAL = 'CONFIRMED';
@@ -53,7 +53,7 @@ final class Status {
 	/**
 	 * Operational status slug for canceled events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const STATUS_CANCELED = 'canceled';
@@ -61,7 +61,7 @@ final class Status {
 	/**
 	 * The event post, or null when the post does not support events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var WP_Post|null
 	 */
@@ -70,7 +70,7 @@ final class Status {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event post ID.
 	 */
@@ -91,7 +91,7 @@ final class Status {
 	 * makes sense for events that can be held online is not offered on a post
 	 * type that cannot.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $post_type Post type to offer statuses for, or empty for all of them.
 	 *
@@ -204,7 +204,7 @@ final class Status {
 		 * The first status in the list is what an event with no status of its
 		 * own reports, so order matters.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param array<string, array<string, mixed>> $statuses  The statuses, keyed by slug.
 		 * @param string                              $post_type Post type they are offered for, or empty for all.
@@ -215,7 +215,7 @@ final class Status {
 	/**
 	 * The slugs of every status, in the order they are offered.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $post_type Post type to offer statuses for, or empty for all.
 	 *
@@ -231,7 +231,7 @@ final class Status {
 	 * The first status offered, rather than a named one, so a site that
 	 * replaces the vocabulary outright still has a state to fall back on.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $post_type Post type to answer for, or empty for all.
 	 *
@@ -246,7 +246,7 @@ final class Status {
 	/**
 	 * Whether a slug names a status an event can be in.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug      The slug to check.
 	 * @param string $post_type Post type to check against, or empty for all.
@@ -260,7 +260,7 @@ final class Status {
 	/**
 	 * The words shown for a status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -273,7 +273,7 @@ final class Status {
 	/**
 	 * The sentence explaining what a status means.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -286,7 +286,7 @@ final class Status {
 	/**
 	 * The Schema.org EventStatusType published for a status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -301,7 +301,7 @@ final class Status {
 	/**
 	 * The RFC 5545 STATUS published for a status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -319,7 +319,7 @@ final class Status {
 	 * A higher integer takes precedence over a lower one when a scalar
 	 * value must be chosen for iCalendar STATUS or Schema.org eventStatus.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -332,7 +332,7 @@ final class Status {
 	/**
 	 * Whether an event's date is crossed out while it is in a status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -350,7 +350,7 @@ final class Status {
 	 * term names across different user locales. Localized display names are
 	 * handled dynamically via filters at retrieval and render time.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *
@@ -373,7 +373,7 @@ final class Status {
 	 *
 	 * Defaults to the default status when the event has none of its own.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string[] The status slugs assigned to the event.
 	 */
@@ -416,7 +416,7 @@ final class Status {
 	/**
 	 * Whether the event is canceled.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when the event's statuses include canceled.
 	 */
@@ -430,7 +430,7 @@ final class Status {
 	 * When an event holds several statuses, the one with the highest priority
 	 * wins for single-value consumers like iCalendar STATUS.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The status slug.
 	 */
@@ -441,7 +441,7 @@ final class Status {
 	/**
 	 * Store the event's status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $status One of the slugs Status::slugs() reports.
 	 * @param bool   $append Optional. When true, appends to existing terms
@@ -474,7 +474,7 @@ final class Status {
 	/**
 	 * The words shown for the event's status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The status label.
 	 */
@@ -485,7 +485,7 @@ final class Status {
 	/**
 	 * The Schema.org EventStatusType for the event's status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The Schema.org value, such as 'EventScheduled'.
 	 */
@@ -496,7 +496,7 @@ final class Status {
 	/**
 	 * The RFC 5545 STATUS for the event's status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string 'CONFIRMED', 'CANCELLED' or 'TENTATIVE'.
 	 */
@@ -507,7 +507,7 @@ final class Status {
 	/**
 	 * One status's definition, falling back to the default one.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The status slug.
 	 *

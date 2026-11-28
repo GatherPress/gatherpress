@@ -23,6 +23,7 @@ use GatherPress\Core\Event\Status as Event_Status;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Response\Serializer;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
@@ -46,6 +47,8 @@ use WP_REST_Server;
  * @since 0.34.0
  *
  * @phpstan-type RouteDefinition array{route: string, args: array<string, mixed>}
+ * @phpstan-import-type RsvpRecord from Rsvp
+ * @phpstan-import-type RsvpSaveDefault from Rsvp
  */
 final class Rest_Api {
 
@@ -53,6 +56,15 @@ final class Rest_Api {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Comment meta key that keeps the order of the last save of an RSVP, by page.
+	 *
+	 * @since TBD
+	 *
+	 * @var string
+	 */
+	public const SAVE_ORDER_META_KEY = 'gatherpress_rsvp_save_order';
 
 	/**
 	 * Class constructor.
@@ -93,7 +105,7 @@ final class Rest_Api {
 	 * callback runs, so this runs on `rest_post_dispatch`, after every
 	 * outcome. A URL on another host is ignored.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTTP_Response $response The response to send.
 	 * @param WP_REST_Server   $server   The REST server.
@@ -138,7 +150,7 @@ final class Rest_Api {
 	 * status panel stays a SelectControl and the taxonomy stays an
 	 * implementation detail with a single write path through Event\Status::set().
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -362,13 +374,22 @@ final class Rest_Api {
 					return is_user_logged_in() && $this->can_read_event_rsvps( $request );
 				},
 				'args'                => array(
-					'post_id' => array(
+					'post_id'    => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'status'  => array(
+					'status'     => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
+					// Only the RSVP block sends these, and its page ID has at most 35 characters.
+					'save_page'  => array(
+						'type'      => 'string',
+						'maxLength' => 64,
+					),
+					'save_order' => array(
+						'type'    => 'integer',
+						'minimum' => 1,
 					),
 				),
 			),
@@ -664,9 +685,10 @@ final class Rest_Api {
 				$guests = 0;
 			}
 
-			$user_record = $rsvp->save( $user_identifier, $status, $anonymous, $guests );
+			$user_record = $this->save_in_order( $rsvp, $user_identifier, $params, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
+			$anonymous   = (int) $user_record['anonymous'];
 
 			if ( in_array( $status, Status::values(), true ) ) {
 				$success = true;
@@ -997,12 +1019,67 @@ final class Rest_Api {
 	}
 
 	/**
+	 * Saves the RSVP unless a newer save from the same page is already stored.
+	 *
+	 * Saves from the RSVP block send the page they come from and their order on
+	 * that page. A save can reach the server before an earlier one, such as a
+	 * guest count sent as the page is left, or a status change right after a guest
+	 * count, so the earlier one must not overwrite it (#2641). Saves from another
+	 * page or device are never ignored, and a save without an order always goes
+	 * through. The order is stored before the save, so a newer save that comes in
+	 * meanwhile sees it.
+	 *
+	 * @since TBD
+	 *
+	 * @param Rsvp                 $rsvp       The event's RSVP object.
+	 * @param string|int           $identifier The user ID or email address.
+	 * @param array<string, mixed> $params     The request parameters.
+	 * @param string               $status     The RSVP status.
+	 * @param int                  $anonymous  Whether the RSVP is anonymous.
+	 * @param int                  $guests     The number of guests.
+	 *
+	 * @return RsvpRecord|RsvpSaveDefault The saved RSVP, or the stored one when this save is older.
+	 */
+	private function save_in_order(
+		Rsvp $rsvp,
+		string|int $identifier,
+		array $params,
+		string $status,
+		int $anonymous,
+		int $guests
+	): array {
+		$page  = sanitize_text_field( (string) ( $params['save_page'] ?? '' ) );
+		$order = absint( $params['save_order'] ?? 0 );
+		$state = ( '' !== $page && $order ) ? $rsvp->find( $identifier ) : null;
+
+		if ( null === $state ) {
+			return $rsvp->save( $identifier, $status, $anonymous, $guests );
+		}
+
+		$comment_id = (int) $state->comment->comment_ID;
+		$stored     = get_comment_meta( $comment_id, self::SAVE_ORDER_META_KEY, true );
+		$orders     = is_array( $stored ) ? $stored : array();
+
+		if ( $order <= (int) ( $orders[ $page ] ?? 0 ) ) {
+			return Serializer::to_array( $state );
+		}
+
+		// Keeps the pages that saved last, so a save from one tab does not drop another tab's order.
+		unset( $orders[ $page ] );
+		$orders[ $page ] = $order;
+
+		update_comment_meta( $comment_id, self::SAVE_ORDER_META_KEY, array_slice( $orders, -5, null, true ) );
+
+		return $rsvp->save( $identifier, $status, $anonymous, $guests );
+	}
+
+	/**
 	 * Determines if a given RSVP user identifier is valid.
 	 *
 	 * A magic-link token supplies an email address; every other path supplies a user ID,
 	 * so each identifier is checked against the one thing it can be.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string|int|null $identifier The user ID or email address.
 	 *

@@ -3,7 +3,7 @@
  * Turns Calendar block attributes into CSS values.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks\Calendar;
@@ -16,14 +16,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * Processes block attributes into CSS style strings.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Style_Processor {
 
 	/**
 	 * The blockGap value of the block: a string, a split { top, left } array, or null.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var mixed
 	 */
 	private readonly mixed $block_gap;
@@ -31,7 +31,7 @@ final class Style_Processor {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 */
@@ -45,7 +45,7 @@ final class Style_Processor {
 	/**
 	 * Get one side of a split blockGap value.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $block_gap Split blockGap value.
 	 * @param string       $side      'top' or 'left'.
@@ -59,7 +59,7 @@ final class Style_Processor {
 	/**
 	 * Resolve the blockGap attribute to a valid CSS gap string.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string CSS gap value (e.g., 'var(--wp--preset--spacing--50)' or '10px 20px') or empty string.
 	 */
@@ -93,7 +93,7 @@ final class Style_Processor {
 	 * column gap is the single value or 'left'. Day cells use it in calc()
 	 * to stay square, so it must be one length: '0' becomes '0px'.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string One CSS length (e.g., 'var(--wp--preset--spacing--50)' or '20px') or empty string.
 	 */
@@ -127,7 +127,7 @@ final class Style_Processor {
 	 * The preset type and slug go through _wp_to_kebab_case(), as WordPress names the preset
 	 * variables (x_large becomes x-large), which leaves only letters, digits and dashes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $value Raw attribute value.
 	 *

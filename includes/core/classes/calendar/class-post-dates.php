@@ -3,7 +3,7 @@
  * The dates of a post on a calendar.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -19,14 +19,14 @@ use WP_Post;
  *
  * Events use their event dates. Other posts use their publish date.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Post_Dates {
 
 	/**
 	 * Minutes in a day, the end of the last time-grid track.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const MINUTES_PER_DAY = 1440;
@@ -34,7 +34,7 @@ final class Post_Dates {
 	/**
 	 * Whether the post has event dates.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	public readonly bool $is_event;
@@ -42,7 +42,7 @@ final class Post_Dates {
 	/**
 	 * Whether the post is an all-day event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var bool
 	 */
 	public readonly bool $is_all_day;
@@ -50,7 +50,7 @@ final class Post_Dates {
 	/**
 	 * First day of the post (Y-m-d).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	public readonly string $start_date;
@@ -61,7 +61,7 @@ final class Post_Dates {
 	 * An event that ends at 00:00 on a later day does not run on that day, so it ends on the
 	 * day before. An end before the start is treated as no end.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	public readonly string $end_date;
@@ -69,7 +69,7 @@ final class Post_Dates {
 	/**
 	 * Start of the post in minutes past midnight.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $start_minute;
@@ -80,7 +80,7 @@ final class Post_Dates {
 	 * An event that ends at 00:00 on the next day runs to the end of its day. An event with
 	 * no end, or an end before its start, lasts one hour. An event lasts at least 15 minutes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	public readonly int $end_minute;
@@ -88,7 +88,7 @@ final class Post_Dates {
 	/**
 	 * Constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id Post ID.
 	 */
@@ -121,7 +121,7 @@ final class Post_Dates {
 	/**
 	 * Resolves the last calendar day of the post.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $end End datetime (Y-m-d H:i:s), or an empty string.
 	 *
@@ -140,7 +140,7 @@ final class Post_Dates {
 	/**
 	 * Resolves the end of the post in minutes past midnight of its first day.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $end_ts End of the post, as a timestamp of its site-time datetime.
 	 *
@@ -158,7 +158,7 @@ final class Post_Dates {
 	/**
 	 * Converts a timestamp to minutes past midnight.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $timestamp Timestamp of a site-time datetime.
 	 *

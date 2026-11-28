@@ -3,7 +3,7 @@
  * GatherPress counts in the dashboard's At a Glance widget.
  *
  * @package GatherPress\Core\Admin
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Admin;
@@ -30,7 +30,7 @@ use WP_Post_Type;
  * matching support. Each count links to the screen it was counted from when
  * the user can open it, and is plain text otherwise.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Dashboard {
 
@@ -44,7 +44,7 @@ final class Dashboard {
 	 *
 	 * Venue counts come from `wp_count_posts()`, which core already caches.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -57,7 +57,7 @@ final class Dashboard {
 	 * them on nearly every load, so this also bounds how long RSVP counts and
 	 * an event that just ended can lag.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var int
 	 */
@@ -68,7 +68,7 @@ final class Dashboard {
 	 *
 	 * Any other menu icon keeps core's default bullet.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var array<string, string>
 	 */
@@ -80,7 +80,7 @@ final class Dashboard {
 	/**
 	 * Dashicon code points for the RSVP items, which are comments rather than a post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var array<string, string>
 	 */
@@ -91,7 +91,7 @@ final class Dashboard {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -100,7 +100,7 @@ final class Dashboard {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -113,7 +113,7 @@ final class Dashboard {
 	/**
 	 * Add the GatherPress counts to At a Glance.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $items Items added by other plugins.
 	 *
@@ -153,7 +153,7 @@ final class Dashboard {
 	 * Core wraps filtered items in a bare `<li>`, so the icon rule targets
 	 * the class on the link or span inside it instead.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $hook_suffix The current admin page.
 	 *
@@ -193,7 +193,7 @@ final class Dashboard {
 	 * Hooked to `clean_post_cache` rather than `transition_post_status`, so
 	 * a changed event date flushes too.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
@@ -214,7 +214,7 @@ final class Dashboard {
 	 * Event counts come from the events list, so each one matches the view
 	 * its item links to.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, array<string, array<string, int>>> Counts keyed by group, then post type.
 	 */
@@ -249,7 +249,7 @@ final class Dashboard {
 	/**
 	 * Count the approved RSVPs on one post type with one response.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $post_type Post type name.
 	 * @param Status $status    The response to count.
@@ -276,7 +276,7 @@ final class Dashboard {
 	/**
 	 * Build the upcoming and past items for one event post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Post_Type       $post_type The event post type.
 	 * @param array<string, int> $counts    Upcoming and past counts.
@@ -318,7 +318,7 @@ final class Dashboard {
 	/**
 	 * Build the attending and waiting list items for one RSVP post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Post_Type       $post_type The post type the RSVPs belong to.
 	 * @param array<string, int> $counts    Counts keyed by response.
@@ -366,7 +366,7 @@ final class Dashboard {
 	/**
 	 * Build the published count item for one venue post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Post_Type $post_type The venue post type.
 	 *
@@ -402,7 +402,7 @@ final class Dashboard {
 	 * Mirrors `wp_dashboard_right_now()`. The moderation item is printed but
 	 * hidden when nothing is waiting, so it only takes a cell when it is not.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int The number of visible core items.
 	 */
@@ -427,7 +427,7 @@ final class Dashboard {
 	/**
 	 * Get the registered post types that declare any of the given supports.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string ...$supports Post type supports.
 	 *
@@ -447,7 +447,7 @@ final class Dashboard {
 	/**
 	 * Pick the singular or plural label to go with a count.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Post_Type $post_type The post type.
 	 * @param int          $count     The count shown beside the label.
@@ -461,7 +461,7 @@ final class Dashboard {
 	/**
 	 * Build one item, linked when there is somewhere to go.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $text      The item text.
 	 * @param string $url       Where the item links to, empty for plain text.

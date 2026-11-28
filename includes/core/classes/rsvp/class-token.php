@@ -72,7 +72,7 @@ final class Token {
 	 *
 	 * Each event gets its own cookie, named with the event's post ID.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const COOKIE_PREFIX = 'gatherpress_rsvp_token_';
@@ -210,7 +210,7 @@ final class Token {
 	/**
 	 * Gets the meta key for when the token was issued.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The meta key.
 	 */
@@ -225,7 +225,7 @@ final class Token {
 	 * and for tokens issued before this was stored, the RSVP's own date is
 	 * used.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int Unix timestamp, or 0 without a comment.
 	 */
@@ -274,7 +274,7 @@ final class Token {
 	 * Saves the current token, and when it was issued, to comment meta.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Also saves when the token was issued.
+	 * @since 0.37.0 Also saves when the token was issued.
 	 *
 	 * @return void
 	 */
@@ -435,7 +435,7 @@ final class Token {
 	 * Clicking the magic link moves the token from the URL into this cookie,
 	 * so the RSVP block and REST requests read it from here.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event's post ID.
 	 *
@@ -453,7 +453,7 @@ final class Token {
 	/**
 	 * Check whether the request carries a session cookie for any event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True when at least one event's session cookie is present.
 	 */
@@ -469,7 +469,7 @@ final class Token {
 	/**
 	 * Get the name of an event's session cookie.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The event's post ID.
 	 *
@@ -486,7 +486,7 @@ final class Token {
 	 * hidden from scripts and only sent on same-site requests and top-level
 	 * links.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return CookieOptions The options for `setcookie()`.
 	 */
@@ -504,7 +504,7 @@ final class Token {
 	/**
 	 * Get the token with its comment ID, the way the URL and cookie carry it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The `{comment_id}_{token}` string, or empty without a comment or token.
 	 */

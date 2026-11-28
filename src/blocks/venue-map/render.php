@@ -184,12 +184,29 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 		);
 	}
 
+	// Leaflet makes the marker a focusable button and names it "Marker" unless
+	// told otherwise. Name it after the venue, and fall back to the address
+	// (never empty here) for a venue without a title. Leaflet writes the value
+	// as plain text, so decode the entities get_the_title() adds.
+	$gatherpress_marker_label = trim(
+		html_entity_decode(
+			wp_strip_all_tags( (string) ( $gatherpress_venue_meta['name'] ?? '' ) ),
+			ENT_QUOTES,
+			'UTF-8'
+		)
+	);
+
+	if ( '' === $gatherpress_marker_label ) {
+		$gatherpress_marker_label = $gatherpress_address;
+	}
+
 	// Everything the view script module needs travels in the context payload:
 	// script modules cannot import @wordpress/i18n or read the block editor's
 	// config, so the tile settings and translated strings are resolved here,
 	// server-side.
 	$gatherpress_block_context = array(
 		'address'            => $gatherpress_address,
+		'markerLabel'        => $gatherpress_marker_label,
 		'latitude'           => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
 		'longitude'          => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
 		'mapZoomLevel'       => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,

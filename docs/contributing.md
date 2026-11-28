@@ -57,7 +57,7 @@ The Credits screen has three groups, and every release is credited on its own te
 
 **Noteworthy Contributors** are the people whose work shaped a given release. The bar is not the size of any single contribution, it is showing up repeatedly across a cycle: pull requests landing, issues opened and triaged, reviews given, discussion that moves decisions forward. It also covers work that never appears in git: helping in Slack, shaping ideas, organizing, translating, supporting other contributors. The leads make that call, because it is the part no tool can see.
 
-**Contributors to GatherPress X.Y.Z** is everyone who contributed to that release, however small. A single typo fix belongs here, and belongs here genuinely. It is a real credit, sized to the contribution.
+**Contributors to GatherPress X.Y.Z** is everyone who contributed to that release, however small. A single typo fix belongs here, and belongs here genuinely. It is a real credit, sized to the contribution. The list belongs to that version alone: it starts empty for each new version, and only Leads and Noteworthy carry over from one release to the next.
 
 ### Moving between groups
 

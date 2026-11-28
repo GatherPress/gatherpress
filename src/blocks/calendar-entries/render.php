@@ -3,7 +3,7 @@
  * Render the Calendar Entries block.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 // Exit if accessed directly.

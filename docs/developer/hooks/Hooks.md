@@ -29,20 +29,23 @@
 
 - [`gatherpress_register_rsvp_check_in_states`](gatherpress_register_rsvp_check_in_states.md) Fires so plugins can register check-in states.
 
+## class-cleanup.php
+
+- [`gatherpress_venue_map_cleanup_in_use_files`](gatherpress_venue_map_cleanup_in_use_files.md) Filters the list of in-use static-map image filenames before garbage collection.
+- [`gatherpress_venue_map_cleanup_scan_batch_size`](gatherpress_venue_map_cleanup_scan_batch_size.md) Filters how many venues have their map data read per batch when finding the static maps in use.
+
 ## class-email.php
 
 - [`gatherpress_email_subject`](gatherpress_email_subject.md) Filters the subject of an event email.
 - [`gatherpress_site_message_active_days`](gatherpress_site_message_active_days.md) Filters the choices for how far back an active user's last RSVP can be.
 - [`gatherpress_site_message_subject`](gatherpress_site_message_subject.md) Filters the subject line of a site-wide message.
 
-## class-event-query.php
-
-- [`gatherpress_query_loop_vars`](gatherpress_query_loop_vars.md) This filter is documented in includes/core/classes/blocks/class-event-query.php
-
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format.md)
 - [`gatherpress_datetime_format`](gatherpress_datetime_format.md) Filters the format an event's datetime is rendered with.
+- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) This filter is documented in includes/core/classes/event/class-event.php
+- [`gatherpress_event_datetimes_saved`](gatherpress_event_datetimes_saved.md) Fires after an event's datetimes are saved.
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link.md) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format.md)
 - [`gatherpress_timezone`](gatherpress_timezone.md)
@@ -68,10 +71,6 @@
 - [`gatherpress_geocode_rate_limit_per_minute`](gatherpress_geocode_rate_limit_per_minute.md) Filter the per-user requests-per-minute ceiling for the
 - [`gatherpress_log_geocoding_errors`](gatherpress_log_geocoding_errors.md) Filters whether to write a PHP error-log line when Photon returns a body
 - [`gatherpress_photon_api_url`](gatherpress_photon_api_url.md) Filters the Photon API base URL used for geocoding and address search.
-
-## class-html-renderer.php
-
-- [`gatherpress_datetime_separator`](gatherpress_datetime_separator.md) Filter the separator between start and end dates/times.
 
 ## class-import.php
 
@@ -104,6 +103,7 @@
 ## class-osm.php
 
 - [`gatherpress_static_map_composite_time_budget`](gatherpress_static_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single OSM
+- [`gatherpress_static_map_marker_colors`](gatherpress_static_map_marker_colors.md) Filter the colors of the marker drawn on static OpenStreetMap images.
 - [`gatherpress_static_map_tile_url`](gatherpress_static_map_tile_url.md) Filter the tile URL template used by the OSM static map provider.
 
 ## class-prewarm.php
@@ -142,6 +142,10 @@
 
 - [`gatherpress_rsvp_waiting_list_promoted`](gatherpress_rsvp_waiting_list_promoted.md) This action is documented in includes/core/classes/rsvp/class-rsvp.php
 
+## class-saved-image.php
+
+- [`gatherpress_static_map_delete_unused_delay`](gatherpress_static_map_delete_unused_delay.md) Filters how long a replaced static map PNG stays on disk.
+
 ## class-scheduler.php
 
 - [`gatherpress_event_end_cache_keys`](gatherpress_event_end_cache_keys.md) Filters cache keys to invalidate when an event ends.
@@ -167,6 +171,7 @@
 
 ## class-shadow-source.php
 
+- [`gatherpress_query_loop_vars`](gatherpress_query_loop_vars.md) This filter is documented in includes/core/classes/blocks/class-event-query.php
 - [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
 - [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
 - [`the_title`](the_title.md)
@@ -208,6 +213,6 @@
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

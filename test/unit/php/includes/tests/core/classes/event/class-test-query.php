@@ -362,6 +362,60 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * Coverage for tax_query clauses of other taxonomies: they join the topic
+	 * clause, and members that are not arrays are left out.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_get_events_list_tax_query(): void {
+		$instance = Query::get_instance();
+		$clause   = array(
+			'taxonomy' => 'gp_test_language',
+			'field'    => 'slug',
+			'terms'    => array( 'japanese' ),
+		);
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'topics'          => array( 'wordcamps' ),
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query'       => array( $clause, 'not-a-clause', 3 ),
+			)
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'taxonomy' => Topic::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( 'wordcamps' ),
+				),
+				$clause,
+			),
+			$results->query['tax_query'],
+			'Failed to assert the clause joins the topic clause and other members are left out.'
+		);
+
+		$results = $instance->get_events_list(
+			array(
+				'event_list_type' => 'upcoming',
+				'tax_query'       => 'not-an-array', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			)
+		);
+
+		$this->assertSame(
+			array(),
+			$results->query['tax_query'],
+			'Failed to assert a tax_query that is not an array adds no clause.'
+		);
+	}
+
+	/**
 	 * Coverage for normalize_slug_list rejecting a non-array value.
 	 *
 	 * @covers ::normalize_slug_list
@@ -632,7 +686,7 @@ class Test_Query extends Base {
 	 * The resolved source post IDs are merged into `post__in`, so they
 	 * still compose with the query loop's post_type and tax_query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -710,7 +764,7 @@ class Test_Query extends Base {
 	 * — only the upcoming branch of the source-ID resolver is reachable from
 	 * a non-coerced string.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -786,7 +840,7 @@ class Test_Query extends Base {
 	 * schema entry, but the `pre_get_posts` branch reads the WP_Query var
 	 * directly and must fall back the same way when no value has been set.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -833,7 +887,7 @@ class Test_Query extends Base {
 	 * Turning the "upcoming events only" toggle off keeps source posts whose
 	 * events are all past, i.e. the archive view.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -883,7 +937,7 @@ class Test_Query extends Base {
 	 * A shadow-source post with no events attached is not a match for either
 	 * activity state, so the query pins to an impossible ID and returns empty.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -920,7 +974,7 @@ class Test_Query extends Base {
 	 * onto any event post type, the filter is inapplicable: the query keeps
 	 * its own scope instead of pinning to an impossible ID.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -967,7 +1021,7 @@ class Test_Query extends Base {
 	 * The activity filter only applies to shadow-source post types; an event
 	 * query with the flag accidentally set is left untouched.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -994,7 +1048,7 @@ class Test_Query extends Base {
 	 * With the filter toggle off the query keeps whatever it already had — no
 	 * resolution work happens.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -2420,7 +2474,7 @@ class Test_Query extends Base {
 	 * Resolves the shadow term slug of a source post that carries an upcoming
 	 * event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -2448,7 +2502,7 @@ class Test_Query extends Base {
 	 * Resolves the shadow term slug of a source post whose events are past, and
 	 * keeps upcoming-only slugs out of that result.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -2488,7 +2542,7 @@ class Test_Query extends Base {
 	 * Sentinel terms carry no leading underscore, so they are kept out of the
 	 * resolved slugs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -2508,7 +2562,7 @@ class Test_Query extends Base {
 	/**
 	 * A password-protected event does not count, so it does not reveal its venue.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -2534,7 +2588,7 @@ class Test_Query extends Base {
 	 * An event that is private resolves only for a user who can read private
 	 * posts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -2577,7 +2631,7 @@ class Test_Query extends Base {
 	 * one so a private custom event only resolves for users who can read
 	 * private custom events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -2668,7 +2722,7 @@ class Test_Query extends Base {
 	 * With no post type declaring event-date support there are no events to
 	 * read, so the method returns early.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -2708,7 +2762,7 @@ class Test_Query extends Base {
 	 * A post__in the query already carries is a narrower scope, so the activity
 	 * filter intersects with it rather than widening the result set.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -3160,7 +3214,7 @@ class Test_Query extends Base {
 	 * When the existing post__in shares no IDs with the resolved source posts
 	 * the query pins to an impossible ID rather than falling open.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::prepare_event_query_before_execution
 	 * @covers ::apply_event_activity_filter
 	 *
@@ -3204,7 +3258,7 @@ class Test_Query extends Base {
 	 * both branches. The past branch matches any source post with at least one
 	 * past event, not only those whose events are all past.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::get_active_shadow_term_slugs
 	 *
 	 * @return void
@@ -3237,7 +3291,7 @@ class Test_Query extends Base {
 	/**
 	 * Matches a term only when it sits on an event of the requested kind.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::has_event_with_term
 	 *
 	 * @return void
@@ -3340,7 +3394,7 @@ class Test_Query extends Base {
 	 * Creates an event tagged with the given venue taxonomy term slug and an
 	 * upcoming or past datetime.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $term_slug   Venue taxonomy term slug to tag the event with.
 	 * @param string $state       'upcoming' or 'past'.

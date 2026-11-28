@@ -7,7 +7,7 @@
  * to GatherPress emails, without going through a single event.
  *
  * @package GatherPress\Core\Admin
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Admin;
@@ -31,7 +31,7 @@ use WP_REST_Server;
  *
  * Handles the Email page in the Events menu.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-import-type Recipient from Mailer
  * @phpstan-import-type Payload from Mailer
@@ -47,7 +47,7 @@ final class Email {
 	/**
 	 * The Email page slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -56,7 +56,7 @@ final class Email {
 	/**
 	 * The Mailer type that sends the Email page's messages.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -66,7 +66,7 @@ final class Email {
 	 * Who a message can be sent to: every user, users with one of the
 	 * chosen roles, or users who RSVP'd recently.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string[]
 	 */
@@ -75,7 +75,7 @@ final class Email {
 	/**
 	 * How far back, in days, an active user's last RSVP can be, unless filtered.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var int[]
 	 */
@@ -84,7 +84,7 @@ final class Email {
 	/**
 	 * The active window picked by default, when it is offered.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var int
 	 */
@@ -93,7 +93,7 @@ final class Email {
 	/**
 	 * Transient key prefix for the cached eligible recipient count.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var string
 	 */
@@ -102,7 +102,7 @@ final class Email {
 	/**
 	 * How long the cached eligible recipient count stays valid.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @var int
 	 */
@@ -111,7 +111,7 @@ final class Email {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -121,7 +121,7 @@ final class Email {
 	/**
 	 * Tell Mailer who the Email page's messages go to and what they say.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -139,7 +139,7 @@ final class Email {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -163,7 +163,7 @@ final class Email {
 	/**
 	 * Add the Email page to the Events menu, between Venues and Settings.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -186,7 +186,7 @@ final class Email {
 	/**
 	 * Highlight the Email item in the Events menu while the Email page is open.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string|null $submenu_file The submenu item to highlight.
 	 *
@@ -201,7 +201,7 @@ final class Email {
 	/**
 	 * Render the Email page.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -225,7 +225,7 @@ final class Email {
 	 * Active users are picked by their RSVPs, so they are only offered
 	 * while RSVPs are turned on.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, string> Audience labels, keyed by audience.
 	 */
@@ -246,7 +246,7 @@ final class Email {
 	/**
 	 * Get the choices for how far back an active user's last RSVP can be.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int[] Numbers of days to offer.
 	 */
@@ -257,7 +257,7 @@ final class Email {
 		 * Lets a site offer windows that suit how often it holds events, for
 		 * example 7 days for a weekly meetup.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param int[] $days Numbers of days to offer. Default 30, 90, 180 and 365.
 		 *
@@ -273,7 +273,7 @@ final class Email {
 	/**
 	 * Get the active window picked by default.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int 90 days when offered, otherwise the first choice.
 	 */
@@ -286,7 +286,7 @@ final class Email {
 	/**
 	 * Check whether RSVPs are turned on for the site.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return bool True unless the RSVP mode setting is disabled.
 	 */
@@ -299,7 +299,7 @@ final class Email {
 	 *
 	 * Runs on the page's own `load-` action, so nothing loads on other screens.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -329,7 +329,7 @@ final class Email {
 	/**
 	 * Clear the cached recipient count.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -340,7 +340,7 @@ final class Email {
 	/**
 	 * Clear the cached recipient count when a user changes their opt-in.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
@@ -363,7 +363,7 @@ final class Email {
 	 * Counting walks every user on the site, so the Email page reads a
 	 * cached count instead of paying that cost on each load.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int Number of eligible users.
 	 */
@@ -381,7 +381,7 @@ final class Email {
 	/**
 	 * Get the user query arguments for the audience a message was queued for.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array $payload The queued message, with its `audience` from `resolve_audience()`.
 	 * @phpstan-param Payload $payload
@@ -403,7 +403,7 @@ final class Email {
 	/**
 	 * Get the users who RSVP'd to any event in the past few days.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $days How many days back to look.
 	 *
@@ -426,7 +426,7 @@ final class Email {
 	/**
 	 * Get the IDs of the users behind a set of RSVPs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $args Arguments for `Rsvp\Query::get_rsvps()`.
 	 *
@@ -449,7 +449,7 @@ final class Email {
 	/**
 	 * Register the REST routes that count and queue a site-wide message.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -499,7 +499,7 @@ final class Email {
 	/**
 	 * Get the REST arguments that pick a message's audience.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, array<string, mixed>> Argument definitions.
 	 */
@@ -526,7 +526,7 @@ final class Email {
 	/**
 	 * Read the audience a REST request picked, and check it is complete.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
@@ -560,7 +560,7 @@ final class Email {
 	/**
 	 * Count the users a site-wide message would go to, from a REST request.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
@@ -594,7 +594,7 @@ final class Email {
 	 * Schedules the message for delivery on the next cron pass, so the request
 	 * returns without waiting on the mail server.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
@@ -666,7 +666,7 @@ final class Email {
 	 * default subject is translated, and the template rendered, in their
 	 * language.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
@@ -695,7 +695,7 @@ final class Email {
 	 * recipient's locale, matching how the event update email builds its own
 	 * default subject.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $subject Optional subject line supplied by the sender.
 	 *
@@ -716,7 +716,7 @@ final class Email {
 		 * Lets a site brand the subject, for example with a prefix, including
 		 * the "Message from" default used when the sender leaves it blank.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @param string $subject Email subject line.
 		 *

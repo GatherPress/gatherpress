@@ -54,6 +54,9 @@ class Test_Map extends Base {
 		$this->tile_png = base64_decode( $png );
 
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		// Delete unused files at once, so a test can check which files go.
+		add_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
 	}
 
 	/**
@@ -63,7 +66,9 @@ class Test_Map extends Base {
 	 */
 	public function tearDown(): void {
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		remove_filter( 'gatherpress_static_map_delete_unused_delay', '__return_zero' );
 		wp_clear_scheduled_hook( Map::GENERATE_CRON_ACTION );
+		wp_clear_scheduled_hook( Saved_Image::DELETE_CRON_ACTION );
 
 		$dirs     = wp_get_upload_dir();
 		$base_dir = trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR;
@@ -168,6 +173,12 @@ class Test_Map extends Base {
 				'name'     => Map::GENERATE_CRON_ACTION,
 				'priority' => 10,
 				'callback' => array( $instance, 'process_generate_job' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => Saved_Image::DELETE_CRON_ACTION,
+				'priority' => 10,
+				'callback' => array( Saved_Image::class, 'delete_unused_now' ),
 			),
 		);
 

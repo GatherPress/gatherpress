@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.37.0-alpha.1',
+  'version' => '0.38.0-alpha.0',
   'leads' => 
   array (
     0 => 
@@ -236,6 +236,19 @@ return array (
     ),
     7 => 
     array (
+      'id' => 8114870,
+      'name' => 'Jenny Dupuy',
+      'link' => 'https://profiles.wordpress.org/jdy68/',
+      'slug' => 'jdy68',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/44627cd5b1937600e6fc12e4abd615cd?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/44627cd5b1937600e6fc12e4abd615cd?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/44627cd5b1937600e6fc12e4abd615cd?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    8 => 
+    array (
       'id' => 15768524,
       'name' => 'Kofi Mokome',
       'link' => 'https://profiles.wordpress.org/kofimokome/',
@@ -247,7 +260,7 @@ return array (
         96 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    8 => 
+    9 => 
     array (
       'id' => 23534793,
       'name' => 'lheroorg',
@@ -260,7 +273,7 @@ return array (
         96 => '//www.gravatar.com/avatar/ee6cccae40a29f2fc886d06c55b48426?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    9 => 
+    10 => 
     array (
       'id' => 23285232,
       'name' => 'Andrew Matia',
@@ -273,7 +286,7 @@ return array (
         96 => '//www.gravatar.com/avatar/07edde51bd6af2361a1dd84d23b0a180?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    10 => 
+    11 => 
     array (
       'id' => 20268498,
       'name' => 'Noruzzaman',
@@ -286,7 +299,7 @@ return array (
         96 => '//www.gravatar.com/avatar/b747b9a4e84b09dca5d20822bc049559?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    11 => 
+    12 => 
     array (
       'id' => 14484135,
       'name' => 'Oscar Hugo Paz',
@@ -299,7 +312,7 @@ return array (
         96 => '//www.gravatar.com/avatar/43fefd8c7cba3a0427828114f12283d5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    12 => 
+    13 => 
     array (
       'id' => 23546338,
       'name' => 'puvaanraaj2001',
@@ -312,7 +325,7 @@ return array (
         96 => '//www.gravatar.com/avatar/3b6c0819f1541912fd4f52ac26985e8a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    13 => 
+    14 => 
     array (
       'id' => 18295298,
       'name' => 'Cem Ünalan',
@@ -325,7 +338,7 @@ return array (
         96 => '//www.gravatar.com/avatar/37f14f00b51fef688b1735cee466cb30?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    14 => 
+    15 => 
     array (
       'id' => 12053379,
       'name' => 'stein2nd',
@@ -338,7 +351,7 @@ return array (
         96 => '//www.gravatar.com/avatar/9da98bce48ef2fbdc855bc58b07b3292?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    15 => 
+    16 => 
     array (
       'id' => 7268075,
       'name' => 'Steve Erdelyi',
@@ -351,7 +364,7 @@ return array (
         96 => '//www.gravatar.com/avatar/96b3db2b51287c4c0f035717b6aac86e?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    16 => 
+    17 => 
     array (
       'id' => 2161128,
       'name' => 'tsubu',
@@ -364,7 +377,7 @@ return array (
         96 => '//www.gravatar.com/avatar/b6c2a9153b16af0874c6202055fcff83?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    17 => 
+    18 => 
     array (
       'id' => 14695490,
       'name' => 'Anton Vanyukov',
@@ -377,7 +390,20 @@ return array (
         96 => '//www.gravatar.com/avatar/8928045986c8be0950657ed9e07e21d9?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    18 => 
+    19 => 
+    array (
+      'id' => 15693083,
+      'name' => 'hifarrer',
+      'link' => 'https://profiles.wordpress.org/virtuapi/',
+      'slug' => 'virtuapi',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/f01dd6c6e21a574e47f5dd628a8e5c8d?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/f01dd6c6e21a574e47f5dd628a8e5c8d?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/f01dd6c6e21a574e47f5dd628a8e5c8d?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    20 => 
     array (
       'id' => 23532709,
       'name' => 'w3lld1',

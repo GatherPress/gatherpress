@@ -24,7 +24,7 @@ import { REST_NAMESPACE } from '../helpers/namespace';
  * Shows the RSVP's check-in state and sets another one in place, through the
  * check-in REST route.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props              Component props.
  * @param {number}   props.rsvpId       The RSVP comment ID.

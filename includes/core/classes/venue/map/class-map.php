@@ -331,6 +331,7 @@ final class Map {
 		// the same prewarm pass that runs on theme switches.
 		add_action( 'update_option_gatherpress_settings', array( $this, 'maybe_handle_settings_change' ), 10, 2 );
 		add_action( self::GENERATE_CRON_ACTION, array( $this, 'process_generate_job' ), 10, 5 );
+		add_action( Saved_Image::DELETE_CRON_ACTION, array( Saved_Image::class, 'delete_unused_now' ) );
 	}
 
 	/**
@@ -1716,7 +1717,7 @@ final class Map {
 	 * inputs that'd change visible output also change the hash in the descriptor.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Takes the filename instead of the pieces it is built from.
+	 * @since 0.37.0 Takes the filename instead of the pieces it is built from.
 	 *
 	 * @param GdImage $image    Finished image from a provider's `render()`.
 	 * @param string  $filename Filename from {@see self::filename_for()}.

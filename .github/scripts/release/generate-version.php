@@ -15,7 +15,8 @@
  * Requires a credits file for the target version at
  * .github/scripts/release/credits/<version>.json (add it there first — a
  * stable version's file is a copy of its latest pre-release file). A patch
- * version with no file starts from the previous patch's file.
+ * version with no file starts from the previous patch's leads and noteworthy,
+ * with contributors left empty: contributors are credited per version.
  *
  * Unlike the old tooling, README.md and readme.txt are hand-edited files —
  * this script only patches the strings that change per release, in place:
@@ -223,9 +224,11 @@ function fold_unreleased_credits( $entry, $credits_file, $version ) {
 /**
  * Start a patch version's credits file from the version before it.
  *
- * A patch's file is a copy of the previous release's (X.Y.0 for X.Y.1),
- * with contributors folded in from credits/unreleased.json as for any bump.
- * Other versions still need their file added by hand.
+ * A patch's file keeps the previous release's leads and noteworthy (X.Y.0
+ * for X.Y.1) and starts its contributors empty, since contributors are
+ * credited for the version they worked on. Contributors are then folded in
+ * from credits/unreleased.json as for any bump. Other versions still need
+ * their file added by hand.
  *
  * @since TBD
  *
@@ -245,8 +248,17 @@ function copy_previous_patch_credits( $version, $credits_file ) {
 		return;
 	}
 
-	if ( ! copy( $previous_file, $credits_file ) ) {
-		fail( "Failed to copy credits/{$previous}.json to credits/{$version}.json." );
+	$entry = json_decode( file_get_contents( $previous_file ), true );
+
+	if ( ! is_array( $entry ) ) {
+		fail( "credits/{$previous}.json is not valid JSON." );
+	}
+
+	$entry['contributors'] = array();
+	$json                  = json_encode( $entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n";
+
+	if ( file_put_contents( $credits_file, $json ) === false ) {
+		fail( "Failed to start credits/{$version}.json from credits/{$previous}.json." );
 	}
 
 	success( "Started credits/{$version}.json from credits/{$previous}.json." );
@@ -398,8 +410,7 @@ function resolve_since_tags( $version ) {
 			continue;
 		}
 
-		$count        = 0;
-		$new_contents = preg_replace( '/(@since\s+)TBD\b/', '${1}' . $version, $contents, -1, $count );
+		list( $new_contents, $count ) = resolve_since_tbd_in( $contents, $version );
 
 		if ( $count === 0 ) {
 			continue;
@@ -439,6 +450,58 @@ function resolve_since_tags( $version ) {
 	if ( ! empty( $leftovers ) ) {
 		fail( 'Unresolved @since TBD remains in: ' . implode( ', ', $leftovers ) );
 	}
+}
+
+/**
+ * Replace each `@since TBD` in a file's contents with the version.
+ *
+ * A change note keeps one space after the version, whatever padding followed
+ * `TBD`, and the lines it continues onto move to the note's new column. A
+ * `@since TBD` with no note keeps its spacing, as in a file header aligned
+ * with `@package`.
+ *
+ * @since TBD
+ *
+ * @param string $contents The file's contents.
+ * @param string $version  The version being generated.
+ * @return array{0: string, 1: int} The new contents and the number of tags resolved.
+ */
+function resolve_since_tbd_in( $contents, $version ) {
+	$lines = explode( "\n", $contents );
+	$count = 0;
+	$total = count( $lines );
+
+	for ( $i = 0; $i < $total; $i++ ) {
+		if ( ! preg_match( '/^(.*?@since\s+)TBD\b([ \t]*)([^\r]*)(\r?)$/', $lines[ $i ], $match ) ) {
+			continue;
+		}
+
+		++$count;
+		list( , $prefix, $padding, $note, $eol ) = $match;
+
+		if ( $note === '' ) {
+			$lines[ $i ] = $prefix . $version . $padding . $eol;
+			continue;
+		}
+
+		$lines[ $i ] = $prefix . $version . ' ' . $note . $eol;
+		$old_column  = strlen( $prefix ) + 3 + strlen( $padding );
+		$new_column  = strlen( $prefix ) + strlen( $version ) + 1;
+
+		// Continuation lines start at the note's old column, below the tag.
+		for ( $j = $i + 1; $j < $total; $j++ ) {
+			if (
+				! preg_match( '/^(\s*\*)(\s+)([^\s@].*)$/', $lines[ $j ], $next ) ||
+				strlen( $next[1] . $next[2] ) !== $old_column
+			) {
+				break;
+			}
+
+			$lines[ $j ] = $next[1] . str_repeat( ' ', $new_column - strlen( $next[1] ) ) . $next[3];
+		}
+	}
+
+	return array( implode( "\n", $lines ), $count );
 }
 
 /**

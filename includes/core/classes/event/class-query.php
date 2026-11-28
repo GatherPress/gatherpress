@@ -153,7 +153,7 @@ final class Query {
 	 * a WordPress query object.
 	 *
 	 * @since 0.34.0
-	 * @since TBD Takes an args array instead of positional parameters.
+	 * @since 0.37.0 Takes an args array instead of positional parameters.
 	 *
 	 * @param array<string, mixed> $args {
 	 *     Event query arguments.
@@ -164,6 +164,11 @@ final class Query {
 	 *     @type string[] $venues          Venue slugs for additional filtering.
 	 *     @type bool     $has_password    Optional. False to leave out password-protected
 	 *                                     events, true to get only them. Default both.
+	 *     @type array[]  $tax_query       Optional. `WP_Query` tax_query clauses for any other
+	 *                                     taxonomy, for example one that a companion plugin
+	 *                                     registers. An event must match every clause, and the
+	 *                                     topics and venues too. Members that are not arrays
+	 *                                     are left out.
 	 * }
 	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
@@ -215,6 +220,16 @@ final class Query {
 			);
 		} elseif ( ! empty( $venues ) ) {
 			$tax_query[] = $this->build_venue_tax_query( $venues );
+		}
+
+		if ( isset( $args['tax_query'] ) && is_array( $args['tax_query'] ) ) {
+			// The clauses sit next to the topic and venue clauses, and WP_Query
+			// joins top-level clauses with AND.
+			foreach ( $args['tax_query'] as $clause ) {
+				if ( is_array( $clause ) ) {
+					$tax_query[] = $clause;
+				}
+			}
 		}
 
 		$query_args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
@@ -351,7 +366,7 @@ final class Query {
 			 * the list rather than replacing it. Check `$query` to act on only
 			 * some lists.
 			 *
-			 * @since TBD
+			 * @since 0.37.0
 			 *
 			 * @param array<string, mixed> $query_vars The query's vars, as `WP_Query` reads them.
 			 * @param string               $type       The list type: `upcoming` or `past`.
@@ -736,7 +751,7 @@ final class Query {
 	 * already has is intersected rather than replaced, so the filter only
 	 * narrows it, and a filter that matches nothing returns no posts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Query $query The query being prepared.
 	 *
@@ -923,7 +938,7 @@ final class Query {
 	 * arrive here. Non-scalar members are dropped rather than cast, because
 	 * `strval()` on an array raises a warning and on an object throws.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param mixed $slugs Candidate slug list.
 	 *
@@ -975,7 +990,7 @@ final class Query {
 	 * event queries use the same upcoming and past rules, status checks and
 	 * filters as any other event list.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $taxonomy Shadow taxonomy to read term slugs from.
 	 * @param bool   $upcoming Whether to match upcoming events rather than past ones.
@@ -1011,7 +1026,7 @@ final class Query {
 	/**
 	 * Whether a shadow term sits on at least one upcoming or past event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string   $taxonomy         Shadow taxonomy.
 	 * @param string   $slug             Shadow term slug.

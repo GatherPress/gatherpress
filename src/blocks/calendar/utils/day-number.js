@@ -5,7 +5,7 @@
  * live day and the read-only day previews can stay in sync with it.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 // eslint-disable-next-line @wordpress/no-unsafe-wp-apis

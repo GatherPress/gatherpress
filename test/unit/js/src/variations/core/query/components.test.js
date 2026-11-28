@@ -17,6 +17,9 @@ jest.mock( '@wordpress/components', () => ( {
 	SelectControl: ( { label } ) => (
 		<div data-testid="select-control">{ label }</div>
 	),
+	TextControl: ( { label } ) => (
+		<div data-testid="text-control">{ label }</div>
+	),
 	ToggleControl: ( { label, help, checked, onChange } ) => (
 		<div data-testid="toggle-control">
 			<span>{ label }</span>
@@ -934,6 +937,7 @@ describe( 'gatherpress.eventQueryControls', () => {
 		expect( seen ).toEqual( [
 			'listType',
 			'includeUnfinished',
+			'dateRange',
 			'exclude',
 			'count',
 			'offset',

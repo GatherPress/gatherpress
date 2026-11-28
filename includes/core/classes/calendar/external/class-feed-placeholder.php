@@ -3,7 +3,7 @@
  * Replaces calendar feed placeholder links with feed URLs.
  *
  * @package GatherPress\Core\Calendar\External
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Calendar\External;
@@ -43,7 +43,7 @@ use WP_Term;
  * that post's venue or archive. It is marked with
  * `data-gatherpress-calendar-unresolved` so a theme can hide it.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Feed_Placeholder {
 
@@ -55,7 +55,7 @@ final class Feed_Placeholder {
 	/**
 	 * Attribute marking a link whose placeholder had no feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const UNRESOLVED_ATTRIBUTE = 'data-gatherpress-calendar-unresolved';
@@ -63,7 +63,7 @@ final class Feed_Placeholder {
 	/**
 	 * Start of every calendar feed placeholder.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const PREFIX = '#gatherpress-calendar-';
@@ -71,7 +71,7 @@ final class Feed_Placeholder {
 	/**
 	 * Pattern that splits a placeholder into its format and feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const PATTERN = '/^#gatherpress-calendar-(feed|subscribe)(?:-(site|archive|venue|venue-(.+)|topic-(.+)))?-url$/';
@@ -79,7 +79,7 @@ final class Feed_Placeholder {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -88,7 +88,7 @@ final class Feed_Placeholder {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -101,7 +101,7 @@ final class Feed_Placeholder {
 	 *
 	 * A placeholder with no feed loses its `href`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $block_content The block's HTML.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -145,7 +145,7 @@ final class Feed_Placeholder {
 	 * a listing page, the current post is only the first one listed, so it
 	 * is used only in the loop or on a single post.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $block    The parsed block data.
 	 * @param WP_Block|null        $instance The block instance.
@@ -165,7 +165,7 @@ final class Feed_Placeholder {
 	/**
 	 * Gets the URL a placeholder stands for.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $placeholder The link's href.
 	 * @param int    $post_id     The post the block renders for.
@@ -200,7 +200,7 @@ final class Feed_Placeholder {
 	 * A single event has a download rather than a feed, so it has none. A
 	 * single venue has the same feed as the venue placeholder.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The feed URL, or an empty string when the page has no feed.
 	 */
@@ -223,7 +223,7 @@ final class Feed_Placeholder {
 	/**
 	 * Gets the events archive feed for the current event's post type, or the archive being viewed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The post the block renders for.
 	 *
@@ -250,7 +250,7 @@ final class Feed_Placeholder {
 	 *
 	 * An event whose venue is hidden by a password has none.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $post_id The post the block renders for.
 	 *
@@ -281,7 +281,7 @@ final class Feed_Placeholder {
 	 * Only a published venue without a password has one, and only when its
 	 * post type has venue feeds.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Post|null $venue The venue post.
 	 *
@@ -303,7 +303,7 @@ final class Feed_Placeholder {
 	/**
 	 * Gets a topic's feed by the topic's slug.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The topic's slug.
 	 *
@@ -327,7 +327,7 @@ final class Feed_Placeholder {
 	 * feeds, are searched, so a draft or protected venue of another post type
 	 * with the same slug doesn't hide one that has a feed.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $slug The venue's slug.
 	 *

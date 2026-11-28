@@ -20,6 +20,7 @@ use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_HTML_Processor;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -48,7 +49,7 @@ final class Rsvp {
 	 *
 	 * Its value is the event's post ID, so only that event's RSVP blocks show the error.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const ERROR_QUERY_ARG = 'gatherpress_rsvp_error';
@@ -56,7 +57,7 @@ final class Rsvp {
 	/**
 	 * RSVP blocks rendered so far in this request, counted per event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<int, int>
 	 */
 	private array $render_counts = array();
@@ -111,6 +112,7 @@ final class Rsvp {
 	 * - Adds `data-wp-interactive` attributes for interactivity.
 	 * - Dynamically renders and serializes inner blocks for each RSVP status.
 	 * - Ensures proper markup updates based on the RSVP status and event state.
+	 * - Marks the disabled buttons of the past and canceled templates as unavailable.
 	 *
 	 * @since 0.33.0
 	 *
@@ -181,11 +183,13 @@ final class Rsvp {
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
 			if ( ( new Event_Status( $post_id ) )->is_canceled() ) {
-				$inner_blocks_markup = do_blocks(
-					$serialized_inner_blocks['canceled'] ?? $this->get_default_canceled_template()
+				$inner_blocks_markup = $this->mark_disabled_buttons(
+					do_blocks( $serialized_inner_blocks['canceled'] ?? $this->get_default_canceled_template() )
 				);
 			} elseif ( $event->has_event_past() ) {
-				$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
+				$inner_blocks_markup = $this->mark_disabled_buttons(
+					do_blocks( $serialized_inner_blocks['past'] ?? '' )
+				);
 			} else {
 				unset( $serialized_inner_blocks['past'], $serialized_inner_blocks['canceled'] );
 				// Render inner blocks for all statuses.
@@ -284,7 +288,9 @@ final class Rsvp {
 					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
-				$target_found = $is_actionable_element;
+				// A control marked unavailable by mark_disabled_buttons() stays
+				// out of the Tab order and takes no click handler.
+				$target_found = $is_actionable_element && 'true' !== $tag->get_attribute( 'aria-disabled' );
 
 				// Apply RSVP attributes if target was found.
 				if ( $target_found ) {
@@ -310,11 +316,61 @@ final class Rsvp {
 	}
 
 	/**
+	 * Marks the disabled buttons of a past or canceled event's RSVP template as unavailable.
+	 *
+	 * The default past and canceled templates hold a Button block with the
+	 * `gatherpress--is-disabled` class, which only changes the pointer. The
+	 * button inside still takes keyboard focus and announces itself as an
+	 * operable button that does nothing. This adds `aria-disabled="true"` and
+	 * `tabindex="-1"`, as the plugin does for its other disabled controls, so
+	 * a screen reader announces the button as unavailable and Tab skips it.
+	 * It runs on the rendered markup, so templates already saved in events
+	 * get it too.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param string $markup The rendered inner blocks of the RSVP block.
+	 *
+	 * @return string The markup with its disabled buttons marked.
+	 */
+	private function mark_disabled_buttons( string $markup ): string {
+		$processor = WP_HTML_Processor::create_fragment( $markup );
+
+		$controls = array( 'A', 'BUTTON' );
+		// Depths of the disabled elements that enclose the current tag. The
+		// Button block puts the class on a wrapper, so a control can be any
+		// descendant of a disabled element, but never a tag after it.
+		$disabled_depths = array();
+
+		while ( $processor?->next_tag() ) {
+			$depth = $processor->get_current_depth();
+
+			while ( ! empty( $disabled_depths ) && end( $disabled_depths ) >= $depth ) {
+				array_pop( $disabled_depths );
+			}
+
+			$is_disabled = $processor->has_class( 'gatherpress--is-disabled' );
+			$is_control  = in_array( $processor->get_tag(), $controls, true );
+
+			if ( $is_control && ( $is_disabled || ! empty( $disabled_depths ) ) ) {
+				$processor->set_attribute( 'aria-disabled', 'true' );
+				$processor->set_attribute( 'tabindex', '-1' );
+			}
+
+			if ( $is_disabled ) {
+				$disabled_depths[] = $depth;
+			}
+		}
+
+		return $processor?->get_updated_html() ?? $markup;
+	}
+
+	/**
 	 * The canceled template for an RSVP block saved before it had one.
 	 *
 	 * Matches the editor's default canceled template, a disabled button.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string The serialized blocks.
 	 */
@@ -344,7 +400,7 @@ final class Rsvp {
 	 * Logged-out visitors get the Login modal instead, and a past or
 	 * canceled event takes no RSVPs, so none of them gets the form.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $block_content The RSVP block's HTML.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -422,7 +478,7 @@ final class Rsvp {
 	 * - The guest count and anonymity fields join the form, showing the
 	 *   saved values.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag       Processor positioned on the element.
 	 * @param string                $form_id   The id of the RSVP block's form.
@@ -464,7 +520,7 @@ final class Rsvp {
 	/**
 	 * Makes a button submit the RSVP block's form with the given status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag     Processor positioned on the button.
 	 * @param string                $form_id The id of the RSVP block's form.
@@ -486,7 +542,7 @@ final class Rsvp {
 	 * A logged-in visitor sends the REST nonce; a magic-link session is
 	 * authorized by its cookie, as it is with JavaScript.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $form_id The form's id.
 	 * @param int    $post_id The event's post ID.
@@ -623,6 +679,10 @@ final class Rsvp {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
+					// The nonce is fetched on focus. The count is saved a moment after its last change,
+					// or at once when the field loses focus.
+					$tag->set_attribute( 'data-wp-on--focus', 'actions.prepareGuestCount' );
+					$tag->set_attribute( 'data-wp-on--blur', 'actions.saveGuestCount' );
 					$tag->set_attribute( 'max', (string) $guest_limit );
 				}
 			}

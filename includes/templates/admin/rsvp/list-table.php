@@ -57,6 +57,8 @@ $rsvp_table->prepare_items();
 
 	<hr class="wp-header-end">
 
+	<?php echo wp_kses_post( $rsvp_table->get_action_notice() ); ?>
+
 	<form method="get">
 		<input type="hidden" name="post_type" value="<?php echo esc_attr( Event::POST_TYPE ); ?>" />
 		<input type="hidden" name="page" value="<?php echo esc_attr( Rsvp::COMMENT_TYPE ); ?>" />
@@ -87,8 +89,6 @@ $rsvp_table->prepare_items();
 			<input type="hidden" name="check_in" value="<?php echo esc_attr( $check_in ); ?>" />
 		<?php endif; ?>
 	</form>
-
-	<?php $rsvp_table->process_bulk_action(); ?>
 
 	<form method="post">
 		<?php

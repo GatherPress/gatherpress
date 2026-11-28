@@ -22,7 +22,7 @@ let latestPreview = 0;
  * The status line stays in the page while empty, so a screen reader is
  * already watching it when the first message arrives.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} status The status output element.
  * @param {string}      text   The text to announce.
@@ -39,7 +39,7 @@ function showStatus( status, text, busy ) {
 /**
  * Add a paragraph with a bold label and a value to the import preview.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} content The preview content element.
  * @param {string}      label   The label.
@@ -59,7 +59,7 @@ function addPreviewLine( content, label, value ) {
 /**
  * Show what an import file holds before it is imported.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} content The preview content element.
  * @param {Object}      data    The parsed import file.
@@ -114,7 +114,7 @@ export function renderPreview( content, data ) {
 /**
  * Describe the result of an import.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   result                  The import result from the REST route.
  * @param {string[]} [result.imported]       Keys that were imported.
@@ -166,7 +166,7 @@ export function describeImport( result ) {
 /**
  * Download data as a JSON file.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object} data The data to download.
  *
@@ -192,7 +192,7 @@ export function downloadJson( data ) {
 /**
  * Export the settings and download them.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}      elements        The Tools elements.
  * @param {string}      elements.scope  Storage scope: `blog` or `network`.
@@ -219,7 +219,7 @@ export async function exportSettings( { scope, status } ) {
 /**
  * Read the chosen import file and preview it.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}           elements                The Tools elements.
  * @param {HTMLInputElement} elements.file           The file input.
@@ -271,9 +271,44 @@ export async function previewImport( elements ) {
 }
 
 /**
- * Import the previewed file.
+ * Check if a button is currently busy (marked with aria-disabled="true").
  *
  * @since TBD
+ *
+ * @param {HTMLElement|null} button The button element to check.
+ *
+ * @return {boolean} True if button is busy, false otherwise.
+ */
+export function isButtonBusy( button ) {
+	return 'true' === button?.getAttribute( 'aria-disabled' );
+}
+
+/**
+ * Toggle the busy state of a button using aria-disabled to preserve keyboard focus.
+ *
+ * @since TBD
+ *
+ * @param {HTMLElement|null} button The button element.
+ * @param {boolean}          busy   Whether the button is busy.
+ *
+ * @return {void}
+ */
+export function setButtonBusy( button, busy ) {
+	if ( ! button ) {
+		return;
+	}
+
+	if ( busy ) {
+		button.setAttribute( 'aria-disabled', 'true' );
+	} else {
+		button.removeAttribute( 'aria-disabled' );
+	}
+}
+
+/**
+ * Import the previewed file.
+ *
+ * @since 0.37.0
  *
  * @param {Object}            elements              The Tools elements.
  * @param {string}            elements.scope        Storage scope: `blog` or `network`.
@@ -287,11 +322,11 @@ export async function previewImport( elements ) {
 export async function importSettings( elements ) {
 	const { scope, importData, root, importButton, status } = elements;
 
-	if ( ! importData ) {
+	if ( ! importData || isButtonBusy( importButton ) ) {
 		return;
 	}
 
-	importButton.disabled = true;
+	setButtonBusy( importButton, true );
 	showStatus( status, __( 'Importing settings…', 'gatherpress' ), true );
 
 	try {
@@ -314,7 +349,7 @@ export async function importSettings( elements ) {
 			false,
 		);
 	} finally {
-		importButton.disabled = false;
+		setButtonBusy( importButton, false );
 	}
 }
 
@@ -323,7 +358,7 @@ export async function importSettings( elements ) {
  *
  * Does nothing on pages without the Tools markup.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {void}
  */

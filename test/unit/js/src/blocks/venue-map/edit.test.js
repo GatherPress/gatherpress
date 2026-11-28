@@ -1,7 +1,14 @@
 /**
  * External dependencies
  */
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	jest,
+} from '@jest/globals';
 import { act, render } from '@testing-library/react';
 
 /**
@@ -51,9 +58,15 @@ const noVenueMockSelect = ( storeName ) => {
 	}
 };
 
+// The select the mocked useSelect hands to selectors. Tests may swap it.
+let mockSelect = noVenueMockSelect;
+
+// The props of the latest MapEmbed render.
+let mockMapEmbedProps = null;
+
 jest.mock( '@wordpress/data', () => ( {
 	useSelect: jest.fn( ( selector ) => {
-		const result = selector( noVenueMockSelect );
+		const result = selector( mockSelect );
 		// Identify the venue-state selector by its return shape.
 		if (
 			null !== result &&
@@ -138,7 +151,10 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
 	getFromSettings: jest.fn( () => null ),
 } ) );
 
-jest.mock( '@src/components/MapEmbed', () => () => null );
+jest.mock( '@src/components/MapEmbed', () => ( props ) => {
+	mockMapEmbedProps = props;
+	return null;
+} );
 
 jest.mock( '@src/components/GoogleMap', () => ( {
 	GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS: [ 'hybrid', 'terrain' ],
@@ -410,6 +426,106 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		expect( result1.staticMapDescriptors ).toBe(
 			result2.staticMapDescriptors,
 		);
+	} );
+} );
+
+describe( 'venue-map Edit venue name for the map marker', () => {
+	/**
+	 * Builds a select mock for a venue with the given title.
+	 *
+	 * @param {number}      currentPostId The post open in the editor.
+	 * @param {string|null} title         The venue title both stores report.
+	 *
+	 * @return {Function} The select mock.
+	 */
+	const titleSelect = ( currentPostId, title ) => ( storeName ) => {
+		switch ( storeName ) {
+			case 'core/editor':
+				return {
+					getCurrentPostId: () => currentPostId,
+					getCurrentPostType: () => 'gatherpress_venue',
+					getEditedPostAttribute: ( key ) =>
+						'title' === key ? title : null,
+					getCurrentPost: () => null,
+				};
+			case 'core':
+				return {
+					getEditedEntityRecord: () => ( { id: 99, meta: {}, title } ),
+				};
+			default:
+				return noVenueMockSelect( storeName );
+		}
+	};
+
+	/**
+	 * Renders the interactive map for a venue and returns the marker label
+	 * handed to the map.
+	 *
+	 * @param {boolean}     isEditing     Whether the venue itself is open in the editor.
+	 * @param {number}      currentPostId The post open in the editor.
+	 * @param {string|null} title         The venue title.
+	 *
+	 * @return {string} The marker label.
+	 */
+	const markerLabelFor = ( isEditing, currentPostId, title ) => {
+		isVenuePostType.mockReturnValue( isEditing );
+		mockSelect = titleSelect( currentPostId, title );
+		render(
+			<Edit
+				attributes={ { ...DEFAULT_ATTRIBUTES, renderMode: 'interactive' } }
+				setAttributes={ jest.fn() }
+				context={ { postId: 99, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>,
+		);
+
+		return mockMapEmbedProps.markerLabel;
+	};
+
+	beforeEach( () => {
+		mockMapEmbedProps = null;
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	afterEach( () => {
+		mockSelect = noVenueMockSelect;
+	} );
+
+	it( 'names the marker after the edited title when the venue itself is open', () => {
+		expect( markerLabelFor( true, 99, 'QA Venue Hall' ) ).toBe(
+			'QA Venue Hall',
+		);
+		expect( markerLabelFor( true, 99, null ) ).toBe( '' );
+	} );
+
+	it( 'names the marker after the venue record title in a Query Loop or an event', () => {
+		expect( markerLabelFor( false, 0, 'QA Venue Hall' ) ).toBe(
+			'QA Venue Hall',
+		);
+		expect( markerLabelFor( false, 0, undefined ) ).toBe( '' );
+	} );
+
+	it( 'passes the title as plain text, like the front end', () => {
+		expect(
+			markerLabelFor( true, 99, '  <em>Hall</em> &amp; Gardens ' ),
+		).toBe( 'Hall & Gardens' );
+		expect(
+			markerLabelFor( false, 0, '<strong>Hall</strong> &amp; Gardens' ),
+		).toBe( 'Hall & Gardens' );
+	} );
+
+	it( 'passes no name when there is no venue', () => {
+		render(
+			<Edit
+				attributes={ { ...DEFAULT_ATTRIBUTES, renderMode: 'interactive' } }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>,
+		);
+
+		expect( mockMapEmbedProps.markerLabel ).toBe( '' );
 	} );
 } );
 

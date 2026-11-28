@@ -4,7 +4,7 @@
  * A link inside a group covers that group, and the links above the groups
  * cover every group.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {HTMLElement} root    The allowlist container.
  * @param {HTMLElement} trigger The Select all or Deselect all button.
@@ -28,7 +28,7 @@ export function toggleAllowlist( root, trigger ) {
  *
  * Does nothing on pages without the allowlist.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {void}
  */

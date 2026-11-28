@@ -3,7 +3,7 @@
  *
  * Mirrors the markup of includes/templates/blocks/event-date.php.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}      props          Component props.
  * @param {boolean}     props.isLink   Whether the block links to the event.

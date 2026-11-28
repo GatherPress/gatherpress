@@ -2,7 +2,7 @@
  * Calendar Day Block Registration
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { registerBlockType } from '@wordpress/blocks';

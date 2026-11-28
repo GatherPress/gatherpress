@@ -45,7 +45,7 @@ final class Modal_Manager {
 	 *
 	 * Its value is the key of the modal manager to open, from `get_modal_key()`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const OPEN_QUERY_ARG = 'gatherpress_modal';
@@ -53,7 +53,7 @@ final class Modal_Manager {
 	/**
 	 * Modal managers rendered so far in this request, counted per post.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<int, int>
 	 */
 	private array $render_counts = array();
@@ -61,7 +61,7 @@ final class Modal_Manager {
 	/**
 	 * Attribute marking a modal the server rendered open.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	private const OPENED_ATTRIBUTE = 'data-gatherpress-opened-on-load';
@@ -185,7 +185,7 @@ final class Modal_Manager {
 	 * @since 0.33.0
 	 * @since 0.36.0 Links acting as buttons also close the modal on Space. Links without an
 	 *            `href` get `tabindex`.
-	 * @since TBD    The modal closes on Escape and on an overlay click.
+	 * @since 0.37.0 The modal closes on Escape and on an overlay click.
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -241,7 +241,7 @@ final class Modal_Manager {
 	 * once. A modal rendered open also gets ways out (`add_ways_out()`).
 	 * With JavaScript, the click handlers cancel the navigation.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $block_content The modal manager's HTML.
 	 * @param array<string, mixed> $block         The parsed block data.
@@ -297,7 +297,7 @@ final class Modal_Manager {
 	 * open and the close triggers load the URL that closes it. Otherwise the
 	 * open triggers load the URL that opens it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag     Processor positioned on the modal manager's wrapper.
 	 * @param bool                  $is_open Whether the request asks for this modal manager's modal.
@@ -348,7 +348,7 @@ final class Modal_Manager {
 	 * from `wp_unique_id()` would not: other code on the page shares its
 	 * counter.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $block The parsed block data.
 	 *
@@ -368,7 +368,7 @@ final class Modal_Manager {
 	 * The class sits on the link or button itself, or on the wrapper right
 	 * before it, as the Button block renders it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag Processor positioned on the tag with the trigger class.
 	 *
@@ -390,7 +390,7 @@ final class Modal_Manager {
 	 * A link without an `href` gets the URL; a link with one keeps it. A
 	 * button submits the navigation form instead.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag     Processor positioned on the link or button.
 	 * @param string                $form_id The id of the navigation form.
@@ -419,7 +419,7 @@ final class Modal_Manager {
 	 * A GET form replaces its action's query with its own fields, so the
 	 * URL's query args become hidden inputs.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $form_id The form's id.
 	 * @param string $url     The URL to load.
@@ -463,7 +463,7 @@ final class Modal_Manager {
 	 * JavaScript, the view script hides the button in favor of its own
 	 * overlay handling, and the link closes the modal without a reload.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $block_content    The modal manager's HTML.
 	 * @param string $form_id          The id of the close form.
@@ -502,7 +502,7 @@ final class Modal_Manager {
 	/**
 	 * Inserts HTML just before the block's closing tag.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $block_content The block's HTML.
 	 * @param string $html          The HTML to insert.

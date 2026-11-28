@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The calendar feed of a term in a taxonomy that a companion plugin adds to events, or of a post of a companion plugin's venue-like post type, now lists only the events with that term or post, instead of all events. Developers can pass `tax_query` clauses to `Event\Query::get_events_list()` for any taxonomy.

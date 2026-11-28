@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Remove the deprecated no-margin-bottom prop from the Event Status, Duration and Time Zone controls in the editor.

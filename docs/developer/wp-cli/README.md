@@ -2,13 +2,14 @@
 
 GatherPress registers its commands under a single `gatherpress` namespace, in [`Core\Cli`](../../../includes/core/classes/class-cli.php). They only exist when WP-CLI is loaded, so nothing is added to a normal page request.
 
-Two command groups ship with the plugin today:
+Three command groups ship with the plugin today:
 
 | Command | What it does |
 |---|---|
 | [`wp gatherpress event rsvp`](#wp-gatherpress-event-rsvp) | Record or change a person's RSVP to an event |
 | [`wp gatherpress settings export`](#wp-gatherpress-settings-export) | Write the plugin's settings out as JSON |
 | [`wp gatherpress settings import`](#wp-gatherpress-settings-import) | Read settings back in, with a dry run by default |
+| [`wp gatherpress venue-map cleanup`](#wp-gatherpress-venue-map-cleanup) | Delete static-map images no venue uses anymore, with a dry run by default |
 
 Every command supports WP-CLI's own global flags, so `--url` picks a site on multisite and `--user` changes who the command runs as.
 
@@ -89,6 +90,30 @@ wp gatherpress settings import gatherpress-settings.json --apply --mode=replace
 
 Settings marked non-exportable are also not importable, so a hand-edited file cannot be used to push them in.
 
+## `wp gatherpress venue-map cleanup`
+
+Finds the static-map images in `wp-content/uploads/gatherpress/static-maps/` that no venue's map data points to. **It does not delete anything unless you pass `--apply`**. Without that flag it reports what it found and stops.
+
+```bash
+# Preview. Deletes nothing.
+wp gatherpress venue-map cleanup
+
+# Delete, listing each file.
+wp gatherpress venue-map cleanup --apply --verbose
+
+# Delete at most 200 files in this run.
+wp gatherpress venue-map cleanup --apply --limit=200
+```
+
+| Option | Default | Notes |
+|---|---|---|
+| `--apply` | off | Without it, the command is a dry run |
+| `--verbose` | off | Prints each file found, deleted, or that could not be deleted |
+| `--limit` | `1000` | Stops after this many files. Must be a positive whole number |
+| `--force` | off | Runs even if another cleanup holds the lock |
+
+GatherPress also runs this cleanup on WP-Cron (`gatherpress_venue_map_cleanup`), with `--apply` and the default limit, at the frequency set under Settings > Venues > Maps (weekly by default). The command is for previewing or for running it now. Images changed in the last five minutes are skipped, so a map being saved is never removed mid-write. Only one cleanup runs at a time, through a lock that expires after a minute. If a run reaches `--limit` with `--apply`, run it again to continue.
+
 ## Commands from companion plugins
 
 [GatherPress Alpha](https://github.com/GatherPress/gatherpress-alpha) adds its own command for repairing data after an upgrade:
@@ -106,6 +131,7 @@ Commands are registered in one place, in `Core\Cli`'s constructor:
 ```php
 WP_CLI::add_command( 'gatherpress event', Event_Cli::class );
 WP_CLI::add_command( 'gatherpress settings', Settings_Cli::class );
+WP_CLI::add_command( 'gatherpress venue-map', Venue_Map_Cli::class );
 ```
 
 A command class lives in [`includes/core/classes/commands/`](../../../includes/core/classes/commands/), extends `WP_CLI`, and turns each public method into a subcommand. The docblock is not decoration: WP-CLI parses `## OPTIONS` into the command's synopsis and **rejects any argument that is not declared there**, so an option you read in the method body but forget in the docblock will never reach it.
@@ -140,4 +166,4 @@ public function rsvp( array $args = array(), array $assoc_args = array() ): void
 Two things worth copying from the existing commands:
 
 - **A bare `--flag` with no value arrives as `true`, not a string.** `Settings_Cli::export()` checks `is_string()` before treating `--file` as a path, because `wp gatherpress settings export --file` would otherwise try to write to `1`.
-- **Destructive commands default to a dry run.** `settings import` requires `--apply` before it writes anything, which makes the safe invocation the short one.
+- **Destructive commands default to a dry run.** `settings import` and `venue-map cleanup` require `--apply` before they write or delete anything, which makes the safe invocation the short one.

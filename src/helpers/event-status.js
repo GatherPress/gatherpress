@@ -6,7 +6,7 @@ import { getFromConfig } from './editor-settings';
 /**
  * Slug reported for an event that has no status of its own, before settings load.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @type {string}
  */
@@ -19,7 +19,7 @@ const DEFAULT_STATUS = 'scheduled';
  * through the block editor settings, so a site that registers its own status
  * gets it here without touching JavaScript. Labels arrive translated.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {Object} Statuses keyed by slug, or an empty object before settings load.
  */
@@ -32,7 +32,7 @@ function getStatuses() {
 /**
  * One status's definition, falling back to the scheduled one.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} slug The status slug.
  *
@@ -49,7 +49,7 @@ function getStatus( slug ) {
  *
  * The first status PHP offers, matching `Status::default_slug()`.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {string} The default status slug.
  */
@@ -60,7 +60,7 @@ export function getDefaultStatus() {
 /**
  * The sentence explaining what a status means.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} slug The status slug.
  *
@@ -73,7 +73,7 @@ export function getStatusDescription( slug ) {
 /**
  * The statuses shaped for a SelectControl.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {Array} Options of label and value, in the order PHP offers them.
  */
@@ -87,7 +87,7 @@ export function getStatusOptions() {
 /**
  * Whether an event's date is crossed out while it is in a status.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} slug The status slug.
  *

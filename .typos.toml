@@ -32,6 +32,8 @@ extend-ignore-re = [
 "Wordpress" = "WordPress"
 "Gatherpress" = "GatherPress"
 "Open Street Maps" = "OpenStreetMap"
+# WordPress core function names.
+"get_post_stati" = "get_post_stati"
 
 
 # Case sensitive, matches entire word.

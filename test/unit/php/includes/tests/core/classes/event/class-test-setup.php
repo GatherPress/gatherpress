@@ -41,7 +41,7 @@ class Test_Setup extends Base {
 	 * Unregistering the event post type drops it from every taxonomy, and
 	 * later test classes need venues to stay attached to events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -621,6 +621,10 @@ class Test_Setup extends Base {
 		$instance->register_post_type();
 
 		$this->assertTrue( post_type_exists( Event::POST_TYPE ), 'Failed to assert that post type exists.' );
+		$this->assertFalse(
+			get_post_type_object( Event::POST_TYPE )->randomable,
+			'Failed to assert events are kept out of the random redirect.'
+		);
 	}
 
 	/**
@@ -2473,7 +2477,7 @@ class Test_Setup extends Base {
 	/**
 	 * Tests filter_event_status_term translates status term names dynamically.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @covers ::filter_event_status_term
 	 *

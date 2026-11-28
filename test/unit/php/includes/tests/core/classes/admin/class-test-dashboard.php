@@ -3,7 +3,7 @@
  * Unit tests for the At a Glance dashboard items.
  *
  * @package GatherPress\Core\Admin
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core\Admin;
@@ -27,7 +27,7 @@ class Test_Dashboard extends Base {
 	/**
 	 * Start each test with a cold cache.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -41,7 +41,7 @@ class Test_Dashboard extends Base {
 	/**
 	 * Clean up after each test.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -55,7 +55,7 @@ class Test_Dashboard extends Base {
 	/**
 	 * Log in as a user with the given role.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $role Role name.
 	 *
@@ -68,7 +68,7 @@ class Test_Dashboard extends Base {
 	/**
 	 * Create a published event that starts at the given time.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $when Relative time the event starts, for `strtotime()`.
 	 *

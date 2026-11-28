@@ -2,7 +2,7 @@
  * Ribbon row style for the calendar week and day blocks.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 /**
@@ -14,7 +14,7 @@
  * and would drop the whole row template. `initial` also stops the value of an
  * outer week from passing to a calendar inside one of its entries.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {number} numRibbonSlots Number of ribbon rows.
  *

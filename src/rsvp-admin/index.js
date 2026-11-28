@@ -72,7 +72,7 @@ function mountFilters() {
  * in place without script. The states come from the filters, which list the
  * same ones with their icons.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {void}
  */

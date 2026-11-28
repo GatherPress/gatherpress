@@ -3,7 +3,7 @@
  * Connects the Calendar blocks to the Query Loop block, its pagination and the REST API.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -27,7 +27,7 @@ use WP_REST_Request;
  * Marks Query Loop blocks that contain a calendar, pages them by date range instead of by
  * posts, and lets the REST API return a full date range for the editor preview.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Calendar_Query {
 
@@ -41,7 +41,7 @@ final class Calendar_Query {
 	 *
 	 * A calendar pages by date range, so the number of posts does not limit its pages.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	const MAX_PAGINATION_PAGES = 200;
@@ -57,7 +57,7 @@ final class Calendar_Query {
 	 * Removed in `forget_calendar_query()` when the Query block has rendered, because a queryId is
 	 * unique only inside one post. An archive that shows the content of several posts can repeat it.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<int, true>
 	 */
 	protected array $calendar_query_ids = array();
@@ -67,7 +67,7 @@ final class Calendar_Query {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -76,7 +76,7 @@ final class Calendar_Query {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -101,7 +101,7 @@ final class Calendar_Query {
 	 * Supports the default 'post' post type alongside any post type
 	 * registering 'gatherpress-event-date' support.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string[] Array of post type slugs.
 	 */
@@ -114,7 +114,7 @@ final class Calendar_Query {
 	/**
 	 * Registers the REST hooks for every calendar post type that is already registered.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -127,7 +127,7 @@ final class Calendar_Query {
 	/**
 	 * Registers the REST query and collection hooks for a calendar post type.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 *
@@ -152,7 +152,7 @@ final class Calendar_Query {
 	 * Only the editor preview needs the higher limit, so only users who can edit posts get it.
 	 * Other callers keep the core maximum of 100.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $query_params Endpoint collection parameters.
 	 *
@@ -175,7 +175,7 @@ final class Calendar_Query {
 	/**
 	 * Resolves a date string parameter from REST query parameters with a fallback key.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $parameters REST parameters.
 	 * @param string               $primary    Primary parameter key (e.g. 'start_date').
@@ -192,7 +192,7 @@ final class Calendar_Query {
 	/**
 	 * Builds the date query clause for calendar REST requests.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $parameters REST parameters.
 	 * @param bool                 $is_event   Whether the queried post type supports events.
@@ -227,7 +227,7 @@ final class Calendar_Query {
 	 * calendar editor adds. For event post types it drops the upcoming/past filter, so the
 	 * calendar can show past and upcoming events of the same month.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $args    WP_Query arguments that will be used for the REST request.
 	 * @param WP_REST_Request      $request Request object.
@@ -262,7 +262,7 @@ final class Calendar_Query {
 	/**
 	 * Checks whether a block context belongs to a Query block that contains a calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $context Block context.
 	 *
@@ -283,7 +283,7 @@ final class Calendar_Query {
 	/**
 	 * Adds the date range of its calendar to a Query block that contains one.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $parsed_block Parsed query block data.
 	 * @param WP_Block|null        $parent_block Parent block instance.
@@ -325,7 +325,7 @@ final class Calendar_Query {
 	/**
 	 * Gives a calendar block the date range of its parent Query block.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $parsed_block Parsed calendar block data.
 	 * @param WP_Block|null        $parent_block Parent block instance.
@@ -353,7 +353,7 @@ final class Calendar_Query {
 	/**
 	 * Dynamically set date range and attributes based on core pagination query vars.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $parsed_block The parsed block data.
 	 * @param array<string, mixed> $source_block The original block data.
@@ -398,7 +398,7 @@ final class Calendar_Query {
 	 * A later Query block with the same queryId, for example in the content of another post,
 	 * is not a calendar query.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $block_content The rendered Query block.
 	 * @param array<string, mixed> $parsed_block  The parsed Query block, with the calendar marker.
@@ -428,7 +428,7 @@ final class Calendar_Query {
 	 * Runs once, on the first query after a calendar's Previous Page or Next Page block
 	 * registered it, which is the query of that block.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<WP_Post|int> $posts Array of post objects or IDs.
 	 * @param WP_Query           $query The WP_Query instance.
@@ -451,7 +451,7 @@ final class Calendar_Query {
 	 * A calendar pages by date range, so page numbers of posts mean nothing there. The other
 	 * pagination blocks do not change.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string               $block_content The rendered Page Numbers block.
 	 * @param array<string, mixed> $parsed_block  The parsed Page Numbers block.
@@ -472,7 +472,7 @@ final class Calendar_Query {
 	/**
 	 * Marks the queries of the blocks inside a calendar's Query block as calendar queries.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $query WP_Query arguments.
 	 * @param WP_Block             $block Block instance.

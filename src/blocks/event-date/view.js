@@ -24,7 +24,7 @@ store( 'gatherpress', {
 		 * here: the two sentence formats arrive server-translated in the same
 		 * context payload.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @return {string} The label, or an empty string when there is nothing to add.
 		 */
@@ -43,7 +43,7 @@ store( 'gatherpress', {
 		/**
 		 * Whether the viewer local time is active for this block.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @return {boolean} True when a viewer time label is available.
 		 */
@@ -59,7 +59,7 @@ store( 'gatherpress', {
 		 * Makes the element keyboard-focusable only when there is a tooltip
 		 * to display, matching WCAG 2.1.1 keyboard navigation requirements.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @return {string|undefined} '0' when tooltip is active, undefined otherwise.
 		 */
@@ -75,7 +75,7 @@ store( 'gatherpress', {
 		 * Accompanies the tooltip so non-sighted users hear the converted
 		 * time immediately after the event's datetime.
 		 *
-		 * @since TBD
+		 * @since 0.37.0
 		 *
 		 * @return {string} The parenthesized label, or empty string.
 		 */

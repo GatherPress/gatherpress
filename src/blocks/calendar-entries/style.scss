@@ -397,12 +397,12 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 	#{$wide-ribbon-entry}.gatherpress--is-all-day {
 		&.gatherpress--is-span-middle,
 		&.gatherpress--is-span-end {
-			&:not(.gatherpress--is-span-continued) #{$trigger} {
+			&:not(.gatherpress--is-span-continued) :is(#{$trigger}, .wp-block-post-title:not(.wp-block-gatherpress-modal *)) {
 				opacity: 0;
 			}
 
 			// The hidden link is still in the tab order: show it while it has focus (WCAG 2.4.7).
-			&:not(.gatherpress--is-span-continued):focus-within #{$trigger} {
+			&:not(.gatherpress--is-span-continued):focus-within :is(#{$trigger}, .wp-block-post-title:not(.wp-block-gatherpress-modal *)) {
 				opacity: 1;
 			}
 		}
@@ -600,6 +600,11 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 		position: relative;
 		width: 100%;
 
+		// One column: overlapping events would otherwise be placed in extra columns.
+		> .gatherpress-calendar__entry {
+			grid-column: 1;
+		}
+
 		// Hour lines.
 		background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(var(--gatherpress-calendar-slot-height, 48px) - 1px), color-mix(in srgb, currentcolor 8%, transparent) calc(var(--gatherpress-calendar-slot-height, 48px) - 1px), color-mix(in srgb, currentcolor 8%, transparent) var(--gatherpress-calendar-slot-height, 48px));
 		background-position: 0 calc(var(--gatherpress-num-ribbon-slots, 0) * 1.5rem);
@@ -622,10 +627,8 @@ $classic-entries: ".gatherpress-calendar__day:not(.is-style-ribbon) .wp-block-ga
 			overflow: hidden;
 
 			// Events at the same time sit side by side.
-			min-width: 100%;
-			width: calc(100% * var(--gatherpress-overlap-total, 1));
-			max-width: calc(100% * var(--gatherpress-overlap-total, 1));
-			margin-inline-start: calc((100% / var(--gatherpress-overlap-total, 1)) * var(--gatherpress-overlap-index, 0) * -1);
+			width: calc(100% / var(--gatherpress-overlap-total, 1));
+			margin-inline-start: calc(100% / var(--gatherpress-overlap-total, 1) * var(--gatherpress-overlap-index, 0));
 		}
 	}
 }

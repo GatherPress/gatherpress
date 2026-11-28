@@ -35,12 +35,12 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:616](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L616)
+- [includes/core/classes/event/class-event.php:629](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L629)
 ```php
 apply_filters( 'gatherpress_datetime_format', $format, $which, $local )
 ```
 
-- [includes/core/classes/event/class-event.php:816](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L816)
+- [includes/core/classes/event/class-event.php:829](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L829)
 ```php
 apply_filters( 'gatherpress_datetime_format', $format, $which, $local )
 ```

@@ -32,7 +32,7 @@ class Test_Setup extends Base {
 	 * taxonomy again from scratch, and later test classes need venues to
 	 * stay attached to events.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
