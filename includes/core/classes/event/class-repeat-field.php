@@ -243,11 +243,11 @@ final class Repeat_Field {
 	/**
 	 * Describe an event's rules as one current schedule.
 	 *
-	 * A rule with no dates left is history. Of the rest, the one that
-	 * applies today, or the first to come, is the pattern, and one starting
-	 * after it is a scheduled change. When every rule has ended, the last is
-	 * the pattern and the series is marked ended. Anything the editor can't
-	 * show as one pattern is marked not showable.
+	 * Tomorrow is the first date an edit can change, so a rule with no dates
+	 * from tomorrow on is history. Of the rest, in start order, the first is
+	 * the pattern and a second is a scheduled change. When every rule is
+	 * history, the last is the pattern and the series is marked ended.
+	 * Anything the editor can't show as one pattern is marked not showable.
 	 *
 	 * @since TBD
 	 *
@@ -258,12 +258,14 @@ final class Repeat_Field {
 	 */
 	protected function describe_schedule( Event $event ): array {
 		$groups    = $this->grouped( $event );
-		$current   = $groups['active'][0] ?? $groups['future'][0] ?? null;
-		$scheduled = $groups['active'] ? ( $groups['future'][0] ?? null ) : null;
+		$current   = $groups['live'][0] ?? null;
+		$scheduled = $groups['live'][1] ?? null;
 		$last      = $groups['ended'] ? end( $groups['ended'] ) : null;
-		$showable  = count( $groups['active'] ) <= 1 && count( $groups['future'] ) <= 1;
+		// A scheduled change follows the current rule; two rules running at once can't show as one pattern.
+		$follows  = null === $scheduled || ( null !== $current?->ends_on && $current->ends_on < $scheduled->starts_on );
+		$showable = count( $groups['live'] ) <= 2 && $follows;
 
-		foreach ( array_filter( array( $current, $scheduled ) ) as $rule ) {
+		foreach ( $groups['live'] as $rule ) {
 			$showable = $showable && $this->is_showable( $rule, $event );
 		}
 
@@ -276,58 +278,33 @@ final class Repeat_Field {
 	}
 
 	/**
-	 * An event's rules grouped as history, applying today, or still to come, in the event's timezone.
+	 * An event's rules as live ones, in start order, and history, from tomorrow in the event's timezone.
 	 *
 	 * @since TBD
 	 *
 	 * @param Event $event The event.
 	 *
-	 * @return array{active: Rule[], future: Rule[], ended: Rule[]} The rules.
+	 * @return array{live: Rule[], ended: Rule[]} The rules.
 	 */
 	protected function grouped( Event $event ): array {
-		$today  = $this->today( $this->event_timezone( $event ) );
-		$active = array();
-		$future = array();
-		$ended  = array();
+		$tomorrow = $this->today( $this->event_timezone( $event ) )->modify( '+1 day' );
+		$live     = array();
+		$ended    = array();
 
 		foreach ( $event->rules()->all() as $rule ) {
-			$group = $this->group_of( $rule, $today );
-
-			if ( 'active' === $group ) {
-				$active[] = $rule;
-			} elseif ( 'future' === $group ) {
-				$future[] = $rule;
-			} else {
+			if ( null === $rule->next_date( $tomorrow ) ) {
 				$ended[] = $rule;
+			} else {
+				$live[] = $rule;
 			}
 		}
 
+		usort( $live, static fn( Rule $a, Rule $b ): int => $a->starts_on <=> $b->starts_on );
+
 		return array(
-			'active' => $active,
-			'future' => $future,
-			'ended'  => $ended,
+			'live'  => $live,
+			'ended' => $ended,
 		);
-	}
-
-	/**
-	 * Whether a rule is history, applies today, or is still to come.
-	 *
-	 * A rule with no dates from today on is history, which covers an end
-	 * date in the past and a single date that has passed.
-	 *
-	 * @since TBD
-	 *
-	 * @param Rule              $rule  The rule.
-	 * @param DateTimeImmutable $today Today, as a rule date.
-	 *
-	 * @return string `ended`, `active` or `future`.
-	 */
-	protected function group_of( Rule $rule, DateTimeImmutable $today ): string {
-		if ( $rule->starts_on > $today ) {
-			return 'future';
-		}
-
-		return null === $rule->next_date( $today ) ? 'ended' : 'active';
 	}
 
 	/**
@@ -458,8 +435,8 @@ final class Repeat_Field {
 		}
 
 		$groups    = $this->grouped( $event );
-		$current   = $groups['active'][0] ?? null;
-		$scheduled = array_key_exists( 'scheduled', $value ) ? null : ( $groups['future'][0] ?? null );
+		$current   = $groups['live'][0] ?? null;
+		$scheduled = array_key_exists( 'scheduled', $value ) ? null : ( $groups['live'][1] ?? null );
 		$row       = $this->change_row( $value['pattern'], $dates, $from, $current );
 
 		if ( is_wp_error( $row ) ) {
