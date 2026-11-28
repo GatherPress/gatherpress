@@ -19,7 +19,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  */
 import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
-import { useIsStartedSeries } from '../helpers/repeat';
+import { FROZEN_NOTE_ID, useIsStartedSeries } from '../helpers/repeat';
 import {
 	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
@@ -116,6 +116,8 @@ const DateTimeStart = () => {
 							<Button
 								id="gatherpress-datetime-start"
 								disabled={ frozen }
+								accessibleWhenDisabled
+								aria-describedby={ frozen ? FROZEN_NOTE_ID : undefined }
 								aria-labelledby="gatherpress-datetime-start-label gatherpress-datetime-start-value"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }

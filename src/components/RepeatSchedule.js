@@ -3,6 +3,7 @@
  */
 import { __, sprintf } from '@wordpress/i18n';
 import {
+	Button,
 	CheckboxControl,
 	Notice,
 	PanelRow,
@@ -11,20 +12,24 @@ import {
 	TextControl,
 } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { dateI18n } from '@wordpress/date';
+import { useEffect, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies
  */
 import {
+	FROZEN_NOTE_ID,
 	REPEAT_FIELD,
 	WEEKDAYS,
+	defaultEndDate,
 	defaultPattern,
 	editablePattern,
+	formatDate,
 	hasStarted,
-	intervalUnit,
-	monthlyChoiceOf,
+	intervalLabel,
+	matchingChoice,
 	monthlyChoices,
+	monthlyLabel,
 	summarize,
 	toRequest,
 	tomorrowIn,
@@ -50,24 +55,72 @@ import {
  */
 const RepeatSchedule = () => {
 	const { editPost } = useDispatch( 'core/editor' );
-	const { saved, edited, status, savedJson, dateTimeStart, timezone, isAllDay } = useSelect(
-		( select ) => {
-			const editor = select( 'core/editor' );
+	const state = useSelect( ( select ) => {
+		const editor = select( 'core/editor' );
+		const datetime = select( 'gatherpress/datetime' );
 
-			return {
-				saved: editor.getCurrentPostAttribute( REPEAT_FIELD ),
-				edited: editor.getEditedPostAttribute( REPEAT_FIELD ),
-				status: editor.getCurrentPostAttribute( 'status' ),
-				savedJson: editor.getCurrentPostAttribute( 'meta' )?.gatherpress_datetime,
-				dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
-				timezone: select( 'gatherpress/datetime' ).getTimezone(),
-				isAllDay: Boolean(
-					editor.getEditedPostAttribute( 'meta' )?.gatherpress_is_all_day,
-				),
-			};
-		},
-		[],
-	);
+		return {
+			saved: editor.getCurrentPostAttribute( REPEAT_FIELD ),
+			edited: editor.getEditedPostAttribute( REPEAT_FIELD ),
+			status: editor.getCurrentPostAttribute( 'status' ),
+			savedJson: editor.getCurrentPostAttribute( 'meta' )?.gatherpress_datetime,
+			dateTimeStart: datetime.getDateTimeStart(),
+			dateTimeEnd: datetime.getDateTimeEnd(),
+			timezone: datetime.getTimezone(),
+			isAllDay: Boolean( editor.getEditedPostAttribute( 'meta' )?.gatherpress_is_all_day ),
+		};
+	}, [] );
+	const { saved, edited, status, savedJson, dateTimeStart, dateTimeEnd, timezone, isAllDay } = state;
+	const started = hasStarted( status, savedJson );
+	const isEdited = edited !== saved;
+	const tomorrow = tomorrowIn( timezone );
+	// A change date left from before midnight moves to tomorrow.
+	const editedFrom = isEdited && edited?.from;
+	const from = editedFrom && editedFrom >= tomorrow ? editedFrom : tomorrow;
+	const pattern = isEdited
+		? edited?.pattern ?? null
+		: editablePattern( saved?.ended ? null : saved?.pattern );
+	// A change to a started series begins on its change date, so new days come from there.
+	const baseDate = started ? from : dateTimeStart;
+
+	/**
+	 * Save an edited pattern, with the change date for a started series.
+	 *
+	 * @param {Object|null} next           The pattern, or null to stop repeating.
+	 * @param {Object}      options        Options.
+	 * @param {string}      options.from   The change date for a started series.
+	 * @param {boolean}     options.cancel Whether to cancel a scheduled change.
+	 *
+	 * @return {void}
+	 */
+	const update = ( next, { from: nextFrom = from, cancel = false } = {} ) => {
+		editPost( {
+			[ REPEAT_FIELD ]: toRequest( next, { from: started ? nextFrom : null, cancel } ),
+		} );
+	};
+
+	// A repeating draft's rule follows its dates, so a date edit saves the pattern again.
+	const datesKey = [ dateTimeStart, dateTimeEnd, isAllDay, timezone ].join( '|' );
+	const lastDates = useRef( datesKey );
+
+	useEffect( () => {
+		if ( lastDates.current === datesKey ) {
+			return;
+		}
+
+		lastDates.current = datesKey;
+
+		if ( pattern && ! started ) {
+			editPost( { [ REPEAT_FIELD ]: toRequest( pattern ) } );
+		}
+	}, [ datesKey, pattern, started, editPost ] );
+
+	// A change date stored before midnight would be refused, so it moves to tomorrow.
+	useEffect( () => {
+		if ( started && editedFrom && editedFrom < tomorrow ) {
+			editPost( { [ REPEAT_FIELD ]: toRequest( edited.pattern, { from: tomorrow } ) } );
+		}
+	}, [ started, editedFrom, tomorrow, edited, editPost ] );
 
 	if ( false === saved?.showable ) {
 		return (
@@ -82,28 +135,6 @@ const RepeatSchedule = () => {
 		);
 	}
 
-	const started = hasStarted( status, savedJson );
-	const isEdited = edited !== saved;
-	const tomorrow = tomorrowIn( timezone );
-	const from = ( isEdited && edited?.from ) || tomorrow;
-	const pattern = isEdited
-		? edited?.pattern ?? null
-		: editablePattern( saved?.ended ? null : saved?.pattern );
-	// A change to a started series begins on its change date, so its days come from there.
-	const baseDate = started ? from : dateTimeStart;
-
-	/**
-	 * Save an edited pattern, with the change date for a started series.
-	 *
-	 * @param {Object|null} next     The pattern, or null to stop repeating.
-	 * @param {string}      nextFrom The change date.
-	 *
-	 * @return {void}
-	 */
-	const update = ( next, nextFrom = from ) => {
-		editPost( { [ REPEAT_FIELD ]: toRequest( next, started ? nextFrom : null ) } );
-	};
-
 	/**
 	 * Change some of the pattern's parts.
 	 *
@@ -112,15 +143,23 @@ const RepeatSchedule = () => {
 	 * @return {void}
 	 */
 	const change = ( changes ) => update( { ...pattern, ...changes } );
+	const choices = monthlyChoices( baseDate );
+	const selectedChoice = pattern ? matchingChoice( choices, pattern ) : null;
+	// A started series' pattern can pick a day the change date doesn't offer; it stays a choice.
+	const monthlyOptions = [
+		...( null === selectedChoice ? [ { value: 'current', label: monthlyLabel( pattern ) } ] : [] ),
+		...choices,
+	].map( ( { value, label } ) => ( { value, label } ) );
+	const showScheduled = saved?.scheduled && ! ( isEdited && null === edited?.scheduled );
 
 	return (
 		<PanelRow>
 			<div className="gatherpress-repeat-schedule">
 				<h3>{ __( 'Repeat', 'gatherpress' ) }</h3>
 				{ started && (
-					<p className="gatherpress-repeat-schedule__note">
+					<p id={ FROZEN_NOTE_ID } className="gatherpress-repeat-schedule__note">
 						{ __(
-							'The first date has passed, so changes apply from a later date. Earlier dates stay as they were.',
+							'The first date has passed, so it can\'t change, and schedule changes apply from a later date. Earlier dates stay as they were.',
 							'gatherpress',
 						) }
 					</p>
@@ -130,7 +169,7 @@ const RepeatSchedule = () => {
 						{ sprintf(
 							/* translators: %s: A date. */
 							__( 'This series ended on %s.', 'gatherpress' ),
-							dateI18n( 'F j, Y', saved.pattern.ends_on ),
+							formatDate( saved.pattern.ends_on ),
 						) }
 					</p>
 				) }
@@ -155,11 +194,7 @@ const RepeatSchedule = () => {
 							type="number"
 							min={ 1 }
 							max={ 1000 }
-							label={ sprintf(
-								/* translators: %s: A unit, such as "weeks". */
-								__( 'Every how many %s', 'gatherpress' ),
-								intervalUnit( pattern.frequency, 2 ),
-							) }
+							label={ intervalLabel( pattern.frequency ) }
 							value={ pattern.interval }
 							onChange={ ( value ) =>
 								change( {
@@ -170,45 +205,48 @@ const RepeatSchedule = () => {
 						/>
 						{ 'WEEKLY' === pattern.frequency && (
 							<fieldset className="gatherpress-repeat-schedule__weekdays">
-								<legend>{ __( 'On', 'gatherpress' ) }</legend>
-								{ WEEKDAYS.map( ( code ) => (
-									<CheckboxControl
-										key={ code }
-										label={ weekdayName( code ) }
-										checked={ pattern.weekdays.includes( code ) }
-										// At least one weekday stays checked.
-										disabled={
-											1 === pattern.weekdays.length &&
-											pattern.weekdays.includes( code )
-										}
-										onChange={ ( checked ) =>
-											change( {
-												weekdays: WEEKDAYS.filter( ( day ) =>
-													day === code
-														? checked
-														: pattern.weekdays.includes( day ),
-												),
-											} )
-										}
-									/>
-								) ) }
+								<legend>{ __( 'Repeats on', 'gatherpress' ) }</legend>
+								{ WEEKDAYS.map( ( code ) => {
+									const isOnlyDay =
+										1 === pattern.weekdays.length && pattern.weekdays.includes( code );
+
+									return (
+										<CheckboxControl
+											key={ code }
+											label={ weekdayName( code ) }
+											checked={ pattern.weekdays.includes( code ) }
+											disabled={ isOnlyDay }
+											help={
+												isOnlyDay
+													? __( 'At least one day stays selected.', 'gatherpress' )
+													: undefined
+											}
+											onChange={ ( checked ) =>
+												change( {
+													weekdays: WEEKDAYS.filter( ( day ) =>
+														day === code
+															? checked
+															: pattern.weekdays.includes( day ),
+													),
+												} )
+											}
+										/>
+									);
+								} ) }
 							</fieldset>
 						) }
 						{ 'MONTHLY' === pattern.frequency && (
 							<RadioControl
 								label={ __( 'Repeats on', 'gatherpress' ) }
-								selected={ monthlyChoiceOf( pattern ) }
-								options={ monthlyChoices( baseDate ).map( ( { value, label } ) => ( {
-									value,
-									label,
-								} ) ) }
-								onChange={ ( value ) =>
-									change(
-										monthlyChoices( baseDate ).find(
-											( choice ) => choice.value === value,
-										).pattern,
-									)
-								}
+								selected={ selectedChoice ?? 'current' }
+								options={ monthlyOptions }
+								onChange={ ( value ) => {
+									const choice = choices.find( ( option ) => option.value === value );
+
+									if ( choice ) {
+										change( choice.pattern );
+									}
+								} }
 							/>
 						) }
 						<RadioControl
@@ -219,7 +257,7 @@ const RepeatSchedule = () => {
 								{ value: 'on', label: __( 'On a date', 'gatherpress' ) },
 							] }
 							onChange={ ( value ) =>
-								change( { ends_on: 'on' === value ? baseDate.slice( 0, 10 ) : null } )
+								change( { ends_on: 'on' === value ? defaultEndDate( baseDate ) : null } )
 							}
 						/>
 						{ pattern.ends_on && (
@@ -240,7 +278,7 @@ const RepeatSchedule = () => {
 									min={ tomorrow }
 									value={ from }
 									onChange={ ( value ) =>
-										update( pattern, value && value >= tomorrow ? value : tomorrow )
+										update( pattern, { from: value && value >= tomorrow ? value : tomorrow } )
 									}
 									__next40pxDefaultSize
 								/>
@@ -271,18 +309,28 @@ const RepeatSchedule = () => {
 						) }
 					</>
 				) }
-				<p className="gatherpress-repeat-schedule__summary">
+				<p className="gatherpress-repeat-schedule__summary" aria-live="polite">
 					{ summarize( pattern ) }
 				</p>
-				{ saved?.scheduled && (
-					<p className="gatherpress-repeat-schedule__note">
-						{ sprintf(
-							/* translators: 1: A date. 2: A repeating pattern, such as "Every week on Monday." */
-							__( 'From %1$s: %2$s', 'gatherpress' ),
-							dateI18n( 'F j, Y', saved.scheduled.starts_on ),
-							summarize( editablePattern( saved.scheduled ) ),
-						) }
-					</p>
+				{ showScheduled && (
+					<div className="gatherpress-repeat-schedule__scheduled">
+						<p className="gatherpress-repeat-schedule__note">
+							{ sprintf(
+								/* translators: 1: A date. 2: A repeating pattern, such as "Every week on Monday." */
+								__( 'From %1$s: %2$s', 'gatherpress' ),
+								formatDate( saved.scheduled.starts_on ),
+								summarize( editablePattern( saved.scheduled ) ),
+							) }
+						</p>
+						<Button
+							variant="link"
+							onClick={ () =>
+								update( pattern ?? editablePattern( saved.pattern ), { cancel: true } )
+							}
+						>
+							{ __( 'Cancel this scheduled change', 'gatherpress' ) }
+						</Button>
+					</div>
 				) }
 			</div>
 		</PanelRow>

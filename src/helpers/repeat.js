@@ -2,7 +2,7 @@
  * WordPress dependencies
  */
 import { __, _n, _x, sprintf } from '@wordpress/i18n';
-import { dateI18n } from '@wordpress/date';
+import { dateI18n, getSettings } from '@wordpress/date';
 import { useSelect } from '@wordpress/data';
 
 /**
@@ -23,6 +23,15 @@ import { createMomentWithTimezone, isManualOffset } from './datetime';
  * @type {string}
  */
 export const REPEAT_FIELD = 'gatherpress_repeat';
+
+/**
+ * The id of the note that says a started series' first date can't change.
+ *
+ * @since TBD
+ *
+ * @type {string}
+ */
+export const FROZEN_NOTE_ID = 'gatherpress-repeat-schedule-frozen';
 
 /**
  * Weekday codes, in week order from Monday, as rules store them.
@@ -80,7 +89,66 @@ export function weekdayOf( date ) {
 }
 
 /**
- * The ways a monthly pattern can follow a start date.
+ * A weekday's place in its month, such as "second Friday".
+ *
+ * Each place has its own string, so a translator can make the ordinal
+ * agree with the weekday.
+ *
+ * @since TBD
+ *
+ * @param {number} place 1 to 4, or -1 for the last.
+ * @param {string} code  A weekday code.
+ *
+ * @return {string} The phrase, or empty for an unknown place.
+ */
+export function ordinalWeekday( place, code ) {
+	const name = weekdayName( code );
+
+	switch ( place ) {
+		case 1:
+			/* translators: %s: A weekday name. */
+			return sprintf( _x( 'first %s', 'weekday in a month', 'gatherpress' ), name );
+		case 2:
+			/* translators: %s: A weekday name. */
+			return sprintf( _x( 'second %s', 'weekday in a month', 'gatherpress' ), name );
+		case 3:
+			/* translators: %s: A weekday name. */
+			return sprintf( _x( 'third %s', 'weekday in a month', 'gatherpress' ), name );
+		case 4:
+			/* translators: %s: A weekday name. */
+			return sprintf( _x( 'fourth %s', 'weekday in a month', 'gatherpress' ), name );
+		case -1:
+			/* translators: %s: A weekday name. */
+			return sprintf( _x( 'last %s', 'weekday in a month', 'gatherpress' ), name );
+		default:
+			// Places beyond these aren't rule values.
+			return '';
+	}
+}
+
+/**
+ * The label of a monthly choice, from its day of the month or its weekday's place.
+ *
+ * @since TBD
+ *
+ * @param {Object} part A pattern's `month_day` and `ordinal_weekday`.
+ *
+ * @return {string} Such as "On day 11" or "On the second Friday".
+ */
+export function monthlyLabel( part ) {
+	const ordinal = part?.ordinal_weekday;
+
+	if ( Array.isArray( ordinal ) ) {
+		/* translators: %s: A weekday's place in the month, such as "second Friday". */
+		return sprintf( __( 'On the %s', 'gatherpress' ), ordinalWeekday( ordinal[ 0 ], ordinal[ 1 ] ) );
+	}
+
+	/* translators: %d: Day of the month. */
+	return sprintf( __( 'On day %d', 'gatherpress' ), part?.month_day ?? 1 );
+}
+
+/**
+ * The ways a monthly pattern can follow a date.
  *
  * By its day of the month, by its weekday's place in the month (the
  * second Friday), and by being the last such weekday. A fifth weekday can
@@ -88,7 +156,7 @@ export function weekdayOf( date ) {
  *
  * @since TBD
  *
- * @param {string} date The start date, as `YYYY-MM-DD` or a datetime starting with it.
+ * @param {string} date A date, as `YYYY-MM-DD` or a datetime starting with it.
  *
  * @return {Array<{value: string, label: string, pattern: Object}>} The choices.
  */
@@ -96,76 +164,47 @@ export function monthlyChoices( date ) {
 	const day = moment( date.slice( 0, 10 ) );
 	const weekday = weekdayOf( date );
 	const place = Math.ceil( day.date() / 7 );
-	const isLast = day.clone().add( 7, 'days' ).month() !== day.month();
-	const ordinals = {
-		1: __( 'first', 'gatherpress' ),
-		2: __( 'second', 'gatherpress' ),
-		3: __( 'third', 'gatherpress' ),
-		4: __( 'fourth', 'gatherpress' ),
-	};
-	const choices = [
-		{
-			value: 'day',
-			/* translators: %d: Day of the month. */
-			label: sprintf( __( 'On day %d', 'gatherpress' ), day.date() ),
-			pattern: { month_day: day.date(), ordinal_weekday: null },
-		},
-	];
+	const parts = [ { value: 'day', pattern: { month_day: day.date(), ordinal_weekday: null } } ];
 
 	if ( 4 >= place ) {
-		choices.push( {
-			value: 'weekday',
-			label: sprintf(
-				/* translators: 1: An ordinal such as "second". 2: A weekday name. */
-				__( 'On the %1$s %2$s', 'gatherpress' ),
-				ordinals[ place ],
-				weekdayName( weekday ),
-			),
-			pattern: { month_day: null, ordinal_weekday: [ place, weekday ] },
-		} );
+		parts.push( { value: 'weekday', pattern: { month_day: null, ordinal_weekday: [ place, weekday ] } } );
 	}
 
-	if ( isLast ) {
-		choices.push( {
-			value: 'last',
-			label: sprintf(
-				/* translators: %s: A weekday name. */
-				__( 'On the last %s', 'gatherpress' ),
-				weekdayName( weekday ),
-			),
-			pattern: { month_day: null, ordinal_weekday: [ -1, weekday ] },
-		} );
+	if ( day.clone().add( 7, 'days' ).month() !== day.month() ) {
+		parts.push( { value: 'last', pattern: { month_day: null, ordinal_weekday: [ -1, weekday ] } } );
 	}
 
-	return choices;
+	return parts.map( ( part ) => ( { ...part, label: monthlyLabel( part.pattern ) } ) );
 }
 
 /**
- * Which monthly choice a pattern uses.
+ * Which of a date's monthly choices a pattern is, if any.
  *
  * @since TBD
  *
- * @param {Object} pattern A pattern.
+ * @param {Array<Object>} choices The choices.
+ * @param {Object}        pattern The pattern.
  *
- * @return {string} `day`, `weekday` or `last`.
+ * @return {string|null} The choice's value, or null when the pattern picks another day.
  */
-export function monthlyChoiceOf( pattern ) {
-	const ordinal = pattern?.ordinal_weekday;
+export function matchingChoice( choices, pattern ) {
+	const same = ( a, b ) => JSON.stringify( a ?? null ) === JSON.stringify( b ?? null );
+	const match = choices.find(
+		( choice ) =>
+			same( choice.pattern.month_day, pattern?.month_day ) &&
+			same( choice.pattern.ordinal_weekday, pattern?.ordinal_weekday ),
+	);
 
-	if ( ! Array.isArray( ordinal ) ) {
-		return 'day';
-	}
-
-	return -1 === ordinal[ 0 ] ? 'last' : 'weekday';
+	return match ? match.value : null;
 }
 
 /**
- * A new pattern for a frequency, taking its days from the start date.
+ * A new pattern for a frequency, taking its days from a date.
  *
  * @since TBD
  *
  * @param {string} frequency `DAILY`, `WEEKLY`, `MONTHLY` or `YEARLY`.
- * @param {string} date      The start date, as `YYYY-MM-DD` or a datetime starting with it.
+ * @param {string} date      A date, as `YYYY-MM-DD` or a datetime starting with it.
  *
  * @return {Object} The pattern.
  */
@@ -186,6 +225,19 @@ export function defaultPattern( frequency, date ) {
 	}
 
 	return pattern;
+}
+
+/**
+ * An end date to start from when a pattern is given one: three months after a date.
+ *
+ * @since TBD
+ *
+ * @param {string} date A date, as `YYYY-MM-DD` or a datetime starting with it.
+ *
+ * @return {string} The date, as `YYYY-MM-DD`.
+ */
+export function defaultEndDate( date ) {
+	return moment( date.slice( 0, 10 ) ).add( 3, 'months' ).format( 'YYYY-MM-DD' );
 }
 
 /**
@@ -215,26 +267,163 @@ export function editablePattern( pattern ) {
 }
 
 /**
- * The unit an interval counts in, for its label.
+ * The label of the interval field for a frequency.
  *
  * @since TBD
  *
  * @param {string} frequency The frequency.
- * @param {number} interval  The interval.
  *
- * @return {string} The unit, such as "weeks".
+ * @return {string} Such as "Every how many weeks".
  */
-export function intervalUnit( frequency, interval ) {
+export function intervalLabel( frequency ) {
 	switch ( frequency ) {
 		case 'DAILY':
-			return _n( 'day', 'days', interval, 'gatherpress' );
+			return __( 'Every how many days', 'gatherpress' );
 		case 'WEEKLY':
-			return _n( 'week', 'weeks', interval, 'gatherpress' );
+			return __( 'Every how many weeks', 'gatherpress' );
 		case 'MONTHLY':
-			return _n( 'month', 'months', interval, 'gatherpress' );
+			return __( 'Every how many months', 'gatherpress' );
 		default:
-			return _n( 'year', 'years', interval, 'gatherpress' );
+			return __( 'Every how many years', 'gatherpress' );
 	}
+}
+
+/**
+ * A date in the site's date format.
+ *
+ * @since TBD
+ *
+ * @param {string} date A date, as `YYYY-MM-DD`.
+ *
+ * @return {string} The formatted date.
+ */
+export function formatDate( date ) {
+	return dateI18n( getSettings().formats.date, date );
+}
+
+/**
+ * How often a pattern repeats, as a sentence's start, such as "Every 2 weeks on Monday and Friday".
+ *
+ * Each frequency and form has a whole string with its plural forms, so a
+ * translator controls the word order and agreement.
+ *
+ * @since TBD
+ *
+ * @param {Object} pattern The pattern.
+ *
+ * @return {string} The phrase.
+ */
+export function repeatPhrase( pattern ) {
+	const count = pattern.interval ?? 1;
+
+	if ( 'WEEKLY' === pattern.frequency ) {
+		return weeklyPhrase( pattern, count );
+	}
+
+	if ( 'MONTHLY' === pattern.frequency ) {
+		return monthlyPhrase( pattern, count );
+	}
+
+	if ( 'DAILY' === pattern.frequency ) {
+		if ( 1 === count ) {
+			return __( 'Every day', 'gatherpress' );
+		}
+
+		/* translators: %d: A number of days. */
+		return sprintf( _n( 'Every %d day', 'Every %d days', count, 'gatherpress' ), count );
+	}
+
+	if ( 1 === count ) {
+		return __( 'Every year', 'gatherpress' );
+	}
+
+	/* translators: %d: A number of years. */
+	return sprintf( _n( 'Every %d year', 'Every %d years', count, 'gatherpress' ), count );
+}
+
+/**
+ * How often a weekly pattern repeats, such as "Every 2 weeks on Monday and Friday".
+ *
+ * @since TBD
+ *
+ * @param {Object} pattern A weekly pattern.
+ * @param {number} count   Its interval.
+ *
+ * @return {string} The phrase.
+ */
+export function weeklyPhrase( pattern, count ) {
+	const days = listOf( ( pattern.weekdays ?? [] ).map( weekdayName ) );
+
+	if ( ! days && 1 === count ) {
+		return __( 'Every week', 'gatherpress' );
+	}
+
+	if ( ! days ) {
+		/* translators: %d: A number of weeks. */
+		return sprintf( _n( 'Every %d week', 'Every %d weeks', count, 'gatherpress' ), count );
+	}
+
+	if ( 1 === count ) {
+		/* translators: %s: A list of weekday names. */
+		return sprintf( __( 'Every week on %s', 'gatherpress' ), days );
+	}
+
+	return sprintf(
+		/* translators: 1: A number of weeks. 2: A list of weekday names. */
+		_n( 'Every %1$d week on %2$s', 'Every %1$d weeks on %2$s', count, 'gatherpress' ),
+		count,
+		days,
+	);
+}
+
+/**
+ * How often a monthly pattern repeats, such as "Every month on the second Friday".
+ *
+ * @since TBD
+ *
+ * @param {Object} pattern A monthly pattern.
+ * @param {number} count   Its interval.
+ *
+ * @return {string} The phrase.
+ */
+export function monthlyPhrase( pattern, count ) {
+	const ordinal = pattern.ordinal_weekday;
+	const place = Array.isArray( ordinal ) ? ordinalWeekday( ordinal[ 0 ], ordinal[ 1 ] ) : '';
+
+	if ( place && 1 === count ) {
+		/* translators: %s: A weekday's place in the month, such as "second Friday". */
+		return sprintf( __( 'Every month on the %s', 'gatherpress' ), place );
+	}
+
+	if ( place ) {
+		return sprintf(
+			/* translators: 1: A number of months. 2: A weekday's place in the month, such as "second Friday". */
+			_n( 'Every %1$d month on the %2$s', 'Every %1$d months on the %2$s', count, 'gatherpress' ),
+			count,
+			place,
+		);
+	}
+
+	if ( pattern.month_day && 1 === count ) {
+		/* translators: %d: Day of the month. */
+		return sprintf( __( 'Every month on day %d', 'gatherpress' ), pattern.month_day );
+	}
+
+	if ( pattern.month_day ) {
+		return sprintf(
+			/* translators: 1: A number of months. 2: Day of the month. */
+			_n( 'Every %1$d month on day %2$d', 'Every %1$d months on day %2$d', count, 'gatherpress' ),
+			count,
+			pattern.month_day,
+		);
+	}
+
+	if ( 1 === count ) {
+		return __( 'Every month', 'gatherpress' );
+	}
+
+	/* translators: %d: A number of months. */
+	return sprintf( _n( 'Every %d month', 'Every %d months', count, 'gatherpress' ), count );
 }
 
 /**
@@ -251,82 +440,17 @@ export function summarize( pattern ) {
 		return __( 'Does not repeat.', 'gatherpress' );
 	}
 
-	const interval = pattern.interval ?? 1;
-	let every = sprintf(
-		/* translators: %s: A unit, such as "week". */
-		__( 'Every %s', 'gatherpress' ),
-		intervalUnit( pattern.frequency, 1 ),
-	);
-
-	if ( 1 !== interval ) {
-		every = sprintf(
-			/* translators: 1: A number. 2: A unit, such as "weeks". */
-			__( 'Every %1$d %2$s', 'gatherpress' ),
-			interval,
-			intervalUnit( pattern.frequency, interval ),
-		);
-	}
-
-	const parts = [ every ];
-
-	if ( 'WEEKLY' === pattern.frequency && pattern.weekdays?.length ) {
-		parts.push(
-			sprintf(
-				/* translators: %s: A list of weekday names. */
-				__( 'on %s', 'gatherpress' ),
-				listOf( pattern.weekdays.map( weekdayName ) ),
-			),
-		);
-	} else if ( 'MONTHLY' === pattern.frequency ) {
-		parts.push( monthlyPhrase( pattern ) );
-	}
-
-	const sentence = parts.filter( Boolean ).join( ' ' );
-
 	if ( ! pattern.ends_on ) {
-		/* translators: %s: A repeating pattern. */
-		return sprintf( __( '%s.', 'gatherpress' ), sentence );
+		/* translators: %s: How often an event repeats, such as "Every week on Monday". */
+		return sprintf( __( '%s.', 'gatherpress' ), repeatPhrase( pattern ) );
 	}
 
 	return sprintf(
-		/* translators: 1: A repeating pattern. 2: A date. */
+		/* translators: 1: How often an event repeats, such as "Every week on Monday". 2: A date. */
 		__( '%1$s, until %2$s.', 'gatherpress' ),
-		sentence,
-		dateI18n( 'F j, Y', pattern.ends_on ),
+		repeatPhrase( pattern ),
+		formatDate( pattern.ends_on ),
 	);
-}
-
-/**
- * How a monthly pattern picks its day, from the pattern itself.
- *
- * @since TBD
- *
- * @param {Object} pattern A monthly pattern.
- *
- * @return {string} Such as "on the second Friday", or empty when the pattern names no day.
- */
-export function monthlyPhrase( pattern ) {
-	const ordinal = pattern.ordinal_weekday;
-	const places = {
-		1: __( 'first', 'gatherpress' ),
-		2: __( 'second', 'gatherpress' ),
-		3: __( 'third', 'gatherpress' ),
-		4: __( 'fourth', 'gatherpress' ),
-		'-1': __( 'last', 'gatherpress' ),
-	};
-
-	if ( Array.isArray( ordinal ) && places[ ordinal[ 0 ] ] ) {
-		return sprintf(
-			/* translators: 1: An ordinal such as "second" or "last". 2: A weekday name. */
-			__( 'on the %1$s %2$s', 'gatherpress' ),
-			places[ ordinal[ 0 ] ],
-			weekdayName( ordinal[ 1 ] ),
-		);
-	}
-
-	return pattern.month_day
-		? /* translators: %d: Day of the month. */ sprintf( __( 'on day %d', 'gatherpress' ), pattern.month_day )
-		: '';
 }
 
 /**
@@ -363,9 +487,7 @@ export function listOf( names ) {
  */
 export function tomorrowIn( timezone ) {
 	// moment.tz() can't read a manual offset such as +10:00.
-	const now = isManualOffset( timezone )
-		? moment().utcOffset( timezone )
-		: moment().tz( timezone );
+	const now = isManualOffset( timezone ) ? moment().utcOffset( timezone ) : moment().tz( timezone );
 
 	return now.add( 1, 'day' ).format( 'YYYY-MM-DD' );
 }
@@ -397,31 +519,45 @@ export function hasStarted( status, savedJson ) {
 		return false;
 	}
 
-	return createMomentWithTimezone(
-		saved.dateTimeStart,
-		saved.timezone || 'UTC',
-	).isSameOrBefore( moment() );
+	return createMomentWithTimezone( saved.dateTimeStart, saved.timezone || 'UTC' ).isSameOrBefore( moment() );
 }
 
 /**
  * The field's value to save for an edited pattern.
  *
+ * Without a change date, the event's own dates give the rule's time and
+ * length, so the pattern's are left out.
+ *
  * @since TBD
  *
- * @param {Object|null} pattern The edited pattern, or null to stop repeating.
- * @param {string|null} from    The date a change to a started series applies, if any.
+ * @param {Object|null} pattern        The edited pattern, or null to stop repeating.
+ * @param {Object}      options        Options.
+ * @param {string}      options.from   The date a change to a started series applies, if any.
+ * @param {boolean}     options.cancel Whether to cancel a scheduled change.
  *
  * @return {Object} The value.
  */
-export function toRequest( pattern, from = null ) {
+export function toRequest( pattern, { from = null, cancel = false } = {} ) {
+	let next = pattern;
+
+	if ( pattern && ! from ) {
+		next = { ...pattern };
+		delete next.times;
+		delete next.duration;
+	}
+
 	return {
-		pattern,
+		pattern: next,
 		...( from ? { from } : {} ),
+		...( cancel ? { scheduled: null } : {} ),
 	};
 }
 
 /**
  * Whether the edited event is a repeating series whose first date has passed, which freezes that date.
+ *
+ * A pattern picked but not saved yet counts too, since the save that adds
+ * it can't also move the first date.
  *
  * @since TBD
  *
@@ -430,9 +566,12 @@ export function toRequest( pattern, from = null ) {
 export function useIsStartedSeries() {
 	return useSelect( ( select ) => {
 		const editor = select( 'core/editor' );
+		const repeats =
+			editor.getCurrentPostAttribute?.( REPEAT_FIELD )?.pattern ||
+			editor.getEditedPostAttribute?.( REPEAT_FIELD )?.pattern;
 
 		return (
-			Boolean( editor.getCurrentPostAttribute?.( REPEAT_FIELD )?.pattern ) &&
+			Boolean( repeats ) &&
 			hasStarted(
 				editor.getCurrentPostAttribute?.( 'status' ),
 				editor.getCurrentPostAttribute?.( 'meta' )?.gatherpress_datetime,
