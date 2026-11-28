@@ -1123,4 +1123,38 @@ class Test_Repeat_Field extends Base {
 			'Without a scheduled rule, the new one alone.'
 		);
 	}
+
+	/**
+	 * A draft's rule takes its time and length from the event's dates, not from the pattern.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::plan_replace
+	 *
+	 * @return void
+	 */
+	public function test_draft_ignores_pattern_times(): void {
+		$post_id = $this->event();
+
+		$this->save(
+			$post_id,
+			array(
+				'meta'              => array(
+					'gatherpress_datetime' => $this->datetime_json( $this->day( 7 ), '18:00:00', '18:45:00' ),
+				),
+				Repeat_Field::FIELD => array(
+					'pattern' => array(
+						'frequency' => 'DAILY',
+						'times'     => array( '09:00' ),
+						'duration'  => 120,
+					),
+				),
+			)
+		);
+
+		$rule = ( new Event( $post_id ) )->rules()->all()[0];
+
+		$this->assertSame( array( '18:00' ), $rule->times );
+		$this->assertSame( 45, $rule->duration );
+	}
 }
