@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import moment from 'moment';
 import 'moment-timezone';
@@ -31,59 +31,94 @@ jest.mock( '@wordpress/data', () => {
 	} );
 } );
 
-jest.mock( '@wordpress/components', () => ( {
-	PanelRow: ( { children } ) => <div>{ children }</div>,
-	Notice: ( { children } ) => <div role="note">{ children }</div>,
-	Button: ( { children, onClick } ) => (
-		<button type="button" onClick={ onClick }>
-			{ children }
-		</button>
-	),
-	SelectControl: ( { label, value, options, onChange } ) => (
-		<select aria-label={ label } value={ value } onChange={ ( e ) => onChange( e.target.value ) }>
-			{ options.map( ( option ) => (
-				<option key={ option.value } value={ option.value }>
-					{ option.label }
-				</option>
-			) ) }
-		</select>
-	),
-	TextControl: ( { label, value, type, onChange } ) => (
-		<input
-			aria-label={ label }
-			type={ type }
-			value={ value }
-			onChange={ ( e ) => onChange( e.target.value ) }
-		/>
-	),
-	CheckboxControl: ( { label, checked, disabled, help, onChange } ) => (
-		<span>
+jest.mock( '@wordpress/components', () => {
+	const mockReact = jest.requireActual( 'react' );
+
+	return {
+		BaseControl: ( { label, help, children } ) => (
+			<div role="group" aria-label={ label }>
+				{ children }
+				{ help }
+			</div>
+		),
+		Button: ( { children, onClick, isPressed, 'aria-label': label } ) => (
+			<button type="button" aria-label={ label } aria-pressed={ isPressed } onClick={ onClick }>
+				{ children }
+			</button>
+		),
+		DatePicker: ( { currentDate, isInvalidDate, onChange } ) => (
 			<input
-				type="checkbox"
-				aria-label={ label }
-				checked={ checked }
-				disabled={ disabled }
-				onChange={ ( e ) => onChange( e.target.checked ) }
+				type="date"
+				aria-label="Pick a date"
+				data-past-invalid={ String( isInvalidDate( new Date( '2000-01-01T12:00:00' ) ) ) }
+				value={ currentDate }
+				onChange={ ( e ) => onChange( `${ e.target.value }T00:00:00` ) }
 			/>
-			{ help }
-		</span>
-	),
-	RadioControl: ( { label, selected, options, onChange } ) => (
-		<fieldset aria-label={ label }>
-			{ options.map( ( option ) => (
-				<input
-					key={ option.value }
-					type="radio"
-					aria-label={ option.label }
-					checked={ selected === option.value }
-					// On click, so picking the option already chosen still reports it.
-					readOnly
-					onClick={ () => onChange( option.value ) }
-				/>
-			) ) }
-		</fieldset>
-	),
-} ) );
+		),
+		Dropdown: ( { renderToggle, renderContent } ) => (
+			<div>
+				{ renderToggle( { isOpen: false, onToggle: () => {} } ) }
+				{ renderContent() }
+			</div>
+		),
+		Notice: ( { children } ) => <div role="note">{ children }</div>,
+		RadioControl: ( { label, selected, options, onChange } ) => (
+			<fieldset aria-label={ label }>
+				{ options.map( ( option ) => (
+					<input
+						key={ option.value }
+						type="radio"
+						aria-label={ option.label }
+						checked={ selected === option.value }
+						// On click, so picking the option already chosen still reports it.
+						readOnly
+						onClick={ () => onChange( option.value ) }
+					/>
+				) ) }
+			</fieldset>
+		),
+		SelectControl: ( { label, value, options, onChange } ) => (
+			<select aria-label={ label } value={ value } onChange={ ( e ) => onChange( e.target.value ) }>
+				{ options.map( ( option ) => (
+					<option key={ option.value } value={ option.value }>
+						{ option.label }
+					</option>
+				) ) }
+			</select>
+		),
+		TextControl: ( { label, value, type, onChange } ) => (
+			<input aria-label={ label } type={ type } value={ value } onChange={ ( e ) => onChange( e.target.value ) } />
+		),
+		__experimentalHStack: ( { children, role, 'aria-label': label } ) => (
+			<div role={ role } aria-label={ label }>
+				{ children }
+			</div>
+		),
+		__experimentalVStack: ( { children } ) => <div>{ children }</div>,
+		__experimentalText: ( { children } ) => <p>{ children }</p>,
+		__experimentalInputControlSuffixWrapper: ( { children } ) => <span>{ children }</span>,
+		__experimentalNumberControl: ( { label, value, suffix, onChange } ) => (
+			<span>
+				<input aria-label={ label } type="number" value={ value } onChange={ ( e ) => onChange( e.target.value ) } />
+				{ suffix }
+			</span>
+		),
+		__experimentalToggleGroupControl: ( { label, value, onChange, children } ) => (
+			<fieldset aria-label={ label }>
+				{ mockReact.Children.map( children, ( child ) => (
+					<button
+						type="button"
+						aria-pressed={ value === child.props.value }
+						onClick={ () => onChange( child.props.value ) }
+					>
+						{ child.props.label }
+					</button>
+				) ) }
+			</fieldset>
+		),
+		__experimentalToggleGroupControlOption: () => null,
+	};
+} );
 
 const past = JSON.stringify( { dateTimeStart: '2020-01-06 19:00:00', timezone: 'UTC' } );
 const future = JSON.stringify( { dateTimeStart: '2099-01-05 19:00:00', timezone: 'UTC' } );
@@ -178,8 +213,13 @@ describe( 'RepeatSchedule component', () => {
 		render( <RepeatSchedule /> );
 
 		expect( screen.getByText( 'Every week on Monday.' ) ).toBeInTheDocument();
-		expect( screen.getByLabelText( 'Monday' ) ).toBeDisabled();
-		expect( screen.getByText( 'At least one day stays selected.' ) ).toBeInTheDocument();
+		expect( screen.getByRole( 'button', { name: 'Monday' } ) ).toHaveAttribute( 'aria-pressed', 'true' );
+		expect( screen.getByText( 'Choose at least one day.' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'week' ) ).toBeInTheDocument();
+
+		// The last day chosen stays chosen.
+		fireEvent.click( screen.getByRole( 'button', { name: 'Monday' } ) );
+		expect( mockEditPost ).not.toHaveBeenCalled();
 
 		fireEvent.change( screen.getByLabelText( 'Every how many weeks' ), { target: { value: '0' } } );
 		expect( lastSaved().pattern.interval ).toBe( 1 );
@@ -189,10 +229,10 @@ describe( 'RepeatSchedule component', () => {
 		fireEvent.change( screen.getByLabelText( 'Every how many weeks' ), { target: { value: '2' } } );
 		expect( lastSaved().pattern.interval ).toBe( 2 );
 
-		fireEvent.click( screen.getByLabelText( 'Friday' ) );
+		fireEvent.click( screen.getByRole( 'button', { name: 'Friday' } ) );
 		expect( lastSaved().pattern.weekdays ).toEqual( [ 'MO', 'FR' ] );
 
-		fireEvent.click( screen.getByLabelText( 'On a date' ) );
+		fireEvent.click( screen.getByText( 'On a date' ) );
 		expect( lastSaved().pattern.ends_on ).toBe( '2099-04-05' );
 
 		fireEvent.change( screen.getByLabelText( 'Repeats' ), { target: { value: '' } } );
@@ -224,19 +264,20 @@ describe( 'RepeatSchedule component', () => {
 		mockEditor( { saved: { pattern: weekly, showable: true }, edited } );
 		render( <RepeatSchedule /> );
 
-		expect( screen.getByLabelText( 'Friday' ) ).toBeChecked();
-		expect( screen.getByLabelText( 'Monday' ) ).not.toBeDisabled();
+		expect( screen.getByRole( 'button', { name: 'Friday' } ) ).toHaveAttribute( 'aria-pressed', 'true' );
 
-		fireEvent.click( screen.getByLabelText( 'Monday' ) );
+		fireEvent.click( screen.getByRole( 'button', { name: 'Monday' } ) );
 		expect( lastSaved().pattern.weekdays ).toEqual( [ 'FR' ] );
 
-		fireEvent.change( screen.getByLabelText( 'End date' ), { target: { value: '2099-04-01' } } );
+		const endDate = within( screen.getByRole( 'group', { name: 'End date' } ) );
+
+		expect( endDate.getByRole( 'button' ) ).toHaveTextContent( '2099' );
+		expect( endDate.getByLabelText( 'Pick a date' ) ).toHaveAttribute( 'data-past-invalid', 'true' );
+
+		fireEvent.change( endDate.getByLabelText( 'Pick a date' ), { target: { value: '2099-04-01' } } );
 		expect( lastSaved().pattern.ends_on ).toBe( '2099-04-01' );
 
-		fireEvent.change( screen.getByLabelText( 'End date' ), { target: { value: '' } } );
-		expect( lastSaved().pattern.ends_on ).toBeNull();
-
-		fireEvent.click( screen.getByLabelText( 'Never' ) );
+		fireEvent.click( screen.getByText( 'Never' ) );
 		expect( lastSaved().pattern.ends_on ).toBeNull();
 	} );
 
@@ -276,11 +317,10 @@ describe( 'RepeatSchedule component', () => {
 		mockEditor( { saved: { pattern: weekly, showable: true }, status: 'publish', json: past } );
 		render( <RepeatSchedule /> );
 
-		expect( screen.getByText( /The first date has passed/ ) ).toHaveAttribute(
-			'id',
-			'gatherpress-repeat-schedule-frozen',
-		);
-		expect( screen.getByLabelText( 'Changes apply from' ) ).toHaveValue( tomorrow );
+		const applyFrom = within( screen.getByRole( 'group', { name: 'Changes apply from' } ) );
+
+		expect( screen.getByText( /Changes apply from a later date/ ) ).toBeInTheDocument();
+		expect( applyFrom.getByLabelText( 'Pick a date' ) ).toHaveValue( tomorrow );
 
 		fireEvent.change( screen.getByLabelText( 'Time from then on' ), { target: { value: '20:00' } } );
 		expect( lastSaved() ).toEqual( { pattern: expect.objectContaining( { times: [ '20:00' ] } ), from: tomorrow } );
@@ -288,16 +328,16 @@ describe( 'RepeatSchedule component', () => {
 		fireEvent.change( screen.getByLabelText( 'Time from then on' ), { target: { value: '' } } );
 		expect( lastSaved().pattern.times ).toEqual( [ '19:00' ] );
 
-		fireEvent.change( screen.getByLabelText( 'Length from then on, in minutes' ), { target: { value: '60' } } );
+		fireEvent.change( screen.getByLabelText( 'Length' ), { target: { value: '60' } } );
 		expect( lastSaved().pattern.duration ).toBe( 60 );
 
-		fireEvent.change( screen.getByLabelText( 'Length from then on, in minutes' ), { target: { value: '' } } );
+		fireEvent.change( screen.getByLabelText( 'Length' ), { target: { value: '' } } );
 		expect( lastSaved().pattern.duration ).toBe( 0 );
 
-		fireEvent.change( screen.getByLabelText( 'Changes apply from' ), { target: { value: '2099-06-01' } } );
+		fireEvent.change( applyFrom.getByLabelText( 'Pick a date' ), { target: { value: '2099-06-01' } } );
 		expect( lastSaved().from ).toBe( '2099-06-01' );
 
-		fireEvent.change( screen.getByLabelText( 'Changes apply from' ), { target: { value: '2000-01-01' } } );
+		fireEvent.change( applyFrom.getByLabelText( 'Pick a date' ), { target: { value: '2000-01-01' } } );
 		expect( lastSaved().from ).toBe( tomorrow );
 	} );
 
@@ -307,7 +347,9 @@ describe( 'RepeatSchedule component', () => {
 		mockEditor( { saved: { pattern: weekly, showable: true }, edited, status: 'publish', json: past } );
 		render( <RepeatSchedule /> );
 
-		expect( screen.getByLabelText( 'Changes apply from' ) ).toHaveValue( tomorrow );
+		expect(
+			within( screen.getByRole( 'group', { name: 'Changes apply from' } ) ).getByLabelText( 'Pick a date' ),
+		).toHaveValue( tomorrow );
 		expect( lastSaved().from ).toBe( tomorrow );
 	} );
 
@@ -323,7 +365,9 @@ describe( 'RepeatSchedule component', () => {
 		} );
 		render( <RepeatSchedule /> );
 
-		expect( screen.getByLabelText( 'Changes apply from' ) ).toHaveValue( '2099-06-01' );
+		expect(
+			within( screen.getByRole( 'group', { name: 'Changes apply from' } ) ).getByLabelText( 'Pick a date' ),
+		).toHaveValue( '2099-06-01' );
 		expect( screen.queryByLabelText( 'Time from then on' ) ).not.toBeInTheDocument();
 	} );
 
@@ -340,7 +384,7 @@ describe( 'RepeatSchedule component', () => {
 		render( <RepeatSchedule /> );
 
 		expect( screen.getByLabelText( 'Time from then on' ) ).toHaveValue( '' );
-		expect( screen.getByLabelText( 'Length from then on, in minutes' ) ).toHaveValue( null );
+		expect( screen.getByLabelText( 'Length' ) ).toHaveValue( null );
 	} );
 
 	it( 'says when a series ended', () => {
@@ -397,5 +441,20 @@ describe( 'RepeatSchedule component', () => {
 
 		fireEvent.click( screen.getByText( 'Cancel this scheduled change' ) );
 		expect( lastSaved().pattern ).toEqual( expect.objectContaining( { weekdays: [ 'MO' ] } ) );
+	} );
+	it( 'shows the interval\'s unit for each frequency', () => {
+		const units = [
+			[ { ...weekly, frequency: 'DAILY', weekdays: [] }, 'day' ],
+			[ { ...weekly, frequency: 'MONTHLY', weekdays: [], month_day: 5 }, 'month' ],
+			[ { ...weekly, frequency: 'YEARLY', weekdays: [], interval: 2 }, 'years' ],
+		];
+
+		units.forEach( ( [ pattern, unit ] ) => {
+			mockEditor( { saved: { pattern, showable: true } } );
+			const { unmount } = render( <RepeatSchedule /> );
+
+			expect( screen.getByText( unit ) ).toBeInTheDocument();
+			unmount();
+		} );
 	} );
 } );
