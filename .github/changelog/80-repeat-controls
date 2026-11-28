@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Events can now repeat. The event's date panel has a Repeat section to set a daily, weekly, monthly or yearly schedule, and a published event that has started changes its schedule from a later date, keeping the dates before it.
