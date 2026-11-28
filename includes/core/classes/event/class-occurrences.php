@@ -235,7 +235,7 @@ final class Occurrences {
 	 * @return int The post ID, or 0 if the post is not an event.
 	 */
 	protected function post_id(): int {
-		return $this->event->post ? $this->event->post->ID : 0;
+		return $this->event->post->ID ?? 0;
 	}
 
 	/**
