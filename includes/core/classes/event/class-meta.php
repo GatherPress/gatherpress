@@ -93,6 +93,9 @@ final class Meta {
 		add_action( 'registered_post_type', array( $this, 'register' ) );
 		add_action( 'template_redirect', array( Geo_Sync::get_instance(), 'maybe_refresh_on_view' ) );
 		add_action( 'wp_after_insert_post', array( Geo_Sync::get_instance(), 'on_event_saved' ), 10, 2 );
+		add_filter( 'add_post_metadata', array( Rules::class, 'guard_write' ), 10, 3 );
+		add_filter( 'update_post_metadata', array( Rules::class, 'guard_write' ), 10, 3 );
+		add_filter( 'delete_post_metadata', array( Rules::class, 'guard_delete' ), 10, 5 );
 	}
 
 	/**

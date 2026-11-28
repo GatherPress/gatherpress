@@ -573,6 +573,7 @@ class Test_Occurrences extends Base {
 	 * @return void
 	 */
 	protected function add_rule( int $post_id, array $changes = array() ): void {
+		add_filter( 'gatherpress_rule_meta_write_allowed', '__return_true' );
 		add_post_meta(
 			$post_id,
 			Rules::META_KEY,

@@ -192,6 +192,40 @@ final class Rule {
 	}
 
 	/**
+	 * The rule as a meta row, in canonical form.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	public function to_meta(): array {
+		return array(
+			'change_id'  => $this->change_id,
+			'starts_on'  => $this->starts_on->format( self::DATE_FORMAT ),
+			'ends_on'    => $this->ends_on?->format( self::DATE_FORMAT ),
+			'rrule'      => $this->rrule(),
+			'is_all_day' => $this->is_all_day,
+			'times'      => $this->times,
+			'timezone'   => $this->timezone->getName(),
+			'duration'   => $this->duration,
+		);
+	}
+
+	/**
+	 * The rule's first occurrence, which is always on its start date.
+	 *
+	 * @since TBD
+	 *
+	 * @param int    $post_id The series post ID.
+	 * @param string $status  The occurrence status.
+	 *
+	 * @return Occurrence The first occurrence.
+	 */
+	public function first_occurrence( int $post_id, string $status ): Occurrence {
+		return $this->occurrences_on( $this->starts_on, $post_id, $status )[0];
+	}
+
+	/**
 	 * The rule's pattern in canonical `RRULE` form, or null for a single date.
 	 *
 	 * Parts come in a fixed order, so two rules can be compared by this value.

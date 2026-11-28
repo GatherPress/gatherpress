@@ -56,6 +56,24 @@ class Test_Meta extends Base {
 				'priority' => 10,
 				'callback' => array( Geo_Sync::get_instance(), 'on_event_saved' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'add_post_metadata',
+				'priority' => 10,
+				'callback' => array( Rules::class, 'guard_write' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'update_post_metadata',
+				'priority' => 10,
+				'callback' => array( Rules::class, 'guard_write' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'delete_post_metadata',
+				'priority' => 10,
+				'callback' => array( Rules::class, 'guard_delete' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -899,6 +917,7 @@ class Test_Meta extends Base {
 			)
 		);
 
+		add_filter( 'gatherpress_rule_meta_write_allowed', '__return_true' );
 		add_post_meta(
 			$post_id,
 			Rules::META_KEY,
@@ -952,6 +971,8 @@ class Test_Meta extends Base {
 			'duration'  => 120,
 		);
 
+		// Raw rows, so one can carry a key the write methods would drop.
+		add_filter( 'gatherpress_rule_meta_write_allowed', '__return_true' );
 		add_post_meta( $post_id, Rules::META_KEY, $row );
 		add_post_meta( $post_id, Rules::META_KEY, array_merge( $row, array( 'venue' => 9 ) ) );
 
