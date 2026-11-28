@@ -29,19 +29,23 @@ use WP_REST_Request;
  * button. It shows one schedule at a time: the rule that applies now, a
  * change scheduled for a later date, and whether the series has ended.
  *
- * A save is checked on `rest_pre_insert_{post_type}`, before anything is
- * saved, so a bad schedule never leaves a post half saved. The rule is
- * written once the post's dates are saved in the same request, through the
- * `Rules` methods, which keep a published schedule's past:
+ * A save is planned on `rest_pre_insert_{post_type}`, before anything is
+ * saved, so a schedule that can't be written fails the request and leaves
+ * the post as it was. The same plan is carried out once the post and its
+ * dates are saved, through the `Rules` methods, which keep a published
+ * schedule's past:
  *
- * - An event that hasn't started gets its rules replaced.
- * - A published event that has started changes from a date after today,
- *   tomorrow unless the request says otherwise.
- * - A pattern equal to the current one changes nothing, and one that only
- *   moves the end date ends the current rule there.
+ * - An event that wasn't both published and started before the request
+ *   gets its rules replaced, so a first publish keeps the dates entered.
+ * - A started, published event changes from tomorrow or a later date. A
+ *   change to an unchanged pattern continues the current rule's cycle, so
+ *   extending or clearing its end keeps every other week aligned.
+ * - An unchanged pattern writes nothing, and one that only brings the end
+ *   date earlier ends the current rule there.
+ * - A change already scheduled for a later date is kept unless the request
+ *   sets `scheduled` to null.
  *
- * Dates in a request come from its `gatherpress_datetime` meta when it has
- * one, so a save that moves the start and adds a pattern uses the new start.
+ * Two saves at once write in turn, and the later one wins.
  *
  * @since TBD
  */
@@ -59,6 +63,14 @@ final class Repeat_Field {
 	 * @var string
 	 */
 	const FIELD = 'gatherpress_repeat';
+
+	/**
+	 * Plans made before a request saved anything, by request.
+	 *
+	 * @since TBD
+	 * @var array<int, array<string, mixed>>
+	 */
+	protected array $plans = array();
 
 	/**
 	 * Class constructor.
@@ -95,11 +107,7 @@ final class Repeat_Field {
 				array(
 					'get_callback'    => array( $this, 'get_value' ),
 					'update_callback' => array( $this, 'update_value' ),
-					'schema'          => array(
-						'description' => __( 'The event\'s repeating schedule.', 'gatherpress' ),
-						'type'        => array( 'object', 'null' ),
-						'context'     => array( 'view', 'edit' ),
-					),
+					'schema'          => $this->schema(),
 				)
 			);
 			add_filter( "rest_pre_insert_{$post_type}", array( $this, 'validate' ), 10, 2 );
@@ -131,9 +139,11 @@ final class Repeat_Field {
 	}
 
 	/**
-	 * Refuse a save whose schedule can't be written, before anything is saved.
+	 * Plan a save's schedule before anything is saved, refusing one that can't be written.
 	 *
-	 * Hooked to `rest_pre_insert_{post_type}`.
+	 * Hooked to `rest_pre_insert_{post_type}`. A `Rules` method can still
+	 * refuse after the post is saved, such as when the database fails a
+	 * write, and then the post is saved without the schedule change.
 	 *
 	 * @since TBD
 	 *
@@ -150,17 +160,23 @@ final class Repeat_Field {
 
 		$plan = $this->plan( (int) ( $prepared_post->ID ?? 0 ), $request );
 
-		return is_wp_error( $plan ) ? $plan : $prepared_post;
+		if ( is_wp_error( $plan ) ) {
+			return $plan;
+		}
+
+		$this->plans[ spl_object_id( $request ) ] = $plan;
+
+		return $prepared_post;
 	}
 
 	/**
-	 * Write the schedule once the post and its dates are saved.
+	 * Carry out the save's plan once the post and its dates are saved.
 	 *
 	 * @since TBD
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @param mixed           $value   The field's value. Read again from the request.
+	 * @param mixed           $value   The field's value. Read from the plan.
 	 * @param WP_Post         $post    The saved post.
 	 * @param string          $field   The field name. Required by the callback's signature.
 	 * @param WP_REST_Request $request The request.
@@ -174,15 +190,60 @@ final class Repeat_Field {
 		string $field,
 		WP_REST_Request $request
 	): bool|WP_Error {
-		$plan = $this->plan( $post->ID, $request );
+		$key  = spl_object_id( $request );
+		$plan = $this->plans[ $key ] ?? $this->plan( $post->ID, $request );
+
+		unset( $this->plans[ $key ] );
 
 		return is_wp_error( $plan ) ? $plan : $this->apply( $post->ID, $plan );
 	}
 
 	/**
+	 * The field's schema.
+	 *
+	 * @since TBD
+	 *
+	 * @return array<string, mixed> The schema.
+	 */
+	protected function schema(): array {
+		return array(
+			'description' => __( 'The event\'s repeating schedule.', 'gatherpress' ),
+			'type'        => array( 'object', 'null' ),
+			'context'     => array( 'view', 'edit' ),
+			'properties'  => array(
+				'pattern'   => array(
+					'description' => __( 'The rule that applies today, or null to stop repeating.', 'gatherpress' ),
+					'type'        => array( 'object', 'null' ),
+				),
+				'scheduled' => array(
+					'description' => __(
+						'A change starting later. Left out of a save, it is kept; null removes it.',
+						'gatherpress'
+					),
+					'type'        => array( 'object', 'null' ),
+				),
+				'from'      => array(
+					'description' => __( 'The first date a change to a started event applies.', 'gatherpress' ),
+					'type'        => array( 'string', 'null' ),
+				),
+				'ended'     => array(
+					'description' => __( 'Whether every rule has ended.', 'gatherpress' ),
+					'type'        => 'boolean',
+					'readonly'    => true,
+				),
+				'showable'  => array(
+					'description' => __( 'Whether one pattern can show the schedule.', 'gatherpress' ),
+					'type'        => 'boolean',
+					'readonly'    => true,
+				),
+			),
+		);
+	}
+
+	/**
 	 * Describe an event's rules as one current schedule.
 	 *
-	 * Rules that ended before today are history. Of the rest, the one that
+	 * A rule with no dates left is history. Of the rest, the one that
 	 * applies today, or the first to come, is the pattern, and one starting
 	 * after it is a scheduled change. When every rule has ended, the last is
 	 * the pattern and the series is marked ended. Anything the editor can't
@@ -196,24 +257,13 @@ final class Repeat_Field {
 	 *     showable: bool} The schedule.
 	 */
 	protected function describe_schedule( Event $event ): array {
-		$today  = $this->today( $this->event_timezone( $event ) );
-		$groups = array(
-			'active' => array(),
-			'future' => array(),
-			'ended'  => array(),
-		);
-
-		foreach ( $event->rules()->all() as $rule ) {
-			$groups[ $this->group_of( $rule, $today ) ][] = $rule;
-		}
-
+		$groups    = $this->grouped( $event );
 		$current   = $groups['active'][0] ?? $groups['future'][0] ?? null;
 		$scheduled = $groups['active'] ? ( $groups['future'][0] ?? null ) : null;
 		$last      = $groups['ended'] ? end( $groups['ended'] ) : null;
-		$shown     = array_filter( array( $current, $scheduled ) );
 		$showable  = count( $groups['active'] ) <= 1 && count( $groups['future'] ) <= 1;
 
-		foreach ( $shown as $rule ) {
+		foreach ( array_filter( array( $current, $scheduled ) ) as $rule ) {
 			$showable = $showable && $this->is_showable( $rule, $event );
 		}
 
@@ -226,7 +276,44 @@ final class Repeat_Field {
 	}
 
 	/**
+	 * An event's rules grouped as history, applying today, or still to come, in the event's timezone.
+	 *
+	 * @since TBD
+	 *
+	 * @param Event $event The event.
+	 *
+	 * @return array{active: Rule[], future: Rule[], ended: Rule[]} The rules.
+	 */
+	protected function grouped( Event $event ): array {
+		$today  = $this->today( $this->event_timezone( $event ) );
+		$active = array();
+		$future = array();
+		$ended  = array();
+
+		foreach ( $event->rules()->all() as $rule ) {
+			$group = $this->group_of( $rule, $today );
+
+			if ( 'active' === $group ) {
+				$active[] = $rule;
+			} elseif ( 'future' === $group ) {
+				$future[] = $rule;
+			} else {
+				$ended[] = $rule;
+			}
+		}
+
+		return array(
+			'active' => $active,
+			'future' => $future,
+			'ended'  => $ended,
+		);
+	}
+
+	/**
 	 * Whether a rule is history, applies today, or is still to come.
+	 *
+	 * A rule with no dates from today on is history, which covers an end
+	 * date in the past and a single date that has passed.
 	 *
 	 * @since TBD
 	 *
@@ -236,11 +323,11 @@ final class Repeat_Field {
 	 * @return string `ended`, `active` or `future`.
 	 */
 	protected function group_of( Rule $rule, DateTimeImmutable $today ): string {
-		if ( null !== $rule->ends_on && $rule->ends_on < $today ) {
-			return 'ended';
+		if ( $rule->starts_on > $today ) {
+			return 'future';
 		}
 
-		return $rule->starts_on > $today ? 'future' : 'active';
+		return null === $rule->next_date( $today ) ? 'ended' : 'active';
 	}
 
 	/**
@@ -295,8 +382,7 @@ final class Repeat_Field {
 	 * @param WP_REST_Request $request The request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
-	 * @return array{action: string, rows?: array<int, array<string, mixed>>, from?: string}|WP_Error The plan,
-	 *     or why the schedule can't be written.
+	 * @return array<string, mixed>|WP_Error The plan, with its `action`, or why the schedule can't be written.
 	 */
 	protected function plan( int $post_id, WP_REST_Request $request ): array|WP_Error {
 		$value   = $request->get_param( self::FIELD );
@@ -308,12 +394,14 @@ final class Repeat_Field {
 		}
 
 		if ( null === $dates ) {
-			return $this->error( __( 'Set the event\'s date before making it repeat.', 'gatherpress' ) );
+			return $this->error(
+				__( 'The event needs a valid date and timezone before it can repeat.', 'gatherpress' )
+			);
 		}
 
-		return $this->has_started( $post_id, $request, $dates )
-			? $this->plan_change( $pattern, $value['from'] ?? null, $dates )
-			: $this->plan_replace( $pattern, $dates );
+		return $this->has_started( $post_id )
+			? $this->plan_change( new Event( $post_id ), $value, $dates )
+			: $this->plan_replace( $post_id, $pattern, $dates );
 	}
 
 	/**
@@ -321,13 +409,13 @@ final class Repeat_Field {
 	 *
 	 * @since TBD
 	 *
+	 * @param int                       $post_id The event's post ID, or 0.
 	 * @param array<string, mixed>|null $pattern The pattern, or null to stop repeating.
 	 * @param array<string, mixed>      $dates   The event's dates in the request.
 	 *
-	 * @return array{action: string, rows: array<int, array<string, mixed>>}|WP_Error The plan, or why the
-	 *     pattern is invalid.
+	 * @return array<string, mixed>|WP_Error The plan, or why the pattern is invalid.
 	 */
-	protected function plan_replace( ?array $pattern, array $dates ): array|WP_Error {
+	protected function plan_replace( int $post_id, ?array $pattern, array $dates ): array|WP_Error {
 		$rows = array();
 
 		if ( null !== $pattern ) {
@@ -340,8 +428,10 @@ final class Repeat_Field {
 			$rows[] = $row;
 		}
 
+		$unchanged = $post_id && $this->rows_of( ( new Event( $post_id ) )->rules()->all() ) === $rows;
+
 		return array(
-			'action' => 'replace',
+			'action' => $unchanged ? 'none' : 'replace',
 			'rows'   => $rows,
 		);
 	}
@@ -349,44 +439,190 @@ final class Repeat_Field {
 	/**
 	 * Plan changing the schedule of a published event that has started.
 	 *
-	 * The new rule starts on its first date on or after the change date, so
-	 * the change date itself isn't added as a date.
-	 *
 	 * @since TBD
 	 *
-	 * @param array<string, mixed>|null $pattern The pattern, or null to stop repeating.
-	 * @param mixed                     $from    The change date from the request, if any.
-	 * @param array<string, mixed>      $dates   The event's dates in the request.
+	 * @param Event                $event The event.
+	 * @param array<string, mixed> $value The field's value.
+	 * @param array<string, mixed> $dates The event's dates in the request.
 	 *
-	 * @return array{action: string, from: string, rows?: array<int, array<string, mixed>>}|WP_Error The plan,
-	 *     or why the change can't be made.
+	 * @return array<string, mixed>|WP_Error The plan, or why the change can't be made.
 	 */
-	protected function plan_change( ?array $pattern, mixed $from, array $dates ): array|WP_Error {
-		$from = $this->change_date( $from, $dates['timezone'] );
+	protected function plan_change( Event $event, array $value, array $dates ): array|WP_Error {
+		$from = $this->change_date( $value['from'] ?? null, $dates['timezone'] );
 
-		if ( is_wp_error( $from ) ) {
-			return $from;
-		}
-
-		if ( null === $pattern ) {
-			return array(
+		if ( is_wp_error( $from ) || null === ( $value['pattern'] ?? null ) ) {
+			return is_wp_error( $from ) ? $from : array(
 				'action' => 'stop',
 				'from'   => $from->format( Rule::DATE_FORMAT ),
 			);
 		}
 
-		$first = $this->first_date( $pattern, $dates, $from );
-		$row   = $first ? $this->valid_row( $this->row( $pattern, $dates, $first ) ) : $this->no_dates();
+		$groups    = $this->grouped( $event );
+		$current   = $groups['active'][0] ?? null;
+		$scheduled = array_key_exists( 'scheduled', $value ) ? null : ( $groups['future'][0] ?? null );
+		$row       = $this->change_row( $value['pattern'], $dates, $from, $current );
 
-		return is_wp_error( $row ) ? $row : array(
+		if ( is_wp_error( $row ) ) {
+			return $row;
+		}
+
+		return $this->change_or_less( $row, $from, $current, $scheduled );
+	}
+
+	/**
+	 * The plan for a change: nothing, ending the current rule earlier, or a change from a date.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $row       The new rule's row.
+	 * @param DateTimeImmutable    $from      The change date.
+	 * @param Rule|null            $current   The rule that applies today, if any.
+	 * @param Rule|null            $scheduled A scheduled change to keep, if any.
+	 *
+	 * @return array<string, mixed> The plan.
+	 */
+	protected function change_or_less( array $row, DateTimeImmutable $from, ?Rule $current, ?Rule $scheduled ): array {
+		$same  = $current && $this->same_pattern( $this->without_change_id( $current->to_meta() ), $row );
+		$ends  = $current?->ends_on?->format( Rule::DATE_FORMAT );
+		$plain = $same && null === $scheduled;
+
+		if ( $plain && $ends === $row['ends_on'] ) {
+			return array( 'action' => 'none' );
+		}
+
+		// Bringing the end earlier only ends the current rule; extending or clearing it continues the cycle.
+		if ( $plain && null !== $row['ends_on'] && ( null === $ends || $row['ends_on'] < $ends ) ) {
+			return array(
+				'action' => 'stop',
+				'from'   => $this->day_after( $row['ends_on'] ),
+			);
+		}
+
+		return array(
 			'action' => 'change',
 			'from'   => $from->format( Rule::DATE_FORMAT ),
-			'rows'   => array( $row ),
+			'rows'   => $this->with_scheduled( $row, $scheduled ),
 		);
 	}
 
 	/**
-	 * Carry out a plan, unless it would change nothing.
+	 * The rows of a change, keeping a scheduled change after the new rule.
+	 *
+	 * The new rule ends the day before the scheduled one starts, or is left
+	 * out when it would start no earlier.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $row       The new rule's row.
+	 * @param Rule|null            $scheduled The scheduled change to keep, if any.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	protected function with_scheduled( array $row, ?Rule $scheduled ): array {
+		if ( null === $scheduled ) {
+			return array( $row );
+		}
+
+		$before = $scheduled->starts_on->modify( '-1 day' )->format( Rule::DATE_FORMAT );
+		$kept   = $this->without_change_id( $scheduled->to_meta() );
+
+		if ( $row['starts_on'] > $before ) {
+			return array( $kept );
+		}
+
+		$row['ends_on'] = null === $row['ends_on'] ? $before : min( $row['ends_on'], $before );
+
+		return array( $row, $kept );
+	}
+
+	/**
+	 * The new rule of a change, starting on its first date on or after the change date.
+	 *
+	 * An unchanged pattern continues the current rule's cycle. A new weekly
+	 * or monthly pattern must name its days, since the change date is no
+	 * guide to them, and a yearly one keeps the series' anniversary.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $pattern The pattern.
+	 * @param array<string, mixed> $dates   The event's dates in the request.
+	 * @param DateTimeImmutable    $from    The change date.
+	 * @param Rule|null            $current The rule that applies today, if any.
+	 *
+	 * @return array<string, mixed>|WP_Error The row, or why the change can't be made.
+	 */
+	protected function change_row(
+		array $pattern,
+		array $dates,
+		DateTimeImmutable $from,
+		?Rule $current
+	): array|WP_Error {
+		$candidate = $this->valid_row( $this->row( $pattern, $dates, $from->format( Rule::DATE_FORMAT ) ) );
+
+		if ( is_wp_error( $candidate ) ) {
+			return $candidate;
+		}
+
+		if ( ! $this->names_its_days( $pattern ) ) {
+			return $this->error( __( 'Choose which days the new schedule repeats on.', 'gatherpress' ) );
+		}
+
+		$same  = $current && $this->same_pattern( $this->without_change_id( $current->to_meta() ), $candidate );
+		$first = $same
+			? Rule::from_meta( array_merge( $current->to_meta(), array( 'ends_on' => null ) ) )?->next_date( $from )
+			: $this->first_date( $pattern, $dates, $from );
+
+		return null === $first
+			? $this->error( __( 'The repeating schedule has no dates on or after the change date.', 'gatherpress' ) )
+			: $this->valid_row( $this->row( $pattern, $dates, $first->format( Rule::DATE_FORMAT ) ) );
+	}
+
+	/**
+	 * Whether a pattern names the days it repeats on, where its frequency needs them.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $pattern The pattern.
+	 *
+	 * @return bool True for a daily or yearly pattern, or a weekly or monthly one with its days.
+	 */
+	protected function names_its_days( array $pattern ): bool {
+		return match ( strtoupper( (string) ( $pattern['frequency'] ?? '' ) ) ) {
+			'WEEKLY'  => ! empty( $pattern['weekdays'] ),
+			'MONTHLY' => ! empty( $pattern['month_day'] ) || ! empty( $pattern['ordinal_weekday'] ),
+			default   => true,
+		};
+	}
+
+	/**
+	 * The pattern's first date on or after the change date.
+	 *
+	 * The new rule starts there, so its interval counts from that date: every
+	 * other Thursday from a Saturday starts on the next Thursday, as an
+	 * organizer means it, rather than skipping a week as counting from the
+	 * change date's week would. A yearly pattern counts from the series'
+	 * first date, so it keeps its anniversary.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $pattern The pattern.
+	 * @param array<string, mixed> $dates   The event's dates in the request.
+	 * @param DateTimeImmutable    $from    The change date.
+	 *
+	 * @return DateTimeImmutable|null The date, or null if the pattern has none.
+	 */
+	protected function first_date( array $pattern, array $dates, DateTimeImmutable $from ): ?DateTimeImmutable {
+		$yearly = 'YEARLY' === strtoupper( (string) ( $pattern['frequency'] ?? '' ) );
+		// A rule's start always counts as a date, so ask one starting the day before, without the interval.
+		$start = $yearly ? $dates['start'] : $from->modify( '-1 day' );
+		$shape = $yearly ? $pattern : array( 'interval' => 1 ) + $pattern;
+		$probe = Rule::from_meta( $this->row( $shape, $dates, $start->format( Rule::DATE_FORMAT ) ) );
+
+		return $probe?->next_date( $from );
+	}
+
+	/**
+	 * Carry out a plan.
 	 *
 	 * @since TBD
 	 *
@@ -396,66 +632,14 @@ final class Repeat_Field {
 	 * @return bool|WP_Error True once written, or why it couldn't be.
 	 */
 	protected function apply( int $post_id, array $plan ): bool|WP_Error {
-		$rules   = ( new Event( $post_id ) )->rules();
-		$current = $this->active_row( $rules );
-		$next    = $plan['rows'][0] ?? null;
-
-		if ( 'change' === $plan['action'] && $current && $next && $this->same_pattern( $current, $next ) ) {
-			return $this->move_end( $rules, $current, $next );
-		}
-
-		$unchanged = 'replace' === $plan['action']
-			&& $this->rows_of( $rules ) === $this->without_change_ids( $plan['rows'] );
-
-		if ( $unchanged ) {
-			return true;
-		}
+		$rules = ( new Event( $post_id ) )->rules();
 
 		return match ( $plan['action'] ) {
+			'none'   => true,
 			'stop'   => $rules->stop( $plan['from'] ),
 			'change' => $rules->change_from( $plan['from'], $plan['rows'] ),
 			default  => $rules->replace( $plan['rows'] ),
 		};
-	}
-
-	/**
-	 * End the current rule where an otherwise identical pattern ends, or leave it.
-	 *
-	 * @since TBD
-	 *
-	 * @param Rules                $rules   The event's rules.
-	 * @param array<string, mixed> $current The current rule's row.
-	 * @param array<string, mixed> $next    The new row.
-	 *
-	 * @return bool|WP_Error True once written or when nothing changes, or why it couldn't be.
-	 */
-	protected function move_end( Rules $rules, array $current, array $next ): bool|WP_Error {
-		if ( $current['ends_on'] === $next['ends_on'] || null === $next['ends_on'] ) {
-			return true;
-		}
-
-		$day_after = ( new DateTimeImmutable( $next['ends_on'], new DateTimeZone( 'UTC' ) ) )->modify( '+1 day' );
-
-		return $rules->stop( $day_after->format( Rule::DATE_FORMAT ) );
-	}
-
-	/**
-	 * The row of the rule that applies today, if any.
-	 *
-	 * @since TBD
-	 *
-	 * @param Rules $rules The event's rules.
-	 *
-	 * @return array<string, mixed>|null The row.
-	 */
-	protected function active_row( Rules $rules ): ?array {
-		foreach ( $rules->all() as $rule ) {
-			if ( 'active' === $this->group_of( $rule, $this->today( $rule->timezone ) ) ) {
-				return $rule->to_meta();
-			}
-		}
-
-		return null;
 	}
 
 	/**
@@ -470,7 +654,6 @@ final class Repeat_Field {
 	 */
 	protected function same_pattern( array $current, array $next ): bool {
 		$ignore = array(
-			'change_id' => '',
 			'starts_on' => '',
 			'ends_on'   => '',
 		);
@@ -479,31 +662,29 @@ final class Repeat_Field {
 	}
 
 	/**
-	 * An event's current rows, without change IDs, for comparison.
+	 * Rules as rows without change IDs, for comparison.
 	 *
 	 * @since TBD
 	 *
-	 * @param Rules $rules The event's rules.
+	 * @param Rule[] $rules The rules.
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
 	 */
-	protected function rows_of( Rules $rules ): array {
-		$rows = array_map( static fn( Rule $rule ): array => $rule->to_meta(), $rules->all() );
-
-		return $this->without_change_ids( $rows );
+	protected function rows_of( array $rules ): array {
+		return array_map( fn( Rule $rule ): array => $this->without_change_id( $rule->to_meta() ), $rules );
 	}
 
 	/**
-	 * Rows without their change IDs.
+	 * A row without its change ID.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<int, array<string, mixed>> $rows The rows.
+	 * @param array<string, mixed> $row The row.
 	 *
-	 * @return array<int, array<string, mixed>> The rows.
+	 * @return array<string, mixed> The row.
 	 */
-	protected function without_change_ids( array $rows ): array {
-		return array_map( static fn( array $row ): array => array_diff_key( $row, array( 'change_id' => '' ) ), $rows );
+	protected function without_change_id( array $row ): array {
+		return array_diff_key( $row, array( 'change_id' => '' ) );
 	}
 
 	/**
@@ -551,7 +732,7 @@ final class Repeat_Field {
 			return $this->error( __( 'The repeating schedule is not valid.', 'gatherpress' ) );
 		}
 
-		return array_diff_key( $rule->to_meta(), array( 'change_id' => '' ) );
+		return $this->without_change_id( $rule->to_meta() );
 	}
 
 	/**
@@ -581,30 +762,6 @@ final class Repeat_Field {
 		}
 
 		return implode( ';', $parts );
-	}
-
-	/**
-	 * The pattern's first date on or after the change date.
-	 *
-	 * The new rule starts there, so its interval counts from that date: every
-	 * other Thursday from a Saturday starts on the next Thursday, as an
-	 * organizer means it, rather than skipping a week as counting from the
-	 * change date's week would.
-	 *
-	 * @since TBD
-	 *
-	 * @param array<string, mixed> $pattern The pattern.
-	 * @param array<string, mixed> $dates   The event's dates in the request.
-	 * @param DateTimeImmutable    $from    The change date.
-	 *
-	 * @return string|null The date, or null if the pattern has none.
-	 */
-	protected function first_date( array $pattern, array $dates, DateTimeImmutable $from ): ?string {
-		// A rule's start always counts as a date, so ask one starting the day before, without the interval.
-		$day_before = $from->modify( '-1 day' )->format( Rule::DATE_FORMAT );
-		$every      = Rule::from_meta( $this->row( array( 'interval' => 1 ) + $pattern, $dates, $day_before ) );
-
-		return $every?->next_date( $from )?->format( Rule::DATE_FORMAT );
 	}
 
 	/**
@@ -638,6 +795,9 @@ final class Repeat_Field {
 	/**
 	 * The event's dates as this request leaves them.
 	 *
+	 * The request's `gatherpress_datetime` meta, or the saved one, or for an
+	 * event without it, such as one imported, its saved dates.
+	 *
 	 * @since TBD
 	 *
 	 * @param int             $post_id The event's post ID, or 0.
@@ -645,24 +805,25 @@ final class Repeat_Field {
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 *
 	 * @return array{start: DateTimeImmutable, end: DateTimeImmutable, timezone: string, is_all_day: bool,
-	 *     duration: int}|null The dates, or null if the event has none.
+	 *     duration: int}|null The dates, or null without a valid date and timezone.
 	 */
 	protected function request_dates( int $post_id, WP_REST_Request $request ): ?array {
-		$meta  = $request->get_param( 'meta' );
-		$meta  = is_array( $meta ) ? $meta : array();
-		$saved = $post_id ? get_post_meta( $post_id, 'gatherpress_datetime', true ) : '';
-		$json  = json_decode( (string) ( $meta['gatherpress_datetime'] ?? $saved ), true );
-		$start = is_array( $json ) ? (string) ( $json['dateTimeStart'] ?? '' ) : '';
-		$end   = is_array( $json ) ? (string) ( $json['dateTimeEnd'] ?? '' ) : '';
+		$meta     = $request->get_param( 'meta' );
+		$meta     = is_array( $meta ) ? $meta : array();
+		$payload  = $this->datetime_payload( $post_id, $meta );
+		$timezone = Utility::normalize_timezone_string( $payload['timezone'] );
 
-		if ( ! Validate::datetime( $start ) || ! Validate::datetime( $end ) ) {
+		$valid = Validate::datetime( $payload['start'] )
+			&& Validate::datetime( $payload['end'] )
+			&& Validate::timezone( $timezone );
+
+		if ( ! $valid ) {
 			return null;
 		}
 
-		$timezone   = Utility::normalize_timezone_string( (string) ( $json['timezone'] ?? wp_timezone_string() ) );
 		$zone       = new DateTimeZone( $timezone );
-		$start      = new DateTimeImmutable( $start, $zone );
-		$end        = new DateTimeImmutable( $end, $zone );
+		$start      = new DateTimeImmutable( $payload['start'], $zone );
+		$end        = new DateTimeImmutable( $payload['end'], $zone );
 		$is_all_day = (bool) ( $meta['gatherpress_is_all_day']
 			?? get_post_meta( $post_id, 'gatherpress_is_all_day', true ) );
 
@@ -678,28 +839,53 @@ final class Repeat_Field {
 	}
 
 	/**
-	 * Whether the event is published and its first date has started, as saved or as the request moves it.
-	 *
-	 * Either counts, matching `Rules::replace()`, which refuses an event whose saved start has passed.
+	 * The start, end and timezone a request leaves an event with, as strings.
 	 *
 	 * @since TBD
 	 *
 	 * @param int                  $post_id The event's post ID, or 0.
-	 * @param WP_REST_Request      $request The request.
-	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
-	 * @param array<string, mixed> $dates   The event's dates in the request.
+	 * @param array<string, mixed> $meta    The request's meta.
+	 *
+	 * @return array{start: string, end: string, timezone: string} The strings, empty when unknown.
+	 */
+	protected function datetime_payload( int $post_id, array $meta ): array {
+		$saved = $post_id ? get_post_meta( $post_id, 'gatherpress_datetime', true ) : '';
+		$json  = json_decode( (string) ( $meta['gatherpress_datetime'] ?? $saved ), true );
+
+		if ( is_array( $json ) && ! empty( $json['dateTimeStart'] ) ) {
+			return array(
+				'start'    => (string) $json['dateTimeStart'],
+				'end'      => (string) ( $json['dateTimeEnd'] ?? '' ),
+				'timezone' => (string) ( $json['timezone'] ?? wp_timezone_string() ),
+			);
+		}
+
+		$event = new Event( $post_id );
+		$dates = $event->get_saved_datetime();
+
+		return array(
+			'start'    => $dates['datetime_start'],
+			'end'      => $dates['datetime_end'],
+			'timezone' => $event->get_timezone(),
+		);
+	}
+
+	/**
+	 * Whether the event was published and its first date had started before this request.
+	 *
+	 * The state before the request decides, so an event's first publish,
+	 * which nobody has seen yet, replaces its rules with the dates entered.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event's post ID, or 0.
 	 *
 	 * @return bool True for a started, published event.
 	 */
-	protected function has_started( int $post_id, WP_REST_Request $request, array $dates ): bool {
-		$status    = $request->get_param( 'status' );
-		$status    = is_string( $status ) ? $status : get_post_status( $post_id );
-		$published = in_array( $status, Rules::PUBLISHED_STATUSES, true );
-		$now       = time();
-
-		$saved = $post_id && ( new Event( $post_id ) )->has_event_started();
-
-		return $published && ( $dates['start']->getTimestamp() <= $now || $saved );
+	protected function has_started( int $post_id ): bool {
+		return $post_id
+			&& in_array( get_post_status( $post_id ), Rules::PUBLISHED_STATUSES, true )
+			&& ( new Event( $post_id ) )->has_event_started();
 	}
 
 	/**
@@ -731,14 +917,18 @@ final class Repeat_Field {
 	}
 
 	/**
-	 * The error a pattern with no dates after the change date gives.
+	 * The day after a rule date.
 	 *
 	 * @since TBD
 	 *
-	 * @return WP_Error The error.
+	 * @param string $date The date, as `Y-m-d`.
+	 *
+	 * @return string The next day, as `Y-m-d`.
 	 */
-	protected function no_dates(): WP_Error {
-		return $this->error( __( 'The repeating schedule has no dates on or after the change date.', 'gatherpress' ) );
+	protected function day_after( string $date ): string {
+		$day = new DateTimeImmutable( $date, new DateTimeZone( 'UTC' ) );
+
+		return $day->modify( '+1 day' )->format( Rule::DATE_FORMAT );
 	}
 
 	/**
