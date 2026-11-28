@@ -124,6 +124,18 @@ The GMT columns are what queries sort and filter on. The local columns exist for
 
 On multisite the table is per-site: every site in the network gets its own.
 
+## Occurrences
+
+An event post is a series, and an occurrence is one of its dates. Without repeat rules, an event is a series of one. `Event::occurrences()` returns the event's `Event\Occurrences`, which is where code asks for its dates:
+
+- `in_range( $from, $to )` returns the `Event\Occurrence` objects that overlap a range, in start order.
+- `find( $recurrence_id )` returns one occurrence by its key, or `null`.
+- `on_day( $day )` returns the first occurrence that starts on a date in the event's timezone, or `null`.
+- `primary()` returns the series' primary occurrence, the one it shows by default: the first that has not ended, preferring one that is not canceled, or the last when all have ended.
+- The static `Occurrences::recurrence_id( $start, $is_all_day )` builds a key: the local start as `Ymd\THis` (the RFC 5545 `RECURRENCE-ID` form), or the local date as `Ymd` for an all-day occurrence.
+
+Each occurrence carries its series post ID, its key, its start and end in the event's timezone, whether it lasts all day, and its status (an event status slug, so `is_canceled()` works per date). Today the one occurrence is read from the event's saved dates, in the event's own timezone rather than a viewer's preference, and takes the event's status. The `gatherpress_event_occurrences`, `gatherpress_event_occurrence_by_key` and `gatherpress_event_primary_occurrence` filters let repeat rules supply more dates without callers changing.
+
 ## REST endpoints
 
 Everything is under the `gatherpress/v1` namespace, defined as `GATHERPRESS_REST_NAMESPACE`.

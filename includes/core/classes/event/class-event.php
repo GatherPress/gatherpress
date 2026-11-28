@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar\External;
+use GatherPress\Core\Event\Occurrences;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Setup as Core_Setup;
@@ -165,6 +166,17 @@ class Event {
 		global $wpdb;
 
 		return sprintf( self::TABLE_FORMAT, $wpdb->prefix );
+	}
+
+	/**
+	 * The event's dates.
+	 *
+	 * @since TBD
+	 *
+	 * @return Occurrences The event's occurrences.
+	 */
+	public function occurrences(): Occurrences {
+		return new Occurrences( $this );
 	}
 
 	/**
@@ -874,6 +886,26 @@ class Event {
 		$format = $this->is_all_day() ? 'Y-m-d' : 'c';
 
 		return $this->format_datetime( $format, 'end', true, false );
+	}
+
+	/**
+	 * The event's own timezone, as saved.
+	 *
+	 * Unlike the timezone in `get_datetime()`, this is not passed through the
+	 * `gatherpress_timezone` filter, so a viewer's timezone preference never
+	 * changes it. Anything that identifies a date, such as an occurrence key,
+	 * reads it from here.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The saved timezone, or the site's when none valid is saved.
+	 */
+	public function get_timezone(): string {
+		$timezone = $this->post
+			? (string) get_post_meta( $this->post->ID, Utility::prefix_key( 'timezone' ), true )
+			: '';
+
+		return Validate::timezone( $timezone ) ? $timezone : sanitize_text_field( wp_timezone_string() );
 	}
 
 	/**

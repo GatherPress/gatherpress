@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added `Event::occurrences()`, which returns an event's dates as `Event\Occurrence` objects within a range, by key, by date, or a series' primary occurrence, the one it shows by default. Each occurrence carries a status. Every event is a series of one for now. Occurrence keys use the event's own timezone, which the new `Event::get_timezone()` returns, rather than a viewer's. The `gatherpress_event_occurrences`, `gatherpress_event_occurrence_by_key` and `gatherpress_event_primary_occurrence` filters let code supply more dates.
