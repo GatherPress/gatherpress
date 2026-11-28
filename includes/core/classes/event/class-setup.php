@@ -99,6 +99,7 @@ final class Setup {
 		Occurrence_Index::get_instance();
 		Query::get_instance();
 		Reminder::get_instance();
+		Repeat_Field::get_instance();
 		Rest_Api::get_instance();
 		Scheduler::get_instance();
 	}
