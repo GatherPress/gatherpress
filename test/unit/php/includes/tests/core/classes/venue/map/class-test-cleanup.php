@@ -960,4 +960,39 @@ class Test_Cleanup extends Base {
 		$this->assertTrue( $deleted, 'The first venue should be deleted during the scan.' );
 		$this->assertArrayHasKey( 'third-osm-roadmap-15-800-400.png', $in_use );
 	}
+
+	/**
+	 * Tests venue IDs come in batches that resume after the last ID, in every status.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_venue_id_batch
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_id_batch(): void {
+		$cleanup = Cleanup::get_instance();
+		$types   = array( Venue::POST_TYPE );
+		$before  = $cleanup->get_venue_id_batch( $types, 0, PHP_INT_MAX );
+		$last    = (int) end( $before );
+		$ids     = array(
+			$this->factory()->post->create( array( 'post_type' => Venue::POST_TYPE ) ),
+			$this->factory()->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'auto-draft',
+				)
+			),
+			$this->factory()->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'trash',
+				)
+			),
+		);
+
+		$this->assertSame( array( $ids[0], $ids[1] ), $cleanup->get_venue_id_batch( $types, $last, 2 ) );
+		$this->assertSame( array( $ids[2] ), $cleanup->get_venue_id_batch( $types, $ids[1], 2 ) );
+		$this->assertSame( array(), $cleanup->get_venue_id_batch( $types, $ids[2], 2 ) );
+	}
 }

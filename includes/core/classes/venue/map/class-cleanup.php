@@ -215,22 +215,15 @@ class Cleanup {
 		$batch_size = (int) apply_filters( 'gatherpress_venue_map_cleanup_scan_batch_size', self::SCAN_BATCH_SIZE );
 		$batch_size = max( 1, $batch_size );
 
-		// Every ID up front, in any status, so a venue deleted mid-scan cannot shift a page.
-		$all_ids = get_posts(
-			array(
-				'post_type'              => $types,
-				'post_status'            => array_keys( get_post_stati() ),
-				'posts_per_page'         => -1,
-				'orderby'                => 'ID',
-				'order'                  => 'ASC',
-				'fields'                 => 'ids',
-				'no_found_rows'          => true,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-			)
-		);
+		$last_id = 0;
 
-		foreach ( array_chunk( $all_ids, $batch_size ) as $post_ids ) {
+		do {
+			$post_ids = $this->get_venue_id_batch( $types, $last_id, $batch_size );
+
+			if ( empty( $post_ids ) ) {
+				break;
+			}
+
 			update_meta_cache( 'post', $post_ids );
 
 			foreach ( $post_ids as $post_id ) {
@@ -253,7 +246,10 @@ class Cleanup {
 					);
 				}
 			}
-		}
+
+			$last_id = (int) end( $post_ids );
+			$fetched = count( $post_ids );
+		} while ( $fetched === $batch_size );
 
 		/**
 		 * Filters the list of in-use static-map image filenames before garbage collection.
@@ -263,6 +259,47 @@ class Cleanup {
 		 * @param array<string, bool> $in_use Map of in-use image basenames.
 		 */
 		return (array) apply_filters( 'gatherpress_venue_map_cleanup_in_use_files', $in_use );
+	}
+
+	/**
+	 * Get one batch of venue IDs, after the last ID of the batch before.
+	 *
+	 * Paging by ID, rather than by offset, keeps a venue deleted between
+	 * batches from shifting the next batch and skipping a venue.
+	 *
+	 * @since TBD
+	 *
+	 * @param string[] $types   Venue post types.
+	 * @param int      $last_id Last venue ID of the batch before.
+	 * @param int      $size    Venues per batch.
+	 *
+	 * @return int[] Venue IDs, in every registered status.
+	 */
+	public function get_venue_id_batch( array $types, int $last_id, int $size ): array {
+		$after_cursor = static function ( string $where ) use ( $last_id ): string {
+			global $wpdb;
+
+			return $where . $wpdb->prepare( " AND {$wpdb->posts}.ID > %d", $last_id );
+		};
+
+		add_filter( 'posts_where', $after_cursor );
+		$post_ids = get_posts(
+			array(
+				'post_type'              => $types,
+				'post_status'            => array_keys( get_post_stati() ),
+				'posts_per_page'         => $size,
+				'orderby'                => 'ID',
+				'order'                  => 'ASC',
+				'fields'                 => 'ids',
+				'no_found_rows'          => true,
+				'suppress_filters'       => false,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+		remove_filter( 'posts_where', $after_cursor );
+
+		return array_map( 'intval', $post_ids );
 	}
 
 	/**
