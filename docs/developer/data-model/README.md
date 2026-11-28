@@ -139,7 +139,7 @@ Each occurrence carries its series post ID, its key, its start and end in the ev
 
 ### Repeat rules
 
-An event repeats when it has `gatherpress_rule` meta: one row per rule, read through `Event::rules()`. Once an event has at least one valid rule, its valid rules decide its dates and the event's saved datetimes are not read for occurrences. A rule with no `rrule` supplies just its one date. An event without valid rules is a series of one, as above.
+An event can have `gatherpress_rule` meta: one row per rule, read through `Event::rules()`. Once an event has at least one valid rule, its valid rules decide its dates and the event's saved datetimes are not read for occurrences. A rule with no `rrule` supplies just its one date. An event without valid rules is a series of one, as above.
 
 ```php
 array(

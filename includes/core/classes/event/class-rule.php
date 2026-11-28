@@ -490,17 +490,23 @@ final class Rule {
 			// spring-forward gap to after it and picks the first of a repeated hour.
 			// Adding an interval counts elapsed time across a clock change, where
 			// modify() would count wall-clock minutes. A spring-forward gap can
-			// put two showtimes at one instant with one key; merging counts it once.
+			// put two showtimes at one instant with one key; it is kept once below.
 			$start         = new DateTimeImmutable( $day . ' ' . $time, $this->timezone );
 			$end           = $start->add( new DateInterval( sprintf( 'PT%dM', $this->duration ) ) );
 			$key           = Occurrences::recurrence_id( $start );
 			$occurrences[] = new Occurrence( $post_id, $key, $start, $end, false, $status );
 		}
 
-		// A spring-forward gap can move an earlier time past a later one.
+		// A spring-forward gap can move an earlier time past a later one, or onto it.
 		usort( $occurrences, array( Occurrences::class, 'compare_start' ) );
 
-		return $occurrences;
+		$unique = array();
+
+		foreach ( $occurrences as $occurrence ) {
+			$unique[ $occurrence->recurrence_id . '|' . $occurrence->start->getTimestamp() ] ??= $occurrence;
+		}
+
+		return array_values( $unique );
 	}
 
 	/**
