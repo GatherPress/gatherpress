@@ -104,6 +104,14 @@ final class Occurrence_Index {
 	protected array $pending = array();
 
 	/**
+	 * Whether this request is building the index, so rebuilds run before it's ready.
+	 *
+	 * @since TBD
+	 * @var bool
+	 */
+	protected bool $building = false;
+
+	/**
 	 * Class constructor.
 	 *
 	 * @since TBD
@@ -163,6 +171,10 @@ final class Occurrence_Index {
 	 * Runs on every request rather than only on an admin visit, so the front
 	 * end never waits for one, and each site of a network builds its own.
 	 *
+	 * The index is ready only once every event is in it, so queries never use
+	 * a partial one. A build that fails or stops keeps its lock, so the next
+	 * attempt waits out `LOCK_TIMEOUT` rather than running on every request.
+	 *
 	 * @since TBD
 	 *
 	 * @return void
@@ -173,14 +185,18 @@ final class Occurrence_Index {
 			return;
 		}
 
+		$this->building = true;
+
 		try {
 			$this->create_table();
-			$this->copy_events();
-			// Ready before the rule pass, which rebuilds through rebuild().
-			update_option( self::SCHEMA_OPTION, self::SCHEMA_VERSION );
-			$this->expand_repeating();
+
+			if ( $this->copy_events() ) {
+				$this->expand_repeating();
+				update_option( self::SCHEMA_OPTION, self::SCHEMA_VERSION );
+				delete_option( self::LOCK_OPTION );
+			}
 		} finally {
-			delete_option( self::LOCK_OPTION );
+			$this->building = false;
 		}
 	}
 
@@ -264,13 +280,13 @@ final class Occurrence_Index {
 	 *
 	 * @since TBD
 	 *
-	 * @return void
+	 * @return bool True once copied, including when there is nothing to copy; false if the query failed.
 	 */
-	protected function copy_events(): void {
+	protected function copy_events(): bool {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Building a plugin-owned cache table.
-		$wpdb->query(
+		$copied = $wpdb->query(
 			$wpdb->prepare(
 				'INSERT IGNORE INTO %i
 					(post_id, recurrence_id, datetime_start, datetime_start_gmt,
@@ -294,6 +310,8 @@ final class Occurrence_Index {
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		return false !== $copied;
 	}
 
 	/**
@@ -335,7 +353,7 @@ final class Occurrence_Index {
 	public function rebuild( int $post_id ): void {
 		unset( $this->pending[ get_current_blog_id() ][ $post_id ] );
 
-		if ( ! $this->is_ready() ) {
+		if ( ! $this->building && ! $this->is_ready() ) {
 			return;
 		}
 
@@ -521,8 +539,9 @@ final class Occurrence_Index {
 	/**
 	 * Insert an event's occurrences in a range, a month at a time.
 	 *
-	 * Reading a month at a time keeps each read under the occurrence cap.
-	 * An occurrence two months both reach is stored once.
+	 * Reading a month at a time keeps most reads under the occurrence cap. A
+	 * read that reaches the cap continues from its last date. An occurrence
+	 * two reads both reach is stored once.
 	 *
 	 * @since TBD
 	 *
@@ -534,10 +553,41 @@ final class Occurrence_Index {
 	 */
 	protected function insert( Event $event, DateTimeImmutable $from, DateTimeImmutable $to ): void {
 		$occurrences = $event->occurrences();
+		$cursor      = $from;
 
-		for ( $cursor = $from; $cursor < $to; $cursor = $cursor->modify( '+1 month' ) ) {
-			$this->insert_rows( $occurrences->in_range( $cursor, min( $to, $cursor->modify( '+1 month' ) ) ) );
+		while ( $cursor < $to ) {
+			$end   = min( $to, $cursor->modify( '+1 month' ) );
+			$batch = $occurrences->in_range( $cursor, $end );
+
+			$this->insert_rows( $batch );
+			$cursor = $this->next_cursor( $batch, $cursor, $end );
 		}
+	}
+
+	/**
+	 * Where the next read starts after a batch.
+	 *
+	 * A batch at the cap may stop short of its range, so the next read starts
+	 * at its last date. If that doesn't move forward, as when more dates than
+	 * the cap overlap one moment, the next read starts at the range's end.
+	 *
+	 * @since TBD
+	 *
+	 * @param Occurrence[]      $batch  The batch, in start order.
+	 * @param DateTimeImmutable $cursor Where the batch's read started.
+	 * @param DateTimeImmutable $end    Where the batch's read ended.
+	 *
+	 * @return DateTimeImmutable Where the next read starts.
+	 */
+	protected function next_cursor(
+		array $batch,
+		DateTimeImmutable $cursor,
+		DateTimeImmutable $end
+	): DateTimeImmutable {
+		$last = count( $batch ) >= Occurrences::MAX_OCCURRENCES ? end( $batch ) : null;
+		$next = $last ? $last->start->setTimezone( new DateTimeZone( 'UTC' ) ) : $end;
+
+		return $next > $cursor ? $next : $end;
 	}
 
 	/**
