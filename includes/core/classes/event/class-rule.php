@@ -265,16 +265,23 @@ final class Rule {
 	 * @param DateTimeInterface $to      End of the range, exclusive.
 	 * @param int               $post_id The event post ID.
 	 * @param string            $status  The event status slug each occurrence takes.
+	 * @param int               $limit   The most occurrences to return, earliest first.
 	 *
 	 * @return Occurrence[] The occurrences.
 	 *
 	 * @throws Exception If a date cannot be built.
 	 */
-	public function occurrences( DateTimeInterface $from, DateTimeInterface $to, int $post_id, string $status ): array {
+	public function occurrences(
+		DateTimeInterface $from,
+		DateTimeInterface $to,
+		int $post_id,
+		string $status,
+		int $limit = PHP_INT_MAX
+	): array {
 		$occurrences = array();
 		$last        = $this->local_date( $to );
 		// An occurrence that started before the range can still overlap it.
-		$first = $this->local_date( $from )->modify( sprintf( '-%d days', $this->span_days() ) );
+		$first = $this->local_date( $from )->modify( sprintf( '-%d days', $this->lookback_days() ) );
 
 		foreach ( $this->dates_from( $first ) as $date ) {
 			if ( $date > $last ) {
@@ -285,6 +292,11 @@ final class Rule {
 				if ( $occurrence->start < $to && $occurrence->end >= $from ) {
 					$occurrences[] = $occurrence;
 				}
+			}
+
+			// Dates come in order, so once there are enough, later ones can't be earlier.
+			if ( count( $occurrences ) >= $limit ) {
+				return array_slice( $occurrences, 0, $limit );
 			}
 		}
 
@@ -336,7 +348,7 @@ final class Rule {
 	 * @throws Exception If a date cannot be built.
 	 */
 	public function next_occurrence( DateTimeInterface $now, int $post_id, string $status ): ?Occurrence {
-		$first = $this->local_date( $now )->modify( sprintf( '-%d days', $this->span_days() ) );
+		$first = $this->local_date( $now )->modify( sprintf( '-%d days', $this->lookback_days() ) );
 
 		foreach ( $this->dates_from( $first ) as $date ) {
 			foreach ( $this->occurrences_on( $date, $post_id, $status ) as $occurrence ) {
@@ -519,6 +531,9 @@ final class Rule {
 			$occurrences[] = new Occurrence( $post_id, $key, $start, $end, false, $status );
 		}
 
+		// A spring-forward gap can move an earlier time past a later one.
+		usort( $occurrences, array( Occurrences::class, 'compare_start' ) );
+
 		return $occurrences;
 	}
 
@@ -531,6 +546,20 @@ final class Rule {
 	 */
 	protected function span_days(): int {
 		return max( 1, (int) ceil( $this->duration / 1440 ) );
+	}
+
+	/**
+	 * How many days back an occurrence still running can have started.
+	 *
+	 * A timed occurrence's end counts elapsed time, so a clock change can push
+	 * it a day past what its duration in days suggests.
+	 *
+	 * @since TBD
+	 *
+	 * @return int The number of days.
+	 */
+	protected function lookback_days(): int {
+		return $this->span_days() + ( $this->is_all_day ? 0 : 1 );
 	}
 
 	/**
@@ -630,21 +659,44 @@ final class Rule {
 	}
 
 	/**
-	 * How many periods a Gregorian cycle spans, divided by the interval.
+	 * How many periods to search before every aligned period has been seen.
+	 *
+	 * Periods a whole number of intervals from the start repeat their place
+	 * in the Gregorian cycle every cycle / gcd( interval, cycle ) steps, so a
+	 * pattern with no match in that many steps can never match.
 	 *
 	 * @since TBD
 	 *
 	 * @return int The number of periods to search.
 	 */
 	protected function period_limit(): int {
-		$per_year = match ( $this->frequency ) {
-			'DAILY'   => 366,
-			'WEEKLY'  => 53,
-			'MONTHLY' => 12,
-			default   => 1,
+		// Periods in one 400-year Gregorian cycle: 146097 days, which is a whole number of weeks.
+		$cycle = match ( $this->frequency ) {
+			'DAILY'   => 146097,
+			'WEEKLY'  => 20871,
+			'MONTHLY' => self::CYCLE_YEARS * 12,
+			default   => self::CYCLE_YEARS,
 		};
 
-		return intdiv( self::CYCLE_YEARS * $per_year, $this->interval ) + 1;
+		return intdiv( $cycle, self::gcd( $this->interval, $cycle ) ) + 1;
+	}
+
+	/**
+	 * The greatest common divisor of two positive integers.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $a A positive integer.
+	 * @param int $b A positive integer.
+	 *
+	 * @return int The greatest common divisor.
+	 */
+	protected static function gcd( int $a, int $b ): int {
+		while ( 0 !== $b ) {
+			list( $a, $b ) = array( $b, $a % $b );
+		}
+
+		return $a;
 	}
 
 	/**
@@ -767,15 +819,21 @@ final class Rule {
 		}
 
 		$timezone = is_string( $row['timezone'] ?? null ) ? $row['timezone'] : '';
-		$pattern  = self::parse_rrule( $row['rrule'] ?? null );
+		$pattern  = Rrule::parse( $row['rrule'] ?? null );
 		$times    = self::parse_times( $row['times'] ?? array() );
 
 		if ( null === $pattern || null === $times || ! Validate::timezone( $timezone ) ) {
 			return null;
 		}
 
-		$is_all_day = ! empty( $row['is_all_day'] );
-		$duration   = is_numeric( $row['duration'] ?? null ) ? (int) $row['duration'] : -1;
+		// The flag reads as REST reads booleans, so the string 'false' is false.
+		$flag       = $row['is_all_day'] ?? false;
+		$is_all_day = is_string( $flag )
+			? ! in_array( strtolower( $flag ), array( '', '0', 'false' ), true )
+			: (bool) $flag;
+		$duration   = $row['duration'] ?? null;
+		$is_integer = is_int( $duration ) || ( is_string( $duration ) && ctype_digit( $duration ) );
+		$duration   = $is_integer ? (int) $duration : -1;
 
 		if ( ! self::is_valid_length( $is_all_day, $times, $duration ) ) {
 			return null;
@@ -849,116 +907,6 @@ final class Rule {
 	}
 
 	/**
-	 * Parse the supported `RRULE` subset.
-	 *
-	 * @since TBD
-	 *
-	 * @param mixed $rrule The pattern, or null for a single date.
-	 *
-	 * @return array<string, mixed>|null The parts, or null if the pattern is not supported.
-	 * @phpstan-return RulePattern|null
-	 */
-	protected static function parse_rrule( mixed $rrule ): ?array {
-		$parts = array(
-			'frequency'       => null,
-			'interval'        => 1,
-			'weekdays'        => array(),
-			'ordinal_weekday' => null,
-			'month_day'       => null,
-		);
-
-		if ( null === $rrule || '' === $rrule ) {
-			return $parts;
-		}
-
-		if ( ! is_string( $rrule ) ) {
-			return null;
-		}
-
-		$values = array();
-
-		foreach ( explode( ';', strtoupper( $rrule ) ) as $pair ) {
-			list( $name, $value ) = array_pad( explode( '=', $pair, 2 ), 2, '' );
-
-			$supported = array( 'FREQ', 'INTERVAL', 'BYDAY', 'BYMONTHDAY' );
-
-			if ( isset( $values[ $name ] ) || ! in_array( $name, $supported, true ) ) {
-				return null;
-			}
-
-			$values[ $name ] = $value;
-		}
-
-		$parts['frequency'] = in_array( $values['FREQ'] ?? '', Rules::FREQUENCIES, true ) ? $values['FREQ'] : null;
-
-		if ( isset( $values['INTERVAL'] ) ) {
-			$parts['interval'] = ctype_digit( $values['INTERVAL'] ) ? (int) $values['INTERVAL'] : 0;
-		}
-
-		if ( ! $parts['frequency'] || 1 > $parts['interval'] || self::MAX_INTERVAL < $parts['interval'] ) {
-			return null;
-		}
-
-		return self::parse_by_parts( $parts, $values );
-	}
-
-	/**
-	 * Parse `BYDAY` and `BYMONTHDAY` for the frequencies that take them.
-	 *
-	 * @since TBD
-	 *
-	 * @param array<string, mixed>  $parts  The parts parsed so far.
-	 * @param array<string, string> $values The raw `RRULE` values.
-	 * @phpstan-param RulePattern $parts
-	 *
-	 * @return array<string, mixed>|null The parts, or null if `BYDAY` or `BYMONTHDAY` is not supported.
-	 * @phpstan-return RulePattern|null
-	 */
-	protected static function parse_by_parts( array $parts, array $values ): ?array {
-		$by_day       = $values['BYDAY'] ?? null;
-		$by_month_day = $values['BYMONTHDAY'] ?? null;
-
-		if ( 'WEEKLY' === $parts['frequency'] && null === $by_month_day ) {
-			$weekdays = null === $by_day ? array() : explode( ',', $by_day );
-
-			$repeated = count( $weekdays ) !== count( array_unique( $weekdays ) );
-
-			if ( $repeated || array_diff( $weekdays, Rules::WEEKDAYS ) ) {
-				return null;
-			}
-
-			// Kept in week order, so the canonical form doesn't depend on how it was written.
-			$parts['weekdays'] = array_values( array_intersect( Rules::WEEKDAYS, $weekdays ) );
-
-			return $parts;
-		}
-
-		if ( 'MONTHLY' === $parts['frequency'] && ( null === $by_day || null === $by_month_day ) ) {
-			if ( null !== $by_day ) {
-				if ( ! preg_match( '/^(-1|[1-4])(MO|TU|WE|TH|FR|SA|SU)$/', $by_day, $matches ) ) {
-					return null;
-				}
-
-				$parts['ordinal_weekday'] = array( (int) $matches[1], $matches[2] );
-			}
-
-			if ( null !== $by_month_day ) {
-				if ( ! ctype_digit( $by_month_day ) || 1 > (int) $by_month_day || 31 < (int) $by_month_day ) {
-					return null;
-				}
-
-				$parts['month_day'] = (int) $by_month_day;
-			}
-
-			return $parts;
-		}
-
-		$takes_no_by_parts = in_array( $parts['frequency'], array( 'DAILY', 'YEARLY' ), true );
-
-		return ( $takes_no_by_parts && null === $by_day && null === $by_month_day ) ? $parts : null;
-	}
-
-	/**
 	 * Parse the times of day.
 	 *
 	 * @since TBD
@@ -998,10 +946,10 @@ final class Rule {
 			return null;
 		}
 
-		$parsed = self::utc_date( $date );
+		$parsed = DateTimeImmutable::createFromFormat( '!' . self::DATE_FORMAT, $date, new DateTimeZone( 'UTC' ) );
 
-		// The round trip rejects overflowing dates such as 2026-02-31.
-		return $parsed->format( self::DATE_FORMAT ) === $date ? $parsed : null;
+		// The round trip rejects month 13 and overflowing dates such as 2026-02-31.
+		return $parsed && $parsed->format( self::DATE_FORMAT ) === $date ? $parsed : null;
 	}
 
 	/**

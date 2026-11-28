@@ -269,8 +269,8 @@ class Test_Rule extends Base {
 	 *
 	 * @since TBD
 	 *
-	 * @covers ::parse_rrule
-	 * @covers ::parse_by_parts
+	 * @covers \GatherPress\Core\Event\Rrule::parse
+	 * @covers \GatherPress\Core\Event\Rrule::by_parts
 	 *
 	 * @return void
 	 */
@@ -817,5 +817,155 @@ class Test_Rule extends Base {
 
 		$this->assertSame( array(), $this->keys( $rule, '2026-01-01', '2026-12-01' ) );
 		$this->assertSame( array(), $this->keys( $rule, '2027-03-01', '2028-01-01' ) );
+	}
+
+	/**
+	 * Stored values read the way REST reads them, and a bad date or duration makes the row invalid without throwing.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::from_meta
+	 * @covers ::parse_row
+	 * @covers ::parse_date
+	 *
+	 * @return void
+	 */
+	public function test_stored_value_types(): void {
+		$timed = $this->rule(
+			array(
+				'is_all_day' => 'false',
+				'duration'   => 1440,
+			)
+		);
+
+		$this->assertFalse( $timed->is_all_day, "The string 'false' is false, as REST reads it." );
+		$this->assertSame( array( '20:00' ), $timed->times );
+		$this->assertTrue(
+			$this->rule(
+				array(
+					'is_all_day' => '1',
+					'times'      => array(),
+					'duration'   => '1440',
+				)
+			)->is_all_day
+		);
+		$this->assertSame( 120, $this->rule( array( 'duration' => '120' ) )->duration, 'A digit string counts.' );
+
+		foreach ( array( '-0.5', 1.5, '12 minutes', null ) as $duration ) {
+			$this->assertNull( Rule::from_meta( $this->row( array( 'duration' => $duration ) ) ), 'Not an integer.' );
+		}
+
+		$this->assertNull( Rule::from_meta( $this->row( array( 'starts_on' => '2026-13-01' ) ) ), 'Month 13.' );
+		$this->assertNull( Rule::from_meta( $this->row( array( 'ends_on' => '2027-00-10' ) ) ), 'Month 0 is refused.' );
+	}
+
+	/**
+	 * A rule whose next match is many intervals away within the Gregorian cycle is still found.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::period_limit
+	 * @covers ::gcd
+	 * @covers ::can_repeat
+	 *
+	 * @return void
+	 */
+	public function test_search_covers_the_cycle(): void {
+		// Every 301 years from a leap day: 1705, 2006 and 2307 have no Feb 29; 2608 does.
+		$rule = $this->rule(
+			array(
+				'starts_on' => '1404-02-29',
+				'rrule'     => 'FREQ=YEARLY;INTERVAL=301',
+			)
+		);
+
+		$this->assertSame( '2608-02-29', $rule->next_date( $this->utc( '1404-03-01' ) )->format( 'Y-m-d' ) );
+		$this->assertSame( 401, Utility::invoke_hidden_method( $rule, 'period_limit' ), 'A full cycle of 400 years.' );
+		$this->assertSame(
+			3,
+			Utility::invoke_hidden_method(
+				$this->rule( array( 'rrule' => 'FREQ=YEARLY;INTERVAL=200' ) ),
+				'period_limit'
+			),
+			'An interval sharing factors with the cycle repeats sooner.'
+		);
+		$this->assertSame( 4, Utility::invoke_hidden_method( $rule, 'gcd', array( 12, 8 ) ) );
+	}
+
+	/**
+	 * A timed occurrence still running across a spring-forward change is found.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences
+	 * @covers ::next_occurrence
+	 * @covers ::lookback_days
+	 *
+	 * @return void
+	 */
+	public function test_running_occurrence_across_spring_forward(): void {
+		// 23:30 EST on Mar 7 plus 24 elapsed hours ends at 00:30 EDT on Mar 9.
+		$rule = $this->rule(
+			array(
+				'starts_on' => '2026-03-07',
+				'rrule'     => 'FREQ=DAILY',
+				'times'     => array( '23:30' ),
+				'duration'  => 1440,
+			)
+		);
+		$now  = $this->utc( '2026-03-09 04:15' );
+
+		$this->assertSame( '20260307T233000', $rule->next_occurrence( $now, 7, 'scheduled' )->recurrence_id );
+		$this->assertSame( '20260307T233000', $this->keys( $rule, '2026-03-09 04:15', '2026-03-09 04:20' )[0] );
+	}
+
+	/**
+	 * A day's occurrences come in start order even when a gap moves an earlier time past a later one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences_on
+	 *
+	 * @return void
+	 */
+	public function test_gap_day_order(): void {
+		// 02:45 doesn't exist on Mar 8 and starts at 03:45, after 03:15.
+		$rule = $this->rule(
+			array(
+				'starts_on' => '2026-03-08',
+				'rrule'     => null,
+				'times'     => array( '02:45', '03:15' ),
+				'duration'  => 30,
+			)
+		);
+
+		$this->assertSame(
+			array( '20260308T031500', '20260308T034500' ),
+			$this->keys( $rule, '2026-03-08', '2026-03-09' )
+		);
+	}
+
+	/**
+	 * A limit stops the expansion at the earliest occurrences.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences
+	 *
+	 * @return void
+	 */
+	public function test_occurrences_limit(): void {
+		$rule = $this->rule(
+			array(
+				'rrule' => 'FREQ=DAILY',
+				'times' => array( '09:00', '20:00' ),
+			)
+		);
+		$keys = array_map(
+			static fn( Occurrence $occurrence ): string => $occurrence->recurrence_id,
+			$rule->occurrences( $this->utc( '2026-12-01' ), $this->utc( '2027-12-01' ), 7, 'scheduled', 3 )
+		);
+
+		$this->assertSame( array( '20261211T090000', '20261211T200000', '20261212T090000' ), $keys );
 	}
 }

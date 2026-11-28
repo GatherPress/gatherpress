@@ -125,7 +125,13 @@ final class Occurrences {
 			$occurrences = array();
 
 			foreach ( $rules as $rule ) {
-				$from_rule   = $rule->occurrences( $from, $to, $this->post_id(), $this->status() );
+				$from_rule   = $rule->occurrences(
+					$from,
+					$to,
+					$this->post_id(),
+					$this->status(),
+					self::MAX_OCCURRENCES
+				);
 				$occurrences = array_merge( $occurrences, $from_rule );
 			}
 
@@ -153,18 +159,16 @@ final class Occurrences {
 		 */
 		$occurrences = apply_filters( 'gatherpress_event_occurrences', $occurrences, $this->post_id(), $from, $to );
 
-		usort(
-			$occurrences,
-			static function ( Occurrence $a, Occurrence $b ): int {
-				return $a->start <=> $b->start;
-			}
-		);
+		usort( $occurrences, array( self::class, 'compare_start' ) );
 
 		return $occurrences;
 	}
 
 	/**
 	 * One of the event's occurrences, by its key.
+	 *
+	 * When rules in different timezones give two occurrences one key, the
+	 * earlier one is returned, matching `primary()`.
 	 *
 	 * @since TBD
 	 *
@@ -173,16 +177,16 @@ final class Occurrences {
 	 * @return Occurrence|null The occurrence, or null if the event has none with that key.
 	 */
 	public function find( string $recurrence_id ): ?Occurrence {
-		$occurrence = null;
-		$rules      = $this->rules();
+		$matches = array();
+		$rules   = $this->rules();
 
 		foreach ( $rules as $rule ) {
-			$occurrence = $rule->find( $recurrence_id, $this->post_id(), $this->status() );
-
-			if ( $occurrence ) {
-				break;
-			}
+			$matches[] = $rule->find( $recurrence_id, $this->post_id(), $this->status() );
 		}
+
+		// Rules in different timezones can give two occurrences one key. The
+		// earliest wins, as it does for primary(), so a key always names one date.
+		$occurrence = self::merge( array_filter( $matches ) )[0] ?? null;
 
 		if ( ! $rules ) {
 			$single     = $this->single();
@@ -343,14 +347,23 @@ final class Occurrences {
 
 		$unique = array_values( $unique );
 
-		usort(
-			$unique,
-			static function ( Occurrence $a, Occurrence $b ): int {
-				return $a->start <=> $b->start;
-			}
-		);
+		usort( $unique, array( self::class, 'compare_start' ) );
 
 		return $unique;
+	}
+
+	/**
+	 * Compare two occurrences by start, for sorting.
+	 *
+	 * @since TBD
+	 *
+	 * @param Occurrence $a An occurrence.
+	 * @param Occurrence $b Another occurrence.
+	 *
+	 * @return int Negative, zero or positive as `$a` starts before, with or after `$b`.
+	 */
+	public static function compare_start( Occurrence $a, Occurrence $b ): int {
+		return $a->start <=> $b->start;
 	}
 
 	/**

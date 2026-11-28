@@ -596,6 +596,8 @@ class Test_Occurrences extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::in_range
+	 * @covers ::find
+	 * @covers ::compare_start
 	 * @covers ::merge
 	 * @covers ::status
 	 *
@@ -643,6 +645,11 @@ class Test_Occurrences extends Base {
 		$first = $this->occurrences( $post_id )->in_range( $this->utc( '2026-12-01' ), $this->utc( '2027-01-15' ) )[0];
 
 		$this->assertSame( 'scheduled', $first->status, 'Each date takes the event status.' );
+		$this->assertSame(
+			'Europe/Berlin',
+			$this->occurrences( $post_id )->find( '20261211T200000' )->start->getTimezone()->getName(),
+			'A key two rules share names the earlier date, as primary() would pick.'
+		);
 	}
 
 	/**
