@@ -62,6 +62,7 @@ final class Meta {
 		'gatherpress_datetime_end',
 		'gatherpress_datetime_end_gmt',
 		'gatherpress_timezone',
+		Rules::META_KEY,
 		'geo_latitude',
 		'geo_longitude',
 		'geo_address',
@@ -206,6 +207,35 @@ final class Meta {
 				'single'            => true,
 				'type'              => 'string',
 				'default'           => '',
+			),
+		);
+
+		// One row per repeat rule. Read-only until rules have a write API that
+		// keeps a schedule's past intact.
+		$event_date_meta[ Rules::META_KEY ] = array(
+			'auth_callback' => '__return_false',
+			'single'        => false,
+			'type'          => 'object',
+			'show_in_rest'  => array(
+				'schema' => array(
+					'type'                 => 'object',
+					// WordPress defaults meta objects to no extra keys, which would turn
+					// a row with a key added later, such as a venue, into null.
+					'additionalProperties' => true,
+					'properties'           => array(
+						'change_id'  => array( 'type' => 'string' ),
+						'starts_on'  => array( 'type' => 'string' ),
+						'ends_on'    => array( 'type' => array( 'string', 'null' ) ),
+						'rrule'      => array( 'type' => array( 'string', 'null' ) ),
+						'is_all_day' => array( 'type' => 'boolean' ),
+						'times'      => array(
+							'type'  => 'array',
+							'items' => array( 'type' => 'string' ),
+						),
+						'timezone'   => array( 'type' => 'string' ),
+						'duration'   => array( 'type' => 'integer' ),
+					),
+				),
 			),
 		);
 
@@ -359,6 +389,7 @@ final class Meta {
 				'gatherpress_datetime_end',
 				'gatherpress_datetime_end_gmt',
 				'gatherpress_timezone',
+				Rules::META_KEY,
 			),
 			Geo_Sync::FIELDS
 		);
@@ -412,7 +443,8 @@ final class Meta {
 
 		foreach ( $keys as $key ) {
 			if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
-				$response->data['meta'][ $key ] = '';
+				// The rule key holds a list of rows, so it hides as an empty list.
+				$response->data['meta'][ $key ] = Rules::META_KEY === $key ? array() : '';
 			}
 		}
 

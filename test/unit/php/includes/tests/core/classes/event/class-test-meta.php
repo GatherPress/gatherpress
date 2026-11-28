@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
+use GatherPress\Core\Event\Rules;
 use GatherPress\Core\Geo_Sync;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -356,6 +357,7 @@ class Test_Meta extends Base {
 				'geo_address'                    => '123 Main St',
 				'geo_public'                     => 1,
 				'gatherpress_online_event_link'  => 'https://example.com',
+				Rules::META_KEY                  => array( array( 'starts_on' => '2025-01-01' ) ),
 			)
 		);
 
@@ -378,6 +380,7 @@ class Test_Meta extends Base {
 		$this->assertArrayNotHasKey( 'geo_longitude', $filtered_meta );
 		$this->assertArrayNotHasKey( 'geo_address', $filtered_meta );
 		$this->assertArrayNotHasKey( 'geo_public', $filtered_meta );
+		$this->assertArrayNotHasKey( Rules::META_KEY, $filtered_meta, 'Rules are read-only through REST for now.' );
 		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
 		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
 	}
@@ -846,5 +849,118 @@ class Test_Meta extends Base {
 		$this->assertSame( $meta, $hide( $at_protected ), 'An Editor sees the location.' );
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * The repeat rule meta registers as read-only rows, hidden on protected events.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_registers_the_rule_meta(): void {
+		unregister_post_meta( Event::POST_TYPE, Rules::META_KEY );
+
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
+
+		$this->assertArrayHasKey( Rules::META_KEY, $meta );
+		$this->assertFalse( $meta[ Rules::META_KEY ]['single'], 'One meta row per rule.' );
+		$this->assertSame( 'object', $meta[ Rules::META_KEY ]['type'] );
+		$this->assertSame( '__return_false', $meta[ Rules::META_KEY ]['auth_callback'], 'Read-only for now.' );
+		$this->assertSame(
+			array( 'change_id', 'starts_on', 'ends_on', 'rrule', 'is_all_day', 'times', 'timezone', 'duration' ),
+			array_keys( $meta[ Rules::META_KEY ]['show_in_rest']['schema']['properties'] )
+		);
+		$this->assertContains( Rules::META_KEY, Meta::PASSWORD_PROTECTED_META, 'Rules reveal dates.' );
+	}
+
+	/**
+	 * A password-protected event's rules read as an empty list without the password, and in full with it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::hide_password_protected_meta
+	 *
+	 * @return void
+	 */
+	public function test_rest_hides_the_rule_meta_behind_a_password(): void {
+		unregister_post_meta( Event::POST_TYPE, Rules::META_KEY );
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		add_post_meta(
+			$post_id,
+			Rules::META_KEY,
+			array(
+				'starts_on' => '2026-12-11',
+				'rrule'     => 'FREQ=MONTHLY;BYDAY=2FR',
+				'times'     => array( '20:00' ),
+				'timezone'  => 'America/New_York',
+				'duration'  => 120,
+			)
+		);
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'GET', rest_get_route_for_post( $post_id ) );
+
+		$this->assertSame( array(), rest_do_request( $request )->get_data()['meta'][ Rules::META_KEY ] );
+
+		$request->set_param( 'password', 'secret' );
+
+		$rules = rest_do_request( $request )->get_data()['meta'][ Rules::META_KEY ];
+
+		$this->assertCount( 1, $rules );
+		$this->assertSame( 'FREQ=MONTHLY;BYDAY=2FR', $rules[0]['rrule'] );
+	}
+
+	/**
+	 * The REST API reads every rule row, including ones with keys added later.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_rest_reads_the_rule_meta(): void {
+		// Another test can leave the key unregistered, and registrations persist between tests.
+		unregister_post_meta( Event::POST_TYPE, Rules::META_KEY );
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$row     = array(
+			'starts_on' => '2026-12-11',
+			'rrule'     => 'FREQ=MONTHLY;BYDAY=2FR',
+			'times'     => array( '20:00' ),
+			'timezone'  => 'America/New_York',
+			'duration'  => 120,
+		);
+
+		add_post_meta( $post_id, Rules::META_KEY, $row );
+		add_post_meta( $post_id, Rules::META_KEY, array_merge( $row, array( 'venue' => 9 ) ) );
+
+		$request  = new WP_REST_Request( 'GET', rest_get_route_for_post( $post_id ) );
+		$response = rest_do_request( $request );
+		$rules    = $response->get_data()['meta'][ Rules::META_KEY ];
+
+		$this->assertCount( 2, $rules );
+		$this->assertSame( 'FREQ=MONTHLY;BYDAY=2FR', $rules[0]['rrule'] );
+		$this->assertNotNull( $rules[1], 'A row with a key the schema does not list still reads.' );
 	}
 }

@@ -180,6 +180,17 @@ class Event {
 	}
 
 	/**
+	 * The event's repeat rules.
+	 *
+	 * @since TBD
+	 *
+	 * @return Rules The event's rules.
+	 */
+	public function rules(): Rules {
+		return new Rules( $this );
+	}
+
+	/**
 	 * Whether an event's blocks should render for the current viewer.
 	 *
 	 * Blocks stay off an event nobody is meant to see yet, but an unpublished
