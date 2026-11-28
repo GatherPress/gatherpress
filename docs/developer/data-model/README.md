@@ -157,7 +157,19 @@ CREATE TABLE {$prefix}gatherpress_occurrence_index (
 
 **Each site builds its own on its first request** after updating, not on an admin visit: one statement copies every event in from `gatherpress_events`, then events with rules are expanded. `Occurrence_Index::is_ready()` says whether a site's index is built. The table is dropped when a site is deleted and on uninstall.
 
-Queries don't join the index yet. That comes next, together with each row showing its own date in loops and the calendar.
+### Queries list each date
+
+Front-end event queries join the index instead of `gatherpress_events`, so a repeating event comes back once per date: upcoming and past lists, the month and date filters, ordering by date, Query Loops, and the calendar. Pagination counts dates. The index has the events table's columns, so every condition GatherPress builds applies to each date, and a query grouped by post, such as one filtering by several terms, is grouped by date too.
+
+These stay one row per event:
+
+- Queries for IDs (`fields => ids`), since duplicate IDs carry no dates. Reminders, the iCal feed, abilities and `Event\Query::get_events_list()` query IDs.
+- The admin, REST requests, feeds, and an event's own page.
+- Any query that sets `gatherpress_occurrences` to false. Setting it to true turns the index on where it would otherwise be off.
+
+Until a site's index is built, queries keep using `gatherpress_events`.
+
+**Each row knows its date.** A row selects its date as `gatherpress_occurrence_*` properties on the post. While the loop's global `$post` is that row, `Event::get_datetime()` and `Event::is_all_day()` return that date, so the Event Date and Add to Calendar blocks show it. A nested loop or `wp_reset_postdata()` puts the outer row back. `Event::get_saved_datetime()` always returns the saved dates, the series' first date. `Event\Current_Occurrence` reads the row and lets the calendar, which renders entries from plain posts, set an entry's date while it renders.
 
 ## Occurrences
 

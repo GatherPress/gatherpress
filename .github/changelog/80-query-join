@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+A repeating event now appears once per date in event lists, Query Loops and the calendar, each showing its own date. The admin, REST, feeds and an event's own page still list it once.

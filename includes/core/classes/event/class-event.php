@@ -680,15 +680,14 @@ class Event {
 	 * Whether this event runs for whole days rather than at a time.
 	 *
 	 * @since 0.36.0
+	 * @since TBD    Reads the loop row's date for a repeating event.
 	 *
 	 * @return bool True when the event is all day.
 	 */
 	public function is_all_day(): bool {
-		if ( ! $this->post ) {
-			return false;
-		}
-
-		return (bool) get_post_meta( $this->post->ID, 'gatherpress_is_all_day', true );
+		// Without a post the ID is 0, which has no meta, so the event isn't all day.
+		return Current_Occurrence::get_instance()->is_all_day( $this->post )
+			?? (bool) get_post_meta( $this->post->ID ?? 0, 'gatherpress_is_all_day', true );
 	}
 
 	/**
@@ -924,9 +923,11 @@ class Event {
 	 *
 	 * Fetches the event's start and end dates/times (local and GMT) along with
 	 * timezone information from post meta. Datetime values are validated before
-	 * being returned.
+	 * being returned. In a loop over a query that joined the date index, a
+	 * repeating event returns the date of the current row instead.
 	 *
 	 * @since 0.34.0
+	 * @since TBD    Returns the loop row's date for a repeating event.
 	 *
 	 * @return EventDatetime An associative array detailing the event's schedule and timezone, potentially
 	 * adjusted for user-specific preferences:
@@ -937,6 +938,20 @@ class Event {
 	 *     - 'timezone'           (string) The timezone of the event, adjusted per user or site settings.
 	 */
 	public function get_datetime(): array {
+		return Current_Occurrence::get_instance()->get_datetime( $this->post ) ?? $this->get_saved_datetime();
+	}
+
+	/**
+	 * The event's saved dates, ignoring any loop row's date.
+	 *
+	 * The saved dates are the series' first date for a repeating event. Code
+	 * that writes dates, or builds from the first one, reads these.
+	 *
+	 * @since TBD
+	 *
+	 * @return EventDatetime The saved dates and timezone, with the timezone filtered as in `get_datetime()`.
+	 */
+	public function get_saved_datetime(): array {
 		$data = array(
 			'datetime_start'     => '',
 			'datetime_start_gmt' => '',

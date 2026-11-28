@@ -340,7 +340,7 @@ final class Occurrence_Index {
 		}
 
 		$event = new Event( $post_id );
-		$data  = $event->post ? $event->get_datetime() : array();
+		$data  = $event->post ? $event->get_saved_datetime() : array();
 		$first = empty( $data['datetime_start_gmt'] ) ? null : $this->utc( $data['datetime_start_gmt'] );
 		$from  = $this->rebuild_from( $event );
 

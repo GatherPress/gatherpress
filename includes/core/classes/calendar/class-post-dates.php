@@ -17,7 +17,8 @@ use WP_Post;
 /**
  * Class Post_Dates.
  *
- * Events use their event dates. Other posts use their publish date.
+ * Events use their event dates, or one date of a repeating event. Other
+ * posts use their publish date.
  *
  * @since 0.37.0
  */
@@ -89,17 +90,23 @@ final class Post_Dates {
 	 * Constructor.
 	 *
 	 * @since 0.37.0
+	 * @since TBD    Takes one date of a repeating event.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int                        $post_id    Post ID.
+	 * @param array<string, string>|null $occurrence One date of the event, as the date index gives it, or
+	 *                                               null for its saved dates.
 	 */
-	public function __construct( public readonly int $post_id ) {
+	public function __construct( public readonly int $post_id, public readonly ?array $occurrence = null ) {
 		$event     = $post_id > 0 ? new Event( $post_id ) : null;
-		$datetimes = $event ? $event->get_datetime() : array();
+		$datetimes = $occurrence ?? ( $event ? $event->get_datetime() : array() );
 		$start     = $datetimes['datetime_start'] ?? '';
 		$end       = $datetimes['datetime_end'] ?? '';
 
-		$this->is_event   = '' !== $start;
-		$this->is_all_day = $event && $event->is_all_day();
+		$this->is_event = '' !== $start;
+		// A date's key has no time when it is all day.
+		$this->is_all_day = null === $occurrence
+			? $event && $event->is_all_day()
+			: 8 === strlen( $occurrence['recurrence_id'] ?? '' );
 
 		if ( ! $this->is_event ) {
 			$post  = get_post( $post_id );

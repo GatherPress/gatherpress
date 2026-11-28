@@ -15,6 +15,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
 use WP_Block;
 use WP_Post;
+use GatherPress\Core\Event\Current_Occurrence;
 use WP_Query;
 
 /**
@@ -209,33 +210,35 @@ final class Query_Builder {
 	}
 
 	/**
-	 * Queries the IDs of the posts of the calendar.
+	 * Queries the entries of the calendar: each post, and each date of a repeating event.
 	 *
-	 * @since 0.37.0
+	 * The query joins the date index, so a repeating event comes back once
+	 * per date in range, each row with its date.
 	 *
-	 * @return list<int> Post IDs.
+	 * @since TBD
+	 *
+	 * @return list<array{post_id: int, occurrence: array<string, string>|null}> The entries, with the date of
+	 *                                                                          each event row.
 	 */
-	public function get_post_ids(): array {
+	public function get_entries(): array {
 		$query_args = $this->get_args();
 
-		// The calendar needs only the IDs, and pages by date range, so it needs no post count.
-		$query_args['fields']        = 'ids';
-		$query_args['no_found_rows'] = true;
-		$query                       = new WP_Query( $query_args );
+		// The calendar pages by date range, so it needs no post count.
+		$query_args['no_found_rows']                  = true;
+		$query_args[ Event\Query::OCCURRENCES_PARAM ] = true;
+		$query                                        = new WP_Query( $query_args );
+		$entries                                      = array();
 
-		$post_ids = array_values(
-			array_map(
-				static function ( $post ): int {
-					return $post instanceof WP_Post ? $post->ID : (int) $post;
-				},
-				$query->posts
-			)
-		);
+		foreach ( $query->posts as $post ) {
+			if ( $post instanceof WP_Post ) {
+				$entries[] = array(
+					'post_id'    => $post->ID,
+					'occurrence' => Current_Occurrence::from_post( $post ),
+				);
+			}
+		}
 
-		// Batch-prime caches so subsequent get_post() and get_post_meta() calls are memory hits.
-		_prime_post_caches( $post_ids );
-
-		return $post_ids;
+		return $entries;
 	}
 
 	/**

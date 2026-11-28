@@ -108,8 +108,8 @@ final class Calendar extends Base {
 		$this->block->context['gatherpress/showWeekends']   = $date_range->week->show_weekends;
 		$this->block->context['gatherpress/timeGridConfig'] = $time_grid;
 
-		$post_ids      = ( new Query_Builder( $this->block, $date_range ) )->get_post_ids();
-		$posts_by_date = ( new Post_Organizer( $date_range, $time_grid ) )->organize( $post_ids );
+		$entries       = ( new Query_Builder( $this->block, $date_range ) )->get_entries();
+		$posts_by_date = ( new Post_Organizer( $date_range, $time_grid ) )->organize( $entries );
 		$calendar_data = ( new Structure_Builder( $date_range ) )->build( $posts_by_date );
 		$renderer      = new Html_Renderer( $this->block, $date_range, $time_grid );
 

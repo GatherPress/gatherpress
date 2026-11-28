@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Calendar\Style_Processor;
 use GatherPress\Core\Calendar\Time_Grid;
+use GatherPress\Core\Event\Current_Occurrence;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 use WP_Post;
@@ -312,6 +313,13 @@ final class Calendar_Entries {
 
 		setup_postdata( $post );
 
+		// The entry is one date of a repeating event, so its blocks show that date.
+		$occurrence = is_array( $span_data['occurrence'] ?? null ) ? $span_data['occurrence'] : null;
+
+		if ( $occurrence ) {
+			Current_Occurrence::get_instance()->set( $post->ID, $occurrence );
+		}
+
 		/**
 		 * Parsed inner blocks of the entry template.
 		 *
@@ -321,6 +329,10 @@ final class Calendar_Entries {
 			? $block->parsed_block['innerBlocks']
 			: array();
 		$inner_content = $this->render_entry_template( $inner_blocks, $post->ID, $post->post_type, $span_data );
+
+		if ( $occurrence ) {
+			Current_Occurrence::get_instance()->clear( $post->ID );
+		}
 
 		wp_reset_postdata();
 

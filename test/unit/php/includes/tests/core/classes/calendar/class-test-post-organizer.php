@@ -109,6 +109,7 @@ class Test_Post_Organizer extends Base {
 				'2026-10-15' => array(
 					array(
 						'id'         => $post_id,
+						'occurrence' => null,
 						'span'       => 'single',
 						'day_index'  => 1,
 						'total_days' => 1,
@@ -143,6 +144,7 @@ class Test_Post_Organizer extends Base {
 		$this->assertSame(
 			array(
 				'id'         => $event_id,
+				'occurrence' => null,
 				'span'       => 'middle',
 				'day_index'  => 639,
 				'total_days' => 730,
@@ -323,6 +325,7 @@ class Test_Post_Organizer extends Base {
 		$this->assertSame(
 			array(
 				'id'         => $five_days,
+				'occurrence' => null,
 				'span'       => 'middle',
 				'day_index'  => 3,
 				'total_days' => 5,
@@ -394,6 +397,7 @@ class Test_Post_Organizer extends Base {
 		$this->assertSame(
 			array(
 				'id'             => $first,
+				'occurrence'     => null,
 				'span'           => 'single',
 				'day_index'      => 1,
 				'total_days'     => 1,
@@ -455,5 +459,41 @@ class Test_Post_Organizer extends Base {
 			$columns,
 			'Failed to assert B and C, which overlap, get different columns.'
 		);
+	}
+
+	/**
+	 * Entries with a date of a repeating event go on that date and carry it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::organize
+	 * @covers ::get_spans
+	 * @covers ::allocate_ribbon_entry
+	 *
+	 * @return void
+	 */
+	public function test_organize_entries_with_dates(): void {
+		$post_id    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$organizer  = $this->get_organizer( '2026-10-01', '2026-10-31' );
+		$occurrence = array(
+			'recurrence_id'      => '20261023T100000',
+			'datetime_start'     => '2026-10-23 10:00:00',
+			'datetime_start_gmt' => '2026-10-23 10:00:00',
+			'datetime_end'       => '2026-10-23 11:00:00',
+			'datetime_end_gmt'   => '2026-10-23 11:00:00',
+			'timezone'           => 'UTC',
+		);
+		$entries    = $organizer->organize(
+			array(
+				array(
+					'post_id'    => $post_id,
+					'occurrence' => $occurrence,
+				),
+			)
+		);
+
+		$this->assertSame( array( '2026-10-23' ), array_keys( $entries ) );
+		$this->assertSame( $post_id, $entries['2026-10-23'][0]['id'] );
+		$this->assertSame( $occurrence, $entries['2026-10-23'][0]['occurrence'] );
 	}
 }
