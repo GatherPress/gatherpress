@@ -252,7 +252,12 @@ final class Admin_List {
 	 * in the events table (no date set yet) are excluded from both
 	 * buckets — they only appear under the All view.
 	 *
+	 * Once the date index is built, an event counts as upcoming while any
+	 * of its dates is, and as past once any of them is, so a running
+	 * repeating event counts in both, as it lists in both.
+	 *
 	 * @since 0.34.0
+	 * @since TBD    Counts a repeating event by all of its dates.
 	 *
 	 * @param string $post_type The event post type to count.
 	 *
@@ -265,7 +270,7 @@ final class Admin_List {
 
 		global $wpdb;
 
-		$table   = Event::table();
+		$table   = Occurrence_Index::get_instance()->is_ready() ? Occurrence_Index::table() : Event::table();
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
 		// Upcoming: events whose end time is still in the future (includes
@@ -274,9 +279,10 @@ final class Admin_List {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$upcoming = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(DISTINCT %i.ID) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
 				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt >= %s",
+				$wpdb->posts,
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -295,9 +301,10 @@ final class Admin_List {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$past = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(DISTINCT %i.ID) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
 				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt < %s",
+				$wpdb->posts,
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,

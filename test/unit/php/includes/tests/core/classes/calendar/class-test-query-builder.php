@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Calendar;
 
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Calendar\Date_Range;
 use GatherPress\Core\Calendar\Query_Builder;
 use GatherPress\Core\Event;
@@ -287,13 +288,13 @@ class Test_Query_Builder extends Base {
 	}
 
 	/**
-	 * Coverage for get_post_ids.
+	 * Coverage for get_entries.
 	 *
-	 * @covers ::get_post_ids
+	 * @covers ::get_entries
 	 *
 	 * @return void
 	 */
-	public function test_get_post_ids(): void {
+	public function test_get_entries(): void {
 		$post_id = $this->mock->post(
 			array(
 				'post_title' => 'Zyxcalendarids',
@@ -307,24 +308,84 @@ class Test_Query_Builder extends Base {
 		};
 		add_action( 'pre_get_posts', $capture );
 
-		$query    = array(
+		$query   = array(
 			'postType' => 'post',
 			'search'   => 'Zyxcalendarids',
 		);
-		$post_ids = ( new Query_Builder( $this->get_block( $query ), $range ) )->get_post_ids();
+		$entries = ( new Query_Builder( $this->get_block( $query ), $range ) )->get_entries();
 
 		remove_action( 'pre_get_posts', $capture );
 
-		$this->assertSame( array( $post_id ), $post_ids );
-		$this->assertSame( 'ids', $vars['fields'] );
+		$this->assertSame(
+			array(
+				array(
+					'post_id'    => $post_id,
+					'occurrence' => null,
+				),
+			),
+			$entries,
+			'A post has no date of its own.'
+		);
+		$this->assertTrue( $vars[ Event\Query::OCCURRENCES_PARAM ], 'The query joins the date index.' );
 		$this->assertTrue( $vars['no_found_rows'], 'Failed to assert the query counts no rows.' );
 
 		$query['search'] = 'Zyxcalendarnothing';
 
 		$this->assertSame(
 			array(),
-			( new Query_Builder( $this->get_block( $query ), $range ) )->get_post_ids(),
-			'Failed to assert an empty query gives no IDs.'
+			( new Query_Builder( $this->get_block( $query ), $range ) )->get_entries(),
+			'Failed to assert an empty query gives no entries.'
 		);
+	}
+
+	/**
+	 * A repeating event comes back once per date in the calendar's range.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_entries
+	 *
+	 * @return void
+	 */
+	public function test_get_entries_for_a_repeating_event(): void {
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+		$month   = new \DateTimeImmutable( 'first day of next month', new \DateTimeZone( 'UTC' ) );
+
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				array(
+					'starts_on' => gmdate( 'Y-m-d', strtotime( '+1 day' ) ),
+					'rrule'     => 'FREQ=DAILY',
+					'times'     => array( '12:00' ),
+					'timezone'  => 'UTC',
+					'duration'  => 60,
+				),
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$range   = Date_Range::from_attributes( array( 'selectedDate' => $month->format( 'Y-m-d' ) ) );
+		$block   = $this->get_block( array( 'postType' => Event::POST_TYPE ) );
+		$entries = ( new Query_Builder( $block, $range ) )->get_entries();
+		$days    = array_unique(
+			array_map(
+				static fn( array $entry ): string => substr( $entry['occurrence']['datetime_start'], 0, 10 ),
+				array_filter( $entries, static fn( array $entry ): bool => $post_id === $entry['post_id'] )
+			)
+		);
+
+		$this->assertGreaterThanOrEqual( 28, count( $days ), 'A daily event fills the month, a row per day.' );
 	}
 }

@@ -377,7 +377,7 @@ final class Rules {
 	 *                         or one with seconds.
 	 */
 	protected function seed( string $change_id ): array|WP_Error {
-		$data = $this->event->get_datetime();
+		$data = $this->event->get_saved_datetime();
 
 		if ( empty( $data['datetime_start'] ) || empty( $data['datetime_end'] ) ) {
 			return array();

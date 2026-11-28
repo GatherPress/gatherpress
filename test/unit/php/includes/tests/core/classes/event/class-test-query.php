@@ -10,6 +10,8 @@ namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Current_Occurrence;
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
@@ -55,6 +57,12 @@ class Test_Query extends Base {
 				'name'     => 'posts_clauses',
 				'priority' => 10,
 				'callback' => array( $instance, 'adjust_event_date_window_sql' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'posts_clauses',
+				'priority' => 11,
+				'callback' => array( $instance, 'join_occurrence_index' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -4128,5 +4136,307 @@ class Test_Query extends Base {
 		);
 
 		return $post_id;
+	}
+
+	/**
+	 * A published weekly event starting tomorrow, indexed.
+	 *
+	 * @since TBD
+	 *
+	 * @return int The post ID.
+	 */
+	protected function weekly_event(): int {
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+		$tomorrow = new \DateTimeImmutable( 'tomorrow', new \DateTimeZone( 'America/New_York' ) );
+
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				array(
+					'starts_on' => $tomorrow->format( 'Y-m-d' ),
+					'rrule'     => 'FREQ=WEEKLY',
+					'times'     => array( '19:00' ),
+					'timezone'  => 'America/New_York',
+					'duration'  => 90,
+				),
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * An upcoming list returns a repeating event once per date, each row with its date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::join_occurrence_index
+	 * @covers ::uses_occurrence_index
+	 *
+	 * @return void
+	 */
+	public function test_upcoming_list_has_a_row_per_date(): void {
+		$post_id = $this->weekly_event();
+		$query   = new WP_Query(
+			array(
+				'post_type'              => Event::POST_TYPE,
+				Query::EVENT_QUERY_PARAM => 'upcoming',
+				'orderby'                => 'datetime',
+				'order'                  => 'ASC',
+				'posts_per_page'         => 3,
+				'post__in'               => array( $post_id ),
+			)
+		);
+		$starts  = array_map(
+			static fn( \WP_Post $post ): string => Current_Occurrence::from_post( $post )['datetime_start'],
+			$query->posts
+		);
+		$first   = new \DateTimeImmutable( 'tomorrow', new \DateTimeZone( 'America/New_York' ) );
+
+		$this->assertSame( array( $post_id, $post_id, $post_id ), wp_list_pluck( $query->posts, 'ID' ) );
+		$this->assertSame(
+			array(
+				$first->format( 'Y-m-d' ) . ' 19:00:00',
+				$first->modify( '+7 days' )->format( 'Y-m-d' ) . ' 19:00:00',
+				$first->modify( '+14 days' )->format( 'Y-m-d' ) . ' 19:00:00',
+			),
+			$starts
+		);
+		$this->assertGreaterThan( 50, $query->found_posts, 'Pagination counts dates.' );
+	}
+
+	/**
+	 * Filtering by several terms groups by date too, so a series isn't folded into one row.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::join_occurrence_index
+	 *
+	 * @return void
+	 */
+	public function test_grouped_query_keeps_dates(): void {
+		$post_id = $this->weekly_event();
+		$terms   = array(
+			$this->factory()->term->create( array( 'taxonomy' => Topic::TAXONOMY ) ),
+			$this->factory()->term->create( array( 'taxonomy' => Topic::TAXONOMY ) ),
+		);
+
+		wp_set_object_terms( $post_id, $terms, Topic::TAXONOMY );
+
+		$query = new WP_Query(
+			array(
+				'post_type'              => Event::POST_TYPE,
+				Query::EVENT_QUERY_PARAM => 'upcoming',
+				'posts_per_page'         => 5,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'tax_query'              => array(
+					array(
+						'taxonomy' => Topic::TAXONOMY,
+						'terms'    => $terms,
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString( 'GROUP BY', $query->request );
+		$this->assertCount( 5, $query->posts, 'Each date is a row, though the query groups.' );
+	}
+
+	/**
+	 * The join leaves a query alone when it has no events join or doesn't use the index.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::join_occurrence_index
+	 *
+	 * @return void
+	 */
+	public function test_join_occurrence_index_leaves_other_queries(): void {
+		$instance = Query::get_instance();
+		$pieces   = array(
+			'join'    => '',
+			'where'   => '',
+			'fields'  => 'wp_posts.*',
+			'groupby' => '',
+		);
+
+		$this->assertSame( $pieces, $instance->join_occurrence_index( $pieces, new WP_Query() ), 'No events join.' );
+
+		$joined = array_merge( $pieces, array( 'join' => ' LEFT JOIN ' . Event::table() . ' ON 1=1' ) );
+		$query  = new WP_Query();
+
+		$query->set( Query::OCCURRENCES_PARAM, false );
+
+		$this->assertSame( $joined, $instance->join_occurrence_index( $joined, $query ), 'Turned off.' );
+	}
+
+	/**
+	 * Which queries list repeating events once per date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::uses_occurrence_index
+	 *
+	 * @return void
+	 */
+	public function test_uses_occurrence_index(): void {
+		$instance = Query::get_instance();
+		$uses     = static function ( array $vars ) use ( $instance ): bool {
+			$query = new WP_Query();
+
+			foreach ( $vars as $key => $value ) {
+				$query->set( $key, $value );
+			}
+
+			return Utility::invoke_hidden_method( $instance, 'uses_occurrence_index', array( $query ) );
+		};
+
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$this->assertTrue( $uses( array() ), 'A front-end list uses it.' );
+		$this->assertFalse( $uses( array( 'fields' => 'ids' ) ), 'Duplicate IDs carry no dates.' );
+		$this->assertFalse( $uses( array( Query::OCCURRENCES_PARAM => false ) ), 'Turned off.' );
+
+		$feed = new WP_Query();
+
+		$feed->is_feed = true;
+		$this->assertFalse( Utility::invoke_hidden_method( $instance, 'uses_occurrence_index', array( $feed ) ) );
+
+		$single = new WP_Query();
+
+		$single->is_singular = true;
+		$this->assertFalse( Utility::invoke_hidden_method( $instance, 'uses_occurrence_index', array( $single ) ) );
+
+		set_current_screen( 'edit.php' );
+		$this->assertFalse( $uses( array() ), 'The admin lists events once.' );
+		$this->assertTrue( $uses( array( Query::OCCURRENCES_PARAM => true ) ), 'Unless asked to.' );
+		set_current_screen( 'front' );
+
+		delete_option( Occurrence_Index::SCHEMA_OPTION );
+		$this->assertFalse( $uses( array( Query::OCCURRENCES_PARAM => true ) ), 'Not before the index is built.' );
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+	}
+
+	/**
+	 * A published weekly event that started some days ago, indexed.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $days_ago Days since its first date.
+	 *
+	 * @return int The post ID.
+	 */
+	protected function running_event( int $days_ago ): int {
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+		$start   = new \DateTimeImmutable(
+			sprintf( 'today -%d days', $days_ago ),
+			new \DateTimeZone( 'America/New_York' )
+		);
+
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				array(
+					'starts_on' => $start->format( 'Y-m-d' ),
+					'rrule'     => 'FREQ=WEEKLY',
+					'times'     => array( '19:00' ),
+					'timezone'  => 'America/New_York',
+					'duration'  => 90,
+				),
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * A one-row list finds a running series through the index and orders by its next or latest date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::adjust_event_sql
+	 * @covers ::lists_once_by_index
+	 * @covers ::filter_by_index
+	 *
+	 * @return void
+	 */
+	public function test_one_row_lists_read_the_index(): void {
+		$older = $this->running_event( 20 );
+		$newer = $this->running_event( 3 );
+		$list  = static function ( string $type ) use ( $older, $newer ): array {
+			return ( new WP_Query(
+				array(
+					'post_type'              => Event::POST_TYPE,
+					Query::EVENT_QUERY_PARAM => $type,
+					'fields'                 => 'ids',
+					'orderby'                => 'datetime',
+					'order'                  => 'upcoming' === $type ? 'ASC' : 'DESC',
+					'post__in'               => array( $older, $newer ),
+				)
+			) )->posts;
+		};
+
+		// The newer series' next date is 4 days out; the older one's, 1 day out.
+		$this->assertSame( array( $older, $newer ), $list( 'upcoming' ), 'Both upcoming, soonest next first.' );
+		// The newer series' latest past date is 3 days ago; the older one's, 6 days ago.
+		$this->assertSame( array( $newer, $older ), $list( 'past' ), 'Both are past too, latest past date first.' );
+	}
+
+	/**
+	 * A per-date list breaks ties on the event and key, and a grouped one groups by the whole key.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::join_occurrence_index
+	 *
+	 * @return void
+	 */
+	public function test_join_occurrence_index_tiebreak_and_grouping(): void {
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$index  = Occurrence_Index::table();
+		$pieces = Query::get_instance()->join_occurrence_index(
+			array(
+				'join'    => ' LEFT JOIN ' . Event::table() . ' ON 1=1',
+				'where'   => '',
+				'fields'  => 'wp_posts.*',
+				'groupby' => 'wp_posts.ID',
+				'orderby' => Event::table() . '.datetime_start_gmt ASC',
+			),
+			new WP_Query()
+		);
+
+		$this->assertSame(
+			"{$index}.datetime_start_gmt ASC, {$index}.post_id ASC, {$index}.recurrence_id ASC",
+			$pieces['orderby']
+		);
+		$this->assertSame(
+			"wp_posts.ID, {$index}.post_id, {$index}.recurrence_id, {$index}.datetime_start_gmt",
+			$pieces['groupby']
+		);
 	}
 }

@@ -205,4 +205,48 @@ class Test_Post_Dates extends Base {
 			'Failed to assert a default hour past midnight stops at the end of the day.'
 		);
 	}
+
+	/**
+	 * One date of a repeating event replaces the saved dates.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_occurrence(): void {
+		$post_id = $this->create_event( '2026-10-16 10:00:00', '2026-10-16 11:00:00' );
+		$timed   = new Post_Dates(
+			$post_id,
+			array(
+				'recurrence_id'      => '20261023T100000',
+				'datetime_start'     => '2026-10-23 10:00:00',
+				'datetime_start_gmt' => '2026-10-23 10:00:00',
+				'datetime_end'       => '2026-10-23 11:30:00',
+				'datetime_end_gmt'   => '2026-10-23 11:30:00',
+				'timezone'           => 'UTC',
+			)
+		);
+
+		$this->assertTrue( $timed->is_event );
+		$this->assertFalse( $timed->is_all_day );
+		$this->assertSame( '2026-10-23', $timed->start_date, 'The date, not the saved first date.' );
+		$this->assertSame( 690, $timed->end_minute );
+
+		$all_day = new Post_Dates(
+			$post_id,
+			array(
+				'recurrence_id'      => '20261024',
+				'datetime_start'     => '2026-10-24 00:00:00',
+				'datetime_start_gmt' => '2026-10-24 00:00:00',
+				'datetime_end'       => '2026-10-24 23:59:59',
+				'datetime_end_gmt'   => '2026-10-24 23:59:59',
+				'timezone'           => 'UTC',
+			)
+		);
+
+		$this->assertTrue( $all_day->is_all_day, 'A date key without a time is all day.' );
+		$this->assertSame( '2026-10-24', $all_day->end_date );
+	}
 }

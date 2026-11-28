@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Calendar\Style_Processor;
 use GatherPress\Core\Calendar\Time_Grid;
+use GatherPress\Core\Event\Current_Occurrence;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 use WP_Post;
@@ -287,7 +288,7 @@ final class Calendar_Entries {
 			esc_attr( implode( ' ', get_post_class( $classnames, $post_id ) ) ),
 			$this->build_entry_style_attribute( $entry_styles['inline_styles'], $span_data, $row_span, $timed_style ),
 			$this->build_entry_data_attributes( $span_data, $row_span ),
-			$this->build_entry_iapi_directives( $post_id ),
+			$this->build_entry_iapi_directives( $post_id, $span_data ),
 			$inner_content
 		);
 	}
@@ -312,6 +313,13 @@ final class Calendar_Entries {
 
 		setup_postdata( $post );
 
+		// The entry is one date of a repeating event, so its blocks show that date.
+		$occurrence = is_array( $span_data['occurrence'] ?? null ) ? $span_data['occurrence'] : null;
+
+		if ( $occurrence ) {
+			Current_Occurrence::get_instance()->set( $post->ID, $occurrence );
+		}
+
 		/**
 		 * Parsed inner blocks of the entry template.
 		 *
@@ -321,6 +329,10 @@ final class Calendar_Entries {
 			? $block->parsed_block['innerBlocks']
 			: array();
 		$inner_content = $this->render_entry_template( $inner_blocks, $post->ID, $post->post_type, $span_data );
+
+		if ( $occurrence ) {
+			Current_Occurrence::get_instance()->clear( $post->ID );
+		}
 
 		wp_reset_postdata();
 
@@ -402,14 +414,20 @@ final class Calendar_Entries {
 	 * Build Interactivity API directives for synchronized hover/focus.
 	 *
 	 * @since 0.37.0
+	 * @since TBD    Keys a date of a repeating event by its date as well.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int                  $post_id   Post ID.
+	 * @param array<string, mixed> $span_data The entry, whose date of a repeating event, if any, joins the key.
 	 *
 	 * @return string Directives string.
 	 */
-	private function build_entry_iapi_directives( int $post_id ): string {
+	private function build_entry_iapi_directives( int $post_id, array $span_data = array() ): string {
+		// One date of a repeating event highlights alone, not every date of its series.
+		$key      = $span_data['occurrence']['recurrence_id'] ?? '';
+		$event_id = is_string( $key ) && '' !== $key ? $post_id . ':' . $key : $post_id;
+
 		return ' data-wp-interactive="gatherpress/calendar"'
-			. sprintf( ' data-wp-context="%s"', esc_attr( (string) wp_json_encode( array( 'eventId' => $post_id ) ) ) )
+			. sprintf( ' data-wp-context="%s"', esc_attr( (string) wp_json_encode( array( 'eventId' => $event_id ) ) ) )
 			. ' data-wp-on--mouseenter="actions.hoverEvent"'
 			. ' data-wp-on--mouseleave="actions.unhoverEvent"'
 			. ' data-wp-on--focusin="actions.focusEvent"'

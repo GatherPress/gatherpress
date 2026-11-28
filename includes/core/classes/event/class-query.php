@@ -71,6 +71,19 @@ final class Query {
 	const EVENT_DATE_WINDOW_PARAM = 'gatherpress_event_date_window';
 
 	/**
+	 * Query var that turns the date index on or off for one query.
+	 *
+	 * True lists a repeating event once per date, false once per event. Left
+	 * unset, front-end lists use the index, and the admin, REST, feeds and
+	 * single pages don't. A query for IDs never does, since duplicate IDs
+	 * carry no dates.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const OCCURRENCES_PARAM = 'gatherpress_occurrences';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -95,6 +108,8 @@ final class Query {
 		// Priority 9 to run before the upcoming/past adjustments at priority 10.
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
 		add_filter( 'posts_clauses', array( $this, 'adjust_event_date_window_sql' ), 10, 2 );
+		// Priority 11: after the event SQL at 10, so every events-table reference it added moves to the index.
+		add_filter( 'posts_clauses', array( $this, 'join_occurrence_index' ), 11, 2 );
 
 		// Filter adjacent post queries to join and sort by event datetime.
 		add_filter( 'get_previous_post_join', array( $this, 'get_adjacent_post_join' ), 10, 5 );
@@ -432,7 +447,8 @@ final class Query {
 			'upcoming',
 			$query->get( 'order' ),
 			$query->get( 'orderby' ),
-			$inclusive
+			$inclusive,
+			$query
 		);
 	}
 
@@ -460,7 +476,8 @@ final class Query {
 			'past',
 			$query->get( 'order' ),
 			$query->get( 'orderby' ),
-			$inclusive
+			$inclusive,
+			$query
 		);
 	}
 
@@ -524,7 +541,8 @@ final class Query {
 			$gatherpress_events_query,
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
-			$inclusive
+			$inclusive,
+			$wp_query
 		);
 
 		$gatherpress_event_month = $wp_query->get( self::EVENT_DATE_QUERY_PARAM );
@@ -611,6 +629,8 @@ final class Query {
 	 *                                         (Default: ['datetime']).
 	 * @param bool                  $inclusive Whether to include currently running events in the query
 	 *                                         (Default: true).
+	 * @param WP_Query|null         $query     The query, which decides whether a repeating event is read from
+	 *                                         the date index. Since TBD.
 	 *
 	 * @return array<string, string> An array containing adjusted SQL clauses for the Event query.
 	 */
@@ -619,7 +639,8 @@ final class Query {
 		string $type = 'all',
 		string $order = 'DESC',
 		$order_by = array( 'datetime' ),
-		bool $inclusive = true
+		bool $inclusive = true,
+		?WP_Query $query = null
 	): array {
 		global $wpdb;
 
@@ -691,6 +712,10 @@ final class Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 		$column  = $this->get_datetime_comparison_column( $type, $inclusive );
 
+		if ( $this->lists_once_by_index( $query ) ) {
+			return $this->filter_by_index( $pieces, $type, $column, $current, $order );
+		}
+
 		// Append a date-based condition to the WHERE clause, filtering as
 		// either upcoming or past. Events with no row in the events table
 		// (no date set yet) are excluded from both buckets — they only
@@ -702,6 +727,164 @@ final class Query {
 		}
 
 		return $pieces;
+	}
+
+	/**
+	 * List a repeating event once per date by joining the date index instead of the events table.
+	 *
+	 * The index has the events table's columns, so every condition and
+	 * order the event SQL built on the events table applies to each date.
+	 * Each row also selects its date, which `Current_Occurrence` reads in
+	 * the loop. A grouped query, such as one filtering by several terms, is
+	 * grouped by date too, so the dates aren't folded back into one row.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string> $pieces The query's SQL clauses.
+	 * @param WP_Query              $query  The query.
+	 *
+	 * @return array<string, string> The clauses, joined on the index when the query uses it.
+	 */
+	public function join_occurrence_index( array $pieces, WP_Query $query ): array {
+		/**
+		 * Escaped events table name.
+		 *
+		 * @var string $events esc_sql() only returns an array when it is handed one.
+		 */
+		$events = esc_sql( Event::table() );
+
+		$joined = str_contains( (string) ( $pieces['join'] ?? '' ), $events );
+
+		if ( ! $joined || ! $this->uses_occurrence_index( $query ) ) {
+			return $pieces;
+		}
+
+		$index   = Occurrence_Index::table();
+		$columns = array();
+
+		foreach ( array( 'join', 'where', 'orderby', 'groupby' ) as $clause ) {
+			$pieces[ $clause ] = str_replace( $events, $index, (string) ( $pieces[ $clause ] ?? '' ) );
+		}
+
+		foreach ( Current_Occurrence::FIELDS as $field ) {
+			$columns[] = sprintf( '%1$s.%2$s AS %3$s%2$s', $index, $field, Current_Occurrence::PROPERTY_PREFIX );
+		}
+
+		$pieces['fields'] = (string) ( $pieces['fields'] ?? '' ) . ', ' . implode( ', ', $columns );
+
+		if ( '' !== trim( $pieces['groupby'] ) ) {
+			$pieces['groupby'] .= sprintf( ', %1$s.post_id, %1$s.recurrence_id, %1$s.datetime_start_gmt', $index );
+		}
+
+		// Showtimes and series often share a start, so a tiebreak keeps pages from repeating or skipping rows.
+		if ( '' !== trim( (string) ( $pieces['orderby'] ?? '' ) ) ) {
+			$pieces['orderby'] .= sprintf( ', %1$s.post_id ASC, %1$s.recurrence_id ASC', $index );
+		}
+
+		return $pieces;
+	}
+
+	/**
+	 * Whether a query lists each event once while the date index can say which have upcoming or past dates.
+	 *
+	 * Such a query keeps the events table's one row per event, but the
+	 * events table holds only a series' first date, so the index decides.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query|null $query The query, if known.
+	 *
+	 * @return bool True to filter and order by the index.
+	 */
+	protected function lists_once_by_index( ?WP_Query $query ): bool {
+		return $query instanceof WP_Query
+			&& Occurrence_Index::get_instance()->is_ready()
+			&& ! $this->uses_occurrence_index( $query );
+	}
+
+	/**
+	 * Filter a one-row-per-event query to events with an upcoming or past date, ordered by that date.
+	 *
+	 * An event is upcoming while any of its dates is, and past once any of
+	 * them is, so a running series is in both lists. Upcoming orders by each
+	 * event's next date and past by its latest one.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string> $pieces  The query's SQL clauses.
+	 * @param string                $type    `upcoming` or `past`.
+	 * @param string                $column  The index column to compare.
+	 * @param string                $current Now, in GMT.
+	 * @param string                $order   `ASC` or `DESC`.
+	 *
+	 * @return array<string, string> The clauses.
+	 */
+	protected function filter_by_index(
+		array $pieces,
+		string $type,
+		string $column,
+		string $current,
+		string $order
+	): array {
+		global $wpdb;
+
+		$compare   = 'upcoming' === $type ? '>=' : '<';
+		$aggregate = 'upcoming' === $type ? 'MIN' : 'MAX';
+		$format    = 'FROM %i AS gatherpress_dates WHERE gatherpress_dates.post_id = %i.ID'
+			. ' AND gatherpress_dates.%i ' . $compare . ' %s';
+		$matching  = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $compare is one of two literals.
+			$format,
+			Occurrence_Index::table(),
+			$wpdb->posts,
+			$column,
+			$current
+		);
+
+		$pieces['where'] .= ' AND EXISTS ( SELECT 1 ' . $matching . ' )';
+
+		/**
+		 * Escaped events table name.
+		 *
+		 * @var string $events esc_sql() only returns an array when it is handed one.
+		 */
+		$events = esc_sql( Event::table() );
+
+		if ( str_starts_with( $pieces['orderby'], $events . '.datetime_start_gmt' ) ) {
+			$pieces['orderby'] = sprintf(
+				'( SELECT %1$s( gatherpress_dates.datetime_start_gmt ) %2$s ) %3$s',
+				$aggregate,
+				$matching,
+				in_array( $order, array( 'ASC', 'DESC' ), true ) ? $order : 'DESC'
+			);
+		}
+
+		return $pieces;
+	}
+
+	/**
+	 * Whether a query lists repeating events once per date.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query $query The query.
+	 *
+	 * @return bool True to join the date index.
+	 */
+	protected function uses_occurrence_index( WP_Query $query ): bool {
+		$requested = $query->get( self::OCCURRENCES_PARAM );
+		$possible  = ! in_array( $query->get( 'fields' ), array( 'ids', 'id=>parent' ), true )
+			&& Occurrence_Index::get_instance()->is_ready();
+
+		if ( ! $possible || false === $requested || true === $requested ) {
+			return $possible && false !== $requested;
+		}
+
+		// Lists people browse use the index; editing, the API, feeds and an event's own page don't.
+		return ! is_admin()
+			&& ! ( defined( 'REST_REQUEST' ) && REST_REQUEST )
+			&& ! $query->is_feed()
+			&& ! $query->is_singular();
 	}
 
 	/**

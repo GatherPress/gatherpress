@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Event;
 
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Setup as Event_Setup;
@@ -2373,5 +2374,53 @@ class Test_Admin_List extends Base {
 			$output,
 			'The taxonomy\'s own "all" label should still be used.'
 		);
+	}
+
+	/**
+	 * With the date index built, a running series counts as both upcoming and past.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_reads_the_index(): void {
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$post_type = 'gp_count_test';
+
+		register_post_type( $post_type, array( 'supports' => array( Event::SUPPORT ) ) );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => $post_type,
+				'post_status' => 'draft',
+			)
+		);
+		$start   = new \DateTimeImmutable( 'today -10 days', new \DateTimeZone( 'UTC' ) );
+
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				array(
+					'starts_on' => $start->format( 'Y-m-d' ),
+					'rrule'     => 'FREQ=DAILY',
+					'times'     => array( '12:00' ),
+					'timezone'  => 'UTC',
+					'duration'  => 60,
+				),
+			)
+		);
+
+		$this->assertSame(
+			array(
+				'upcoming' => 1,
+				'past'     => 1,
+			),
+			Admin_List::get_instance()->get_event_counts( $post_type ),
+			'Counted once in each view.'
+		);
+
+		unregister_post_type( $post_type );
 	}
 }

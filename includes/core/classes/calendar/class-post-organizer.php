@@ -95,16 +95,18 @@ final class Post_Organizer {
 	 * Organizes posts into slotted entries grouped by date.
 	 *
 	 * @since 0.37.0
+	 * @since TBD    Takes entries carrying one date of a repeating event, as well as post IDs.
 	 *
-	 * @param int[] $post_ids Post IDs.
+	 * @param array<int, int|array{post_id: int, occurrence: array<string, string>|null}> $entries Post IDs, or
+	 *                                                                                         entries with a date.
 	 *
 	 * @return PostsByDate Slotted calendar entries grouped by date.
 	 */
-	public function organize( array $post_ids ): array {
+	public function organize( array $entries ): array {
 		$this->occupied_slots = array();
 		$this->posts_by_date  = array();
 
-		foreach ( $this->sort_spans( $this->get_spans( $post_ids ) ) as $span ) {
+		foreach ( $this->sort_spans( $this->get_spans( $entries ) ) as $span ) {
 			$is_multi_day = $span['total_days'] > 1 || $span['dates']->is_all_day;
 
 			// In time-grid mode, single-day events go on the time tracks.
@@ -141,15 +143,19 @@ final class Post_Organizer {
 	 *
 	 * @since 0.37.0
 	 *
-	 * @param int[] $post_ids Post IDs.
+	 * @param array<int, int|array{post_id: int, occurrence: array<string, string>|null}> $entries Post IDs, or
+	 *                                                                                         entries with a date.
 	 *
 	 * @return list<EventSpan> Spans of the posts with visible days.
 	 */
-	private function get_spans( array $post_ids ): array {
+	private function get_spans( array $entries ): array {
 		$spans = array();
 
-		foreach ( $post_ids as $post_id ) {
-			$span = $this->get_span( new Post_Dates( $post_id ) );
+		foreach ( $entries as $entry ) {
+			$dates = is_array( $entry )
+				? new Post_Dates( $entry['post_id'], $entry['occurrence'] )
+				: new Post_Dates( $entry );
+			$span  = $this->get_span( $dates );
 
 			if ( null !== $span ) {
 				$spans[] = $span;
@@ -301,6 +307,7 @@ final class Post_Organizer {
 		$this->occupied_slots[ $date_str ][ $slot ] = true;
 		$this->posts_by_date[ $date_str ][]         = array(
 			'id'             => $span['dates']->post_id,
+			'occurrence'     => $span['dates']->occurrence,
 			'span'           => 'single',
 			'day_index'      => 1,
 			'total_days'     => 1,
@@ -341,6 +348,7 @@ final class Post_Organizer {
 			$this->occupied_slots[ $date_str ][ $slot ] = true;
 			$this->posts_by_date[ $date_str ][]         = array(
 				'id'         => $span['dates']->post_id,
+				'occurrence' => $span['dates']->occurrence,
 				'span'       => $this->get_span_type( $day_index, $span['total_days'] ),
 				'day_index'  => $day_index,
 				'total_days' => $span['total_days'],

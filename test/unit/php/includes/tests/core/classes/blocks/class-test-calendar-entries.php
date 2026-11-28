@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Blocks;
 
+use GatherPress\Core\Event\Current_Occurrence;
 use GatherPress\Core\Blocks\Calendar_Entries;
 use GatherPress\Core\Calendar\Time_Grid;
 use GatherPress\Core\Event;
@@ -763,6 +764,71 @@ class Test_Calendar_Entries extends Base {
 				'postId'   => PHP_INT_MAX,
 			),
 			$instance->filter_entry_context( array() )
+		);
+	}
+
+	/**
+	 * An entry for one date of a repeating event renders that date, and leaves nothing behind.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::render_entry_inner_content
+	 *
+	 * @return void
+	 */
+	public function test_entry_renders_its_date(): void {
+		$post_id    = $this->create_event();
+		$occurrence = array(
+			'recurrence_id'      => '20261021T100000',
+			'datetime_start'     => '2026-10-21 10:00:00',
+			'datetime_start_gmt' => '2026-10-21 10:00:00',
+			'datetime_end'       => '2026-10-21 12:00:00',
+			'datetime_end_gmt'   => '2026-10-21 12:00:00',
+			'timezone'           => 'UTC',
+		);
+		$seen       = '';
+		$callback   = static function ( int $id ) use ( &$seen ): void {
+			$seen = ( new Event( $id ) )->get_datetime()['datetime_start'];
+		};
+
+		add_action( 'gatherpress_calendar_entry_render', $callback );
+		$this->render_entries(
+			'<!-- wp:post-title /-->',
+			array(
+				array(
+					'id'         => $post_id,
+					'occurrence' => $occurrence,
+				),
+			)
+		);
+		remove_action( 'gatherpress_calendar_entry_render', $callback );
+
+		$this->assertSame( '2026-10-21 10:00:00', $seen, 'The entry renders its own date.' );
+		$this->assertNull( Current_Occurrence::get_instance()->get( $post_id ), 'The date is cleared after.' );
+	}
+
+	/**
+	 * A date of a repeating event is keyed by its date as well, so hovering it highlights only that date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::build_entry_iapi_directives
+	 *
+	 * @return void
+	 */
+	public function test_entry_key_includes_its_date(): void {
+		$instance = Calendar_Entries::get_instance();
+		$keyed    = Utility::invoke_hidden_method(
+			$instance,
+			'build_entry_iapi_directives',
+			array( 7, array( 'occurrence' => array( 'recurrence_id' => '20261218T190000' ) ) )
+		);
+
+		$this->assertStringContainsString( esc_attr( '"eventId":"7:20261218T190000"' ), $keyed );
+		$this->assertStringContainsString(
+			esc_attr( '"eventId":7' ),
+			Utility::invoke_hidden_method( $instance, 'build_entry_iapi_directives', array( 7 ) ),
+			'A one-off event keeps its ID.'
 		);
 	}
 }
