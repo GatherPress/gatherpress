@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeImmutable;
 use DateTimeZone;
+use GatherPress\Core\Utility;
 use WP_Error;
 
 /**
@@ -62,12 +63,12 @@ final class Rules {
 	const PUBLISHED_STATUSES = array( 'publish', 'private' );
 
 	/**
-	 * How many rule writes are running, which lets their meta writes through.
+	 * Posts whose rules are being written, which lets their meta writes through.
 	 *
 	 * @since TBD
-	 * @var int
+	 * @var array<int, true>
 	 */
-	protected static int $writing = 0;
+	protected static array $writing = array();
 
 	/**
 	 * The valid rules, once read.
@@ -120,7 +121,7 @@ final class Rules {
 	 * @return bool|WP_Error True once saved, or why the rules were refused.
 	 */
 	public function replace( array $rows ): bool|WP_Error {
-		$rows = $this->prepare( $rows );
+		$rows = $this->prepare( $rows, wp_generate_uuid4() );
 
 		if ( ! is_wp_error( $rows ) && $this->is_published() && $this->event->has_event_started() ) {
 			$rows = new WP_Error(
@@ -138,12 +139,14 @@ final class Rules {
 	 * Ends the current rules the day before `$date` and adds the new ones, so
 	 * dates before it stay as they were. A rule that starts on or after
 	 * `$date` has no past dates, so it is removed rather than ended. An event
-	 * without rules keeps its saved date as a rule of one date.
+	 * without rules keeps its saved date as a rule of one date. The new rules
+	 * and the rules this change ends share one new change ID.
 	 *
 	 * @since TBD
 	 *
 	 * @param string            $date The first local date of the new schedule, as `Y-m-d`. On a published
-	 *                                event it must be after today in the event's timezone.
+	 *                                event it must be after today in the event's timezone and in each
+	 *                                rule's, so nothing that has happened, or is happening today, changes.
 	 * @param array<int, mixed> $rows The new rules, as meta rows, each starting on or after `$date`.
 	 *
 	 * @return bool|WP_Error True once saved, or why the change was refused.
@@ -158,7 +161,8 @@ final class Rules {
 			);
 		}
 
-		$rows = $this->prepare( $rows, $from );
+		$change_id = wp_generate_uuid4();
+		$rows      = $this->prepare( $rows, $change_id, $from );
 
 		if ( ! is_wp_error( $rows ) && $this->is_published() && ! $this->is_after_today( $from ) ) {
 			$rows = new WP_Error(
@@ -167,7 +171,13 @@ final class Rules {
 			);
 		}
 
-		return is_wp_error( $rows ) ? $rows : $this->write( array_merge( $this->end_before( $from ), $rows ) );
+		if ( is_wp_error( $rows ) ) {
+			return $rows;
+		}
+
+		$kept = $this->end_before( $from, $change_id );
+
+		return is_wp_error( $kept ) ? $kept : $this->write( array_merge( $kept, $rows ) );
 	}
 
 	/**
@@ -235,10 +245,10 @@ final class Rules {
 	 *
 	 * @param int $object_id The post ID.
 	 *
-	 * @return bool True during a rule write, on a revision, or while importing.
+	 * @return bool True while this post's rules are written, on a revision, or while importing.
 	 */
 	protected static function may_write( int $object_id ): bool {
-		if ( 0 < self::$writing || 'revision' === get_post_type( $object_id ) ) {
+		if ( isset( self::$writing[ $object_id ] ) || 'revision' === get_post_type( $object_id ) ) {
 			return true;
 		}
 
@@ -264,16 +274,17 @@ final class Rules {
 	}
 
 	/**
-	 * Validate new rules and give them one new change ID.
+	 * Validate new rules and give them the change's ID.
 	 *
 	 * @since TBD
 	 *
-	 * @param array<int, mixed>      $rows The new rules, as meta rows.
-	 * @param DateTimeImmutable|null $from The date each rule must start on or after, if any.
+	 * @param array<int, mixed>      $rows      The new rules, as meta rows.
+	 * @param string                 $change_id The change ID the rows take.
+	 * @param DateTimeImmutable|null $from      The date each rule must start on or after, if any.
 	 *
 	 * @return array<int, array<string, mixed>>|WP_Error The rows in canonical form, or the first problem found.
 	 */
-	protected function prepare( array $rows, ?DateTimeImmutable $from = null ): array|WP_Error {
+	protected function prepare( array $rows, string $change_id, ?DateTimeImmutable $from = null ): array|WP_Error {
 		if ( ! $this->event->post ) {
 			return new WP_Error(
 				'gatherpress_rules_not_an_event',
@@ -281,8 +292,7 @@ final class Rules {
 			);
 		}
 
-		$change_id = wp_generate_uuid4();
-		$prepared  = array();
+		$prepared = array();
 
 		foreach ( array_values( $rows ) as $index => $row ) {
 			$rule = is_array( $row )
@@ -312,15 +322,25 @@ final class Rules {
 	/**
 	 * The current rules, each ended before a date, leaving out those that start on or after it.
 	 *
+	 * A rule this ends, and an event's saved date kept as a rule, take the
+	 * change's ID, so the change records what it ended.
+	 *
 	 * @since TBD
 	 *
-	 * @param DateTimeImmutable $from The first date of the new schedule.
+	 * @param DateTimeImmutable $from      The first date of the new schedule.
+	 * @param string            $change_id The change's ID.
 	 *
-	 * @return array<int, array<string, mixed>> The rows to keep.
+	 * @return array<int, array<string, mixed>>|WP_Error The rows to keep, or an error if the event's saved
+	 *                                                   date can't be kept as a rule.
 	 */
-	protected function end_before( DateTimeImmutable $from ): array {
-		$rules = $this->all() ? $this->all() : $this->seed();
-		$rows  = array();
+	protected function end_before( DateTimeImmutable $from, string $change_id ): array|WP_Error {
+		$rules = $this->all() ? $this->all() : $this->seed( $change_id );
+
+		if ( is_wp_error( $rules ) ) {
+			return $rules;
+		}
+
+		$rows = array();
 
 		foreach ( $rules as $rule ) {
 			if ( $rule->starts_on >= $from ) {
@@ -331,7 +351,8 @@ final class Rules {
 
 			// Only a rule with dates from the change on needs ending.
 			if ( null !== $rule->next_date( $from ) ) {
-				$row['ends_on'] = $from->modify( '-1 day' )->format( Rule::DATE_FORMAT );
+				$row['ends_on']   = $from->modify( '-1 day' )->format( Rule::DATE_FORMAT );
+				$row['change_id'] = $change_id;
 			}
 
 			$rows[] = $row;
@@ -345,21 +366,25 @@ final class Rules {
 	 *
 	 * @since TBD
 	 *
-	 * @return Rule[] The rule, or none when the event has no saved date.
+	 * @param string $change_id The change's ID.
+	 *
+	 * @return Rule[]|WP_Error The rule, none when the event has no saved date, or an error if the saved
+	 *                         date can't be a rule, such as one lasting longer than `Rule::MAX_DURATION`.
 	 */
-	protected function seed(): array {
+	protected function seed( string $change_id ): array|WP_Error {
 		$data = $this->event->get_datetime();
 
 		if ( empty( $data['datetime_start'] ) || empty( $data['datetime_end'] ) ) {
 			return array();
 		}
 
-		$timezone   = new DateTimeZone( $this->event->get_timezone() );
+		$timezone   = new DateTimeZone( Utility::normalize_timezone_string( $this->event->get_timezone() ) );
 		$start      = new DateTimeImmutable( $data['datetime_start'], $timezone );
 		$end        = new DateTimeImmutable( $data['datetime_end'], $timezone );
 		$is_all_day = $this->event->is_all_day();
 		$rule       = Rule::from_meta(
 			array(
+				'change_id'  => $change_id,
 				'starts_on'  => $start->format( Rule::DATE_FORMAT ),
 				'rrule'      => null,
 				'is_all_day' => $is_all_day,
@@ -371,7 +396,10 @@ final class Rules {
 			)
 		);
 
-		return $rule ? array( $rule ) : array();
+		return $rule ? array( $rule ) : new WP_Error(
+			'gatherpress_rules_saved_date',
+			__( "The event's saved date can't be kept as a repeat rule, so its schedule can't change.", 'gatherpress' )
+		);
 	}
 
 	/**
@@ -396,7 +424,7 @@ final class Rules {
 			}
 		}
 
-		++self::$writing;
+		self::$writing[ $post_id ] = true;
 
 		try {
 			delete_post_meta( $post_id, self::META_KEY );
@@ -405,7 +433,7 @@ final class Rules {
 				add_post_meta( $post_id, self::META_KEY, $row );
 			}
 		} finally {
-			--self::$writing;
+			unset( self::$writing[ $post_id ] );
 		}
 
 		$this->rules = null;
@@ -418,7 +446,8 @@ final class Rules {
 	 * Move the event's saved dates to the first occurrence of its rules.
 	 *
 	 * Lists, the event page and the editor still read the saved dates, so
-	 * they show the series' first date.
+	 * they show the series' first date. The editor's `gatherpress_datetime`
+	 * moves too, since every save of the event rewrites the dates from it.
 	 *
 	 * @since TBD
 	 *
@@ -441,13 +470,31 @@ final class Rules {
 			return;
 		}
 
+		$start    = $first->start->format( 'Y-m-d H:i:s' );
+		$end      = $first->end->format( 'Y-m-d H:i:s' );
+		$timezone = $first->start->getTimezone()->getName();
+
 		update_post_meta( $post_id, 'gatherpress_is_all_day', $first->is_all_day );
+		update_post_meta(
+			$post_id,
+			'gatherpress_datetime',
+			wp_slash(
+				(string) wp_json_encode(
+					array(
+						'dateTimeStart' => $start,
+						'dateTimeEnd'   => $end,
+						'timezone'      => $timezone,
+					),
+					JSON_UNESCAPED_SLASHES
+				)
+			)
+		);
 
 		$this->event->save_datetimes(
 			array(
-				'datetime_start' => $first->start->format( 'Y-m-d H:i:s' ),
-				'datetime_end'   => $first->end->format( 'Y-m-d H:i:s' ),
-				'timezone'       => $first->start->getTimezone()->getName(),
+				'datetime_start' => $start,
+				'datetime_end'   => $end,
+				'timezone'       => $timezone,
 			)
 		);
 	}
@@ -460,22 +507,36 @@ final class Rules {
 	 * @return bool True for a published or private event.
 	 */
 	protected function is_published(): bool {
-		return in_array( get_post_status( $this->event->post ), self::PUBLISHED_STATUSES, true );
+		// By ID, since the event's post object keeps the status it was read with.
+		return in_array( get_post_status( $this->event->post->ID ?? 0 ), self::PUBLISHED_STATUSES, true );
 	}
 
 	/**
-	 * Whether a local date is after today in the event's timezone.
+	 * Whether a local date is after today in the event's timezone and in each rule's.
+	 *
+	 * Today can be a day further on in one rule's timezone than in another,
+	 * so the date must be after the latest of them.
 	 *
 	 * @since TBD
 	 *
 	 * @param DateTimeImmutable $date The local date.
 	 *
-	 * @return bool True if the date is tomorrow or later.
+	 * @return bool True if the date is tomorrow or later everywhere the event happens.
 	 */
 	protected function is_after_today( DateTimeImmutable $date ): bool {
-		$today = new DateTimeImmutable( 'now', new DateTimeZone( $this->event->get_timezone() ) );
+		$timezones = array( new DateTimeZone( Utility::normalize_timezone_string( $this->event->get_timezone() ) ) );
 
-		return $date->format( Rule::DATE_FORMAT ) > $today->format( Rule::DATE_FORMAT );
+		foreach ( $this->all() as $rule ) {
+			$timezones[] = $rule->timezone;
+		}
+
+		$latest = '';
+
+		foreach ( $timezones as $timezone ) {
+			$latest = max( $latest, ( new DateTimeImmutable( 'now', $timezone ) )->format( Rule::DATE_FORMAT ) );
+		}
+
+		return $date->format( Rule::DATE_FORMAT ) > $latest;
 	}
 
 	/**

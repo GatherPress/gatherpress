@@ -355,8 +355,9 @@ class Test_Rules extends Base {
 			),
 			'Running rules end the day before, ended ones stay, and one starting after the date is removed.'
 		);
-		$this->assertSame( $first, $rules->all()[0]->change_id, 'An ended rule keeps the change that created it.' );
 		$this->assertNotSame( $first, $rules->all()[2]->change_id, 'The new rule has a new change ID.' );
+		$this->assertSame( $rules->all()[2]->change_id, $rules->all()[0]->change_id, 'An ended rule shares the ID.' );
+		$this->assertSame( $first, $rules->all()[1]->change_id, 'A rule that had already ended keeps its ID.' );
 		$this->assertSame( '2020-01-01 20:00:00', $this->saved( $post_id )[0], 'The first date is unchanged.' );
 
 		$this->assertTrue( $rules->stop( '2099-03-01' ) );
@@ -437,6 +438,11 @@ class Test_Rules extends Base {
 			$this->stored( $timed )[0]
 		);
 		$this->assertSame( '2020-03-05 18:00:00', $this->saved( $timed )[0] );
+		$this->assertSame(
+			get_post_meta( $timed, Rules::META_KEY, false )[1]['change_id'],
+			get_post_meta( $timed, Rules::META_KEY, false )[0]['change_id'],
+			'The kept date takes the change ID.'
+		);
 
 		$all_day = $this->event( 'publish' );
 
@@ -451,9 +457,13 @@ class Test_Rules extends Base {
 		$long = $this->event( 'publish' );
 
 		$this->save_dates( $long, '2020-01-01 10:00:00', '2022-01-01 10:00:00' );
-		( new Event( $long ) )->rules()->stop( '2099-01-01' );
 
-		$this->assertSame( array(), $this->stored( $long ), 'A saved date too long for a rule is not kept.' );
+		$this->assertSame(
+			'gatherpress_rules_saved_date',
+			( new Event( $long ) )->rules()->stop( '2099-01-01' )->get_error_code(),
+			'A saved date too long for a rule would be lost, so the change is refused.'
+		);
+		$this->assertSame( array(), $this->stored( $long ) );
 
 		$undated = $this->event();
 
@@ -535,5 +545,153 @@ class Test_Rules extends Base {
 
 		$this->assertTrue( delete_post_meta_by_key( Rules::META_KEY ), 'Deleting the key everywhere is allowed.' );
 		$this->assertSame( array(), $this->stored( $post_id ) );
+	}
+
+	/**
+	 * The synced dates survive the next save of the event, which rewrites them from the editor's JSON.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::sync_saved_dates
+	 *
+	 * @return void
+	 */
+	public function test_sync_survives_a_save(): void {
+		$post_id = $this->event();
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_datetime',
+			'{"dateTimeStart":"2026-01-01 09:00:00","dateTimeEnd":"2026-01-01 10:00:00","timezone":"UTC"}'
+		);
+		( new Event( $post_id ) )->rules()->replace( array( $this->row() ) );
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => 'Saved again',
+			)
+		);
+
+		$this->assertSame(
+			array( '2026-12-11 20:00:00', '2026-12-11 22:00:00', 'America/New_York', 'timed' ),
+			$this->saved( $post_id )
+		);
+		$this->assertSame(
+			array(
+				'dateTimeStart' => '2026-12-11 20:00:00',
+				'dateTimeEnd'   => '2026-12-11 22:00:00',
+				'timezone'      => 'America/New_York',
+			),
+			json_decode( get_post_meta( $post_id, 'gatherpress_datetime', true ), true )
+		);
+	}
+
+	/**
+	 * A timezone saved in an old spelling, before timezones were normalized, still works.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::seed
+	 * @covers ::is_after_today
+	 *
+	 * @return void
+	 */
+	public function test_legacy_timezone(): void {
+		$post_id = $this->event( 'publish' );
+
+		$this->save_dates( $post_id, '2020-03-05 18:00:00', '2020-03-05 20:00:00' );
+		update_post_meta( $post_id, 'gatherpress_timezone', 'UTC+10' );
+
+		$this->assertTrue( ( new Event( $post_id ) )->rules()->stop( '2099-01-01' ) );
+		$this->assertSame( '+10:00', $this->stored( $post_id )[0]['timezone'] );
+	}
+
+	/**
+	 * Today counts in the timezone furthest ahead, so a rule there can't change the day it is already on.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::is_after_today
+	 *
+	 * @return void
+	 */
+	public function test_today_in_the_timezone_furthest_ahead(): void {
+		$post_id = $this->event();
+		$rules   = ( new Event( $post_id ) )->rules();
+
+		$rules->replace(
+			array(
+				$this->row(
+					array(
+						'starts_on' => '2026-01-01',
+						'rrule'     => 'FREQ=DAILY',
+						'timezone'  => 'Pacific/Kiritimati',
+					)
+				),
+			)
+		);
+		update_post_meta( $post_id, 'gatherpress_timezone', 'Pacific/Pago_Pago' );
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$kiritimati = new DateTimeZone( 'Pacific/Kiritimati' );
+		$today      = wp_date( 'Y-m-d', null, $kiritimati );
+		$tomorrow   = wp_date( 'Y-m-d', time() + DAY_IN_SECONDS, $kiritimati );
+
+		$this->assertSame( 'gatherpress_rules_past_change', $rules->stop( $today )->get_error_code() );
+		$this->assertTrue( $rules->stop( $tomorrow ) );
+	}
+
+	/**
+	 * A private event counts as published.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::replace
+	 * @covers ::is_published
+	 *
+	 * @return void
+	 */
+	public function test_private_event_is_published(): void {
+		$post_id = $this->event( 'private' );
+
+		$this->save_dates( $post_id, '2020-01-10 20:00:00', '2020-01-10 22:00:00' );
+
+		$this->assertSame(
+			'gatherpress_rules_past_dates',
+			( new Event( $post_id ) )->rules()->replace( array( $this->row() ) )->get_error_code()
+		);
+	}
+
+	/**
+	 * A rule write lets through only the post being written.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::may_write
+	 * @covers ::write
+	 *
+	 * @return void
+	 */
+	public function test_write_lets_through_only_its_post(): void {
+		$post_id = $this->event();
+		$other   = $this->event();
+		$results = array();
+		$listen  = static function ( $meta_id, $object_id, $meta_key ) use ( $other, &$results ): void {
+			if ( Rules::META_KEY === $meta_key && $other !== $object_id ) {
+				$results[] = add_post_meta( $other, Rules::META_KEY, array( 'starts_on' => '2026-12-11' ) );
+			}
+		};
+
+		add_action( 'added_post_meta', $listen, 10, 3 );
+		( new Event( $post_id ) )->rules()->replace( array( $this->row() ) );
+		remove_action( 'added_post_meta', $listen );
+
+		$this->assertSame( array( false ), $results, 'A write to another post during the rule write is refused.' );
+		$this->assertSame( array(), $this->stored( $other ) );
 	}
 }

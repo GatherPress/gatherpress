@@ -917,6 +917,7 @@ class Test_Meta extends Base {
 			)
 		);
 
+		add_filter( 'gatherpress_rule_meta_write_allowed', '__return_true' );
 		add_post_meta(
 			$post_id,
 			Rules::META_KEY,

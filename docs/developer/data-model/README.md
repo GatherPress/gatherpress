@@ -169,7 +169,7 @@ Each occurrence is built from its own local date and time in the rule's timezone
 Rules change only through three methods on `Event::rules()`, each returning `true` or a `WP_Error` that says why the change was refused:
 
 - `replace( $rows )` replaces every rule. It is for drafts and events that haven't started, and refuses a published or private event whose saved start has passed.
-- `change_from( $date, $rows )` changes the schedule from a local `Y-m-d` date on. Rules with dates from `$date` on end the day before it, a rule that starts on or after `$date` is removed, and the new rules must start on or after it. An event without rules keeps its saved date as a rule of that one date. On a published or private event, `$date` must be after today in the event's timezone, so no date that has happened, or is happening today, changes.
+- `change_from( $date, $rows )` changes the schedule from a local `Y-m-d` date on. Rules with dates from `$date` on end the day before it, a rule that starts on or after `$date` is removed, and the new rules must start on or after it. An event without rules keeps its saved date as a rule of that one date, and the change is refused if that date can't be a rule, such as one lasting longer than 366 days. On a published or private event, `$date` must be after today in the event's timezone and in every rule's, so no date that has happened, or is happening today, changes. Changing a single date, such as cancelling tonight's, waits for the exceptions table.
 - `stop( $date )` ends every rule the day before `$date`.
 
 ```php
@@ -187,9 +187,9 @@ $result = $event->rules()->change_from(
 );
 ```
 
-The new rows are validated, stored in canonical form, and share one new `change_id`. A rule ended by a change keeps the `change_id` of the change that created it. Rows that aren't valid rules, such as one written by a later version, are kept as they were.
+The new rows are validated, stored in canonical form, and share one new `change_id` with the rules the change ends, so a change records what it started and what it stopped. Rows that aren't valid rules, such as one written by a later version, are kept as they were.
 
-After every write, the event's saved datetimes, timezone and all-day flag move to the series' first occurrence. Lists, calendars, the event page and the editor still read those, so they show a series by its first date until dates are expanded in `WP_Query`.
+After every write, the event's saved datetimes, timezone, all-day flag and the editor's `gatherpress_datetime` move to the series' first occurrence, so the next save of the event keeps them. Lists, calendars, the event page and the editor still read those, so they show a series by its first date, and treat it as past once that date has passed, until dates are expanded in `WP_Query`. What changing an event's date in the editor does once it has rules is decided with the editor UI.
 
 Direct writes of `gatherpress_rule` through `add_post_meta()`, `update_post_meta()` and `delete_post_meta()` are refused. Writes to a revision, `delete_post_meta_by_key()`, and imports that set `WP_IMPORTING`, such as the WordPress Importer, are let through, and the `gatherpress_rule_meta_write_allowed` filter can allow others. The meta is read-only through REST.
 
