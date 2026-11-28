@@ -275,6 +275,13 @@ Each date of a repeating event has a URL: the event's link plus the date's recur
 
 Nothing is stored for this, so the notice can't say when or why a date was removed. Recorded aliases, the per-date calendar endpoints, and listing a day's several showtimes are still to come.
 
+### Showing how an event repeats
+
+`Event\Repeat_Summary::for_event()` describes a repeating event as a sentence, such as "Every 2 weeks on Monday and Friday, until March 1, 2027." It describes the rule of the date being shown, on a date's page or a list's row, otherwise the rule running today, otherwise the last one. Its strings match the editor's `summarize()` in `src/helpers/repeat.js`, so they share translations.
+
+- The Event Date block shows it under the date. Its `showRepeat` attribute, on by default, hides it.
+- The admin event list marks a repeating event "Repeating" after its title, shows the sentence under its date, and has a Repeating view beside Upcoming and Past. The view is the `gatherpress_repeating` query var, and lists events with rules, including a series that has stopped repeating.
+
 ## REST endpoints
 
 Everything is under the `gatherpress/v1` namespace, defined as `GATHERPRESS_REST_NAMESPACE`.

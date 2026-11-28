@@ -135,6 +135,7 @@ jest.mock( '@src/blocks/event-date/helpers', () => ( {
  * Internal dependencies
  */
 import Edit from '@src/blocks/event-date/edit';
+import { resolveEventDateData } from '@src/blocks/event-date/helpers';
 
 const baseAttributes = {
 	displayType: 'both',
@@ -432,5 +433,56 @@ describe( 'Event Date Edit status', () => {
 		expect( useBlockProps ).toHaveBeenLastCalledWith(
 			expect.objectContaining( { className: undefined } ),
 		);
+	} );
+} );
+
+describe( 'Event Date Edit showRepeat', () => {
+	const repeating = {
+		dateTimeStart: '2026-08-03 18:00:00',
+		dateTimeEnd: '2026-08-03 20:00:00',
+		timezone: 'UTC',
+		isLoading: false,
+		isValidEvent: true,
+		repeatPattern: { frequency: 'WEEKLY', interval: 1, weekdays: [ 'MO' ], ends_on: null },
+	};
+
+	it( 'shows how a repeating event repeats under its date', () => {
+		useSelect.mockReturnValueOnce( repeating );
+
+		const { getByText } = renderEdit();
+
+		expect( getByText( 'Every week on Monday.' ) ).toHaveClass( 'gatherpress-event-date__repeat' );
+	} );
+
+	it( 'hides it when the block turns it off', () => {
+		useSelect.mockReturnValueOnce( repeating );
+
+		const { queryByText } = renderEdit( { showRepeat: false } );
+
+		expect( queryByText( 'Every week on Monday.' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'shows nothing for an event that doesn\'t repeat', () => {
+		const { container } = renderEdit();
+
+		expect( container.querySelector( '.gatherpress-event-date__repeat' ) ).toBeNull();
+	} );
+
+	it( 'selects the dates and the repeat pattern together', () => {
+		resolveEventDateData.mockReturnValueOnce( { ...repeating, repeatPattern: undefined } );
+		useSelect.mockImplementationOnce( ( selector ) => selector( () => ( {} ) ) );
+
+		const { container } = renderEdit();
+
+		expect( resolveEventDateData ).toHaveBeenCalled();
+		expect( container.querySelector( '.gatherpress-event-date__repeat' ) ).toBeNull();
+	} );
+
+	it( 'toggles the showRepeat attribute', () => {
+		const setAttributes = jest.fn();
+		const { getByText } = renderEdit( {}, setAttributes );
+
+		fireEvent.click( getByText( 'Show repeat schedule' ) );
+		expect( setAttributes ).toHaveBeenCalledWith( { showRepeat: false } );
 	} );
 } );

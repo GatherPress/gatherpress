@@ -44,6 +44,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"showRepeat": {
+			"type": "boolean",
+			"default": true
+		},
 		"showViewerTime": {
 			"type": "boolean",
 			"default": false

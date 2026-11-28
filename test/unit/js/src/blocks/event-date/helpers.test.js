@@ -21,6 +21,7 @@ import {
 	getViewerTimePreview,
 	isTimezoneAppended,
 	resolveEventDateData,
+	selectRepeatPattern,
 } from '@src/blocks/event-date/helpers';
 
 /**
@@ -587,5 +588,36 @@ describe( 'getViewerTimePreview', () => {
 				rangeFormat: '%1$s until %2$s your time',
 			} ),
 		);
+	} );
+} );
+
+describe( 'selectRepeatPattern', () => {
+	const pattern = { frequency: 'WEEKLY', weekdays: [ 'MO' ] };
+	const select = ( edited, record ) => ( store ) => ( {
+		'core/editor': {
+			getCurrentPostId: () => 7,
+			getCurrentPostType: () => 'gatherpress_event',
+			getEditedPostAttribute: () => edited,
+		},
+		core: {
+			getEntityRecord: () => record,
+		},
+	}[ store ] );
+
+	it( 'is null without a post', () => {
+		expect( selectRepeatPattern( select(), undefined, undefined, null ) ).toBeNull();
+	} );
+
+	it( 'reads the edited value for the event being edited', () => {
+		expect( selectRepeatPattern( select( { pattern } ), undefined, undefined, 7 ) ).toBe( pattern );
+		expect( selectRepeatPattern( select( undefined ), undefined, undefined, 7 ) ).toBeNull();
+	} );
+
+	it( 'reads the saved value for another event, such as a Query Loop row', () => {
+		const record = { gatherpress_repeat: { pattern } };
+
+		expect( selectRepeatPattern( select( null, record ), 'gatherpress_event', 3, 7 ) ).toBe( pattern );
+		expect( selectRepeatPattern( select( null, record ), undefined, undefined, 9 ) ).toBe( pattern );
+		expect( selectRepeatPattern( select( null, undefined ), undefined, 3, 9 ) ).toBeNull();
 	} );
 } );

@@ -95,6 +95,7 @@ final class Setup {
 		Abilities::get_instance();
 		Admin_List::get_instance();
 		Date_Pages::get_instance();
+		Repeat_Admin::get_instance();
 		Email::get_instance();
 		Meta::get_instance();
 		Occurrence_Index::get_instance();

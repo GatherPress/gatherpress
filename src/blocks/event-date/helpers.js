@@ -8,6 +8,7 @@ import { __, sprintf } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone } from '../../helpers/datetime';
 import { findEventPostById } from '../../helpers/event';
+import { REPEAT_FIELD } from '../../helpers/repeat';
 import { getViewerTimeLabel } from './viewer-time';
 
 /**
@@ -21,6 +22,37 @@ import { getViewerTimeLabel } from './viewer-time';
  */
 function toStatus( value ) {
 	return 'string' === typeof value ? value : '';
+}
+
+/**
+ * The repeat pattern of the event an Event Date block shows.
+ *
+ * The edited value for the event being edited, so the preview follows the
+ * Repeat schedule panel before a save, and the saved value for any other.
+ *
+ * @since TBD
+ *
+ * @param {Function}         select          WordPress data select function.
+ * @param {string|null}      contextPostType Block context postType value.
+ * @param {number|undefined} contextQueryId  Block context queryId value (set by core/query).
+ * @param {number|null}      postId          Resolved post ID.
+ *
+ * @return {Object|null} The pattern, or null for an event that doesn't repeat.
+ */
+export function selectRepeatPattern( select, contextPostType, contextQueryId, postId ) {
+	if ( ! postId ) {
+		return null;
+	}
+
+	const editor = select( 'core/editor' );
+
+	if ( undefined === contextQueryId && postId === editor?.getCurrentPostId() ) {
+		return editor.getEditedPostAttribute( REPEAT_FIELD )?.pattern ?? null;
+	}
+
+	const postType = contextPostType ?? editor?.getCurrentPostType();
+
+	return select( 'core' ).getEntityRecord( 'postType', postType, postId )?.[ REPEAT_FIELD ]?.pattern ?? null;
 }
 
 /**

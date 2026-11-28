@@ -31,6 +31,9 @@ if ( ! isset( $wrapper_attributes, $datetime, $link, $has_viewer_time ) ) {
 	<?php } elseif ( $has_viewer_time ) { ?>
 		</span>
 	<?php } ?>
+	<?php if ( ! empty( $repeat ) ) : ?>
+		<span class="gatherpress-event-date__repeat"><?php echo esc_html( $repeat ); ?></span>
+	<?php endif; ?>
 	<?php if ( ! empty( $status_label ) ) : ?>
 		<span class="screen-reader-text gatherpress--screen-reader-text"><?php echo esc_html( sprintf( ' (%s)', $status_label ) ); ?></span>
 	<?php endif; ?>

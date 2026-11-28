@@ -373,6 +373,51 @@ class Test_Event_Date extends Base {
 	}
 
 	/**
+	 * A repeating event's date says how it repeats, unless the block hides it.
+	 *
+	 * @since TBD
+	 * @covers \GatherPress\Core\Blocks\Event_Date\Html_Renderer
+	 *
+	 * @return void
+	 */
+	public function test_render_shows_how_an_event_repeats(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				array(
+					'starts_on' => '2099-01-05',
+					'rrule'     => 'FREQ=WEEKLY;BYDAY=MO',
+					'times'     => array( '19:00' ),
+					'timezone'  => 'UTC',
+					'duration'  => 60,
+				),
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+		$this->go_to( get_permalink( $post_id ) );
+
+		$this->assertStringContainsString(
+			'<span class="gatherpress-event-date__repeat">Every week on Monday.</span>',
+			do_blocks( '<!-- wp:gatherpress/event-date /-->' )
+		);
+		$this->assertStringNotContainsString(
+			'gatherpress-event-date__repeat',
+			do_blocks( '<!-- wp:gatherpress/event-date {"showRepeat":false} /-->' )
+		);
+	}
+
+	/**
 	 * A scheduled event's date carries no status class.
 	 *
 	 * @since 0.37.0

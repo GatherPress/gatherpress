@@ -468,3 +468,12 @@
 	color: #b32d2e;
 	flex-basis: 100%;
 }
+
+// The repeat icon in a repeating event's "Repeating" state, sized to the title's text.
+.post-state .dashicons-controls-repeat {
+	font-size: 1em;
+	width: 1em;
+	height: 1em;
+	margin-right: 0.25em;
+	vertical-align: text-bottom;
+}
