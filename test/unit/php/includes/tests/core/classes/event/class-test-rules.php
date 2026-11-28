@@ -820,7 +820,8 @@ class Test_Rules extends Base {
 	 * @since TBD
 	 *
 	 * @covers ::write
-	 * @covers ::replace_rows
+	 * @covers ::clear_rows
+	 * @covers ::add_rows
 	 *
 	 * @return void
 	 */
@@ -845,5 +846,46 @@ class Test_Rules extends Base {
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'gatherpress_rules_not_saved', $result->get_error_code() );
 		$this->assertSame( $before, $this->stored( $post_id ), 'The schedule is as it was.' );
+	}
+
+	/**
+	 * A failed delete changes nothing, and a failed restore says the schedule may be incomplete.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::write
+	 * @covers ::clear_rows
+	 * @covers ::add_rows
+	 *
+	 * @return void
+	 */
+	public function test_write_reports_delete_and_restore_failures(): void {
+		$post_id = $this->event();
+		$rules   = ( new Event( $post_id ) )->rules();
+
+		$rules->replace( array( $this->row() ) );
+
+		$before    = $this->stored( $post_id );
+		$no_delete = static fn( $check, $object_id, $meta_key ) => Rules::META_KEY === $meta_key ? false : $check;
+
+		// Priority 11: after the rule guard at 10, which lets the write through.
+		add_filter( 'delete_post_metadata', $no_delete, 11, 3 );
+		$result = $rules->replace( array( $this->row( array( 'starts_on' => '2027-01-08' ) ) ) );
+		remove_filter( 'delete_post_metadata', $no_delete, 11 );
+
+		$this->assertSame( 'gatherpress_rules_not_saved', $result->get_error_code() );
+		$this->assertSame( $before, $this->stored( $post_id ), 'Nothing was added on top of the old rows.' );
+
+		$calls  = 0;
+		$no_add = static function ( $check, $object_id, $meta_key ) use ( &$calls ) {
+			// The first new row saves, the second fails, and the restore fails too.
+			return Rules::META_KEY === $meta_key && 2 <= ++$calls ? false : $check;
+		};
+
+		add_filter( 'add_post_metadata', $no_add, 11, 3 );
+		$result = $rules->replace( array( $this->row( array( 'starts_on' => '2027-01-08' ) ), $this->row() ) );
+		remove_filter( 'add_post_metadata', $no_add, 11 );
+
+		$this->assertSame( 'gatherpress_rules_lost', $result->get_error_code() );
 	}
 }

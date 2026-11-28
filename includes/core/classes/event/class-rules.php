@@ -414,8 +414,10 @@ final class Rules {
 	 * Save rows as the event's rules, then move its saved dates to the series' first date.
 	 *
 	 * Rows that aren't valid rules, which a later version may have written,
-	 * are kept as they were. If a row can't be saved, the rows from before
-	 * are put back, so a failed write never leaves the schedule half written.
+	 * are kept as they were. If the old rows can't be deleted, nothing
+	 * changes. If a new row can't be saved, the rows from before are put
+	 * back, and if that fails too the error says the schedule may be
+	 * incomplete.
 	 *
 	 * @since TBD
 	 *
@@ -429,12 +431,14 @@ final class Rules {
 		$unknown  = array_filter( $previous, static fn( mixed $row ): bool => null === Rule::from_meta( $row ) );
 
 		self::$writing[ $post_id ] = true;
+		$status                    = 'saved';
 
 		try {
-			$saved = $this->replace_rows( $post_id, array_merge( array_values( $unknown ), $rows ) );
-
-			if ( ! $saved ) {
-				$this->replace_rows( $post_id, $previous );
+			if ( ! $this->clear_rows( $post_id ) ) {
+				$status = 'not_saved';
+			} elseif ( ! $this->add_rows( $post_id, array_merge( array_values( $unknown ), $rows ) ) ) {
+				$restored = $this->clear_rows( $post_id ) && $this->add_rows( $post_id, $previous );
+				$status   = $restored ? 'not_saved' : 'lost';
 			}
 		} finally {
 			unset( self::$writing[ $post_id ] );
@@ -442,11 +446,19 @@ final class Rules {
 
 		$this->rules = null;
 
-		if ( ! $saved ) {
-			return new WP_Error(
-				'gatherpress_rules_not_saved',
-				__( 'The repeat rules could not be saved, so the schedule was left as it was.', 'gatherpress' )
-			);
+		if ( 'saved' !== $status ) {
+			return 'lost' === $status
+				? new WP_Error(
+					'gatherpress_rules_lost',
+					__(
+						'The repeat rules could not be saved or put back, so the schedule may be incomplete.',
+						'gatherpress'
+					)
+				)
+				: new WP_Error(
+					'gatherpress_rules_not_saved',
+					__( 'The repeat rules could not be saved, so the schedule was left as it was.', 'gatherpress' )
+				);
 		}
 
 		$this->sync_saved_dates( $post_id );
@@ -455,7 +467,24 @@ final class Rules {
 	}
 
 	/**
-	 * Replace the stored rows of the rule key.
+	 * Delete the stored rows of the rule key.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $post_id The event's post ID.
+	 *
+	 * @return bool True once no rows are stored, false if rows were there and the delete failed.
+	 * @phpstan-impure
+	 */
+	protected function clear_rows( int $post_id ): bool {
+		$had_rows = (bool) get_post_meta( $post_id, self::META_KEY, false );
+
+		// Deleting an absent key also returns false, which isn't a failure.
+		return delete_post_meta( $post_id, self::META_KEY ) || ! $had_rows;
+	}
+
+	/**
+	 * Store rows of the rule key, stopping at the first that fails.
 	 *
 	 * @since TBD
 	 *
@@ -463,10 +492,9 @@ final class Rules {
 	 * @param array<int, mixed> $rows    The rows to store.
 	 *
 	 * @return bool True if every row was saved.
+	 * @phpstan-impure
 	 */
-	protected function replace_rows( int $post_id, array $rows ): bool {
-		delete_post_meta( $post_id, self::META_KEY );
-
+	protected function add_rows( int $post_id, array $rows ): bool {
 		foreach ( $rows as $row ) {
 			// Slashed, since `add_post_meta()` unslashes.
 			if ( false === add_post_meta( $post_id, self::META_KEY, wp_slash( $row ) ) ) {
@@ -476,6 +504,7 @@ final class Rules {
 
 		return true;
 	}
+
 
 	/**
 	 * Move the event's saved dates to the first occurrence of its rules.
