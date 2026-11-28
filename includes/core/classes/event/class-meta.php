@@ -443,7 +443,8 @@ final class Meta {
 
 		foreach ( $keys as $key ) {
 			if ( array_key_exists( $key, $response->data['meta'] ?? array() ) ) {
-				$response->data['meta'][ $key ] = '';
+				// The rule key holds a list of rows, so it hides as an empty list.
+				$response->data['meta'][ $key ] = Rules::META_KEY === $key ? array() : '';
 			}
 		}
 

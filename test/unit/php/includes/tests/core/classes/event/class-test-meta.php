@@ -879,6 +879,52 @@ class Test_Meta extends Base {
 	}
 
 	/**
+	 * A password-protected event's rules read as an empty list without the password, and in full with it.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::hide_password_protected_meta
+	 *
+	 * @return void
+	 */
+	public function test_rest_hides_the_rule_meta_behind_a_password(): void {
+		unregister_post_meta( Event::POST_TYPE, Rules::META_KEY );
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'     => Event::POST_TYPE,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		add_post_meta(
+			$post_id,
+			Rules::META_KEY,
+			array(
+				'starts_on' => '2026-12-11',
+				'rrule'     => 'FREQ=MONTHLY;BYDAY=2FR',
+				'times'     => array( '20:00' ),
+				'timezone'  => 'America/New_York',
+				'duration'  => 120,
+			)
+		);
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'GET', rest_get_route_for_post( $post_id ) );
+
+		$this->assertSame( array(), rest_do_request( $request )->get_data()['meta'][ Rules::META_KEY ] );
+
+		$request->set_param( 'password', 'secret' );
+
+		$rules = rest_do_request( $request )->get_data()['meta'][ Rules::META_KEY ];
+
+		$this->assertCount( 1, $rules );
+		$this->assertSame( 'FREQ=MONTHLY;BYDAY=2FR', $rules[0]['rrule'] );
+	}
+
+	/**
 	 * The REST API reads every rule row, including ones with keys added later.
 	 *
 	 * @since TBD
