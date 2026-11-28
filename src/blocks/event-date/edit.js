@@ -48,11 +48,13 @@ import {
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 import { getDefaultStatus, strikesDate } from '../../helpers/event-status';
+import { summarize } from '../../helpers/repeat';
 import {
 	getViewerTimeHelp,
 	getViewerTimePreview,
 	isTimezoneAppended,
 	resolveEventDateData,
+	selectRepeatPattern,
 } from './helpers';
 import ViewerTimeTooltip from './viewer-time-tooltip';
 
@@ -251,6 +253,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		separator,
 		showTimezone,
 		showViewerTime,
+		showRepeat,
 	} = attributes;
 
 	const dateFormat = getFromSettings( 'dateFormat' );
@@ -274,8 +277,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		status,
 		isLoading,
 		isValidEvent,
+		repeatPattern,
 	} = useSelect(
-		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
+		( select ) => ( {
+			...resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
+			repeatPattern: selectRepeatPattern( select, contextPostType, contextQueryId, postId ),
+		} ),
 		[ postId, contextPostType, contextQueryId, hasExplicitOverride ],
 	);
 
@@ -400,6 +407,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			<ViewerTimeTooltip isLink={ isLink } label={ viewerTimeLabel }>
 				{ displayedDateTime }
 			</ViewerTimeTooltip>
+			{ false !== showRepeat && repeatPattern && (
+				<span className="gatherpress-event-date__repeat">{ summarize( repeatPattern ) }</span>
+			) }
 			{ isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
@@ -500,6 +510,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							}
 						/>
 					) }
+					<ToggleControl
+						label={ __( 'Show repeat schedule', 'gatherpress' ) }
+						help={ __( 'Show how a repeating event repeats, under its date.', 'gatherpress' ) }
+						checked={ false !== showRepeat }
+						onChange={ ( value ) => setAttributes( { showRepeat: value } ) }
+					/>
 					<ToggleControl
 						label={ __( 'Link to event', 'gatherpress' ) }
 						help={ __(

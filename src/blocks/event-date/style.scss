@@ -9,6 +9,12 @@
 	// This block has customizable padding, border-box makes that more predictable.
 	box-sizing: border-box;
 
+	// How the event repeats, on its own line under the date.
+	.gatherpress-event-date__repeat {
+		display: block;
+		font-size: 0.875em;
+	}
+
 	&.gatherpress-event-date--is-struck {
 		text-decoration: line-through;
 		opacity: 0.7;

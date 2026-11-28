@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Repeat_Summary;
 use GatherPress\Core\Event\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Core\User;
@@ -106,8 +107,20 @@ final class Html_Renderer {
 				'link'               => $this->get_link(),
 				'has_viewer_time'    => ! empty( $context ),
 				'status_label'       => $status_label,
+				'repeat'             => $this->get_repeat(),
 			)
 		);
+	}
+
+	/**
+	 * Get how the event repeats, when the block shows it.
+	 *
+	 * @since TBD
+	 *
+	 * @return string The sentence, or an empty string for an event that doesn't repeat or a block that hides it.
+	 */
+	private function get_repeat(): string {
+		return false === ( $this->attributes['showRepeat'] ?? true ) ? '' : Repeat_Summary::for_event( $this->event );
 	}
 
 	/**
