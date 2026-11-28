@@ -11,6 +11,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -68,6 +69,14 @@ final class Rule {
 	 * @var int
 	 */
 	const MAX_DATES = 1000;
+
+	/**
+	 * Longest an occurrence can last, in minutes: 366 days.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const MAX_DURATION = 527040;
 
 	/**
 	 * The date pattern: `DAILY`, `WEEKLY`, `MONTHLY`, `YEARLY`, or null for one date.
@@ -456,8 +465,11 @@ final class Rule {
 		foreach ( $this->times as $time ) {
 			// Built from the local date and time, so PHP moves a time in a
 			// spring-forward gap to after it and picks the first of a repeated hour.
+			// Adding an interval counts elapsed time across a clock change, where
+			// modify() would count wall-clock minutes. A spring-forward gap can
+			// put two showtimes at one instant with one key; merging counts it once.
 			$start         = new DateTimeImmutable( $day . ' ' . $time, $this->timezone );
-			$end           = $start->modify( sprintf( '+%d minutes', $this->duration ) );
+			$end           = $start->add( new DateInterval( sprintf( 'PT%dM', $this->duration ) ) );
 			$key           = Occurrences::recurrence_id( $start );
 			$occurrences[] = new Occurrence( $post_id, $key, $start, $end, false, $status );
 		}
@@ -731,7 +743,8 @@ final class Rule {
 	 * Whether the times and duration fit the kind of rule.
 	 *
 	 * A timed rule needs at least one time and a duration of zero or more
-	 * minutes. An all-day rule lasts a whole number of days.
+	 * minutes. An all-day rule lasts a whole number of days. Neither lasts
+	 * longer than `MAX_DURATION`, so a lookup never reaches back years.
 	 *
 	 * @since TBD
 	 *
@@ -742,6 +755,10 @@ final class Rule {
 	 * @return bool True when they fit.
 	 */
 	protected static function is_valid_length( bool $is_all_day, array $times, int $duration ): bool {
+		if ( self::MAX_DURATION < $duration ) {
+			return false;
+		}
+
 		if ( $is_all_day ) {
 			return 1440 <= $duration && 0 === $duration % 1440;
 		}

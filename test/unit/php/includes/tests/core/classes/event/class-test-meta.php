@@ -357,6 +357,7 @@ class Test_Meta extends Base {
 				'geo_address'                    => '123 Main St',
 				'geo_public'                     => 1,
 				'gatherpress_online_event_link'  => 'https://example.com',
+				Rules::META_KEY                  => array( array( 'starts_on' => '2025-01-01' ) ),
 			)
 		);
 
@@ -379,6 +380,7 @@ class Test_Meta extends Base {
 		$this->assertArrayNotHasKey( 'geo_longitude', $filtered_meta );
 		$this->assertArrayNotHasKey( 'geo_address', $filtered_meta );
 		$this->assertArrayNotHasKey( 'geo_public', $filtered_meta );
+		$this->assertArrayNotHasKey( Rules::META_KEY, $filtered_meta, 'Rules are read-only through REST for now.' );
 		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
 		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
 	}
@@ -874,5 +876,45 @@ class Test_Meta extends Base {
 			array_keys( $meta[ Rules::META_KEY ]['show_in_rest']['schema']['properties'] )
 		);
 		$this->assertContains( Rules::META_KEY, Meta::PASSWORD_PROTECTED_META, 'Rules reveal dates.' );
+	}
+
+	/**
+	 * The REST API reads every rule row, including ones with keys added later.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_rest_reads_the_rule_meta(): void {
+		// Another test can leave the key unregistered, and registrations persist between tests.
+		unregister_post_meta( Event::POST_TYPE, Rules::META_KEY );
+		Meta::get_instance()->register( Event::POST_TYPE );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$row     = array(
+			'starts_on' => '2026-12-11',
+			'rrule'     => 'FREQ=MONTHLY;BYDAY=2FR',
+			'times'     => array( '20:00' ),
+			'timezone'  => 'America/New_York',
+			'duration'  => 120,
+		);
+
+		add_post_meta( $post_id, Rules::META_KEY, $row );
+		add_post_meta( $post_id, Rules::META_KEY, array_merge( $row, array( 'venue' => 9 ) ) );
+
+		$request  = new WP_REST_Request( 'GET', rest_get_route_for_post( $post_id ) );
+		$response = rest_do_request( $request );
+		$rules    = $response->get_data()['meta'][ Rules::META_KEY ];
+
+		$this->assertCount( 2, $rules );
+		$this->assertSame( 'FREQ=MONTHLY;BYDAY=2FR', $rules[0]['rrule'] );
+		$this->assertNotNull( $rules[1], 'A row with a key the schema does not list still reads.' );
 	}
 }

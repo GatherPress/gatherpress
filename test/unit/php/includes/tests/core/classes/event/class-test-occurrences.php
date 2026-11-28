@@ -16,6 +16,7 @@ use GatherPress\Core\Event\Occurrences;
 use GatherPress\Core\Event\Rules;
 use GatherPress\Core\Event\Status;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Occurrences.
@@ -686,44 +687,79 @@ class Test_Occurrences extends Base {
 	 *
 	 * @covers ::primary
 	 * @covers ::primary_from_rules
+	 * @covers ::rules
 	 *
 	 * @return void
 	 */
 	public function test_primary_with_rules(): void {
-		$upcoming = $this->event();
-		$today    = current_datetime();
+		$post_id = $this->event();
 
+		$this->add_rule( $post_id, array( 'ends_on' => '2027-03-31' ) );
 		$this->add_rule(
-			$upcoming,
+			$post_id,
 			array(
-				'starts_on' => $today->modify( '-30 days' )->format( 'Y-m-d' ),
-				'rrule'     => 'FREQ=DAILY;INTERVAL=7',
-				'timezone'  => 'UTC',
-				'times'     => array( '00:00' ),
-				'duration'  => 1,
+				'starts_on' => '2027-01-04',
+				'ends_on'   => '2027-01-31',
+				'rrule'     => 'FREQ=WEEKLY;BYDAY=MO',
 			)
 		);
 
-		$primary = $this->occurrences( $upcoming )->primary();
+		$occurrences = $this->occurrences( $post_id );
+		$rules       = ( new Event( $post_id ) )->rules()->all();
+		$at          = static fn( string $moment ): ?string => Utility::invoke_hidden_method(
+			$occurrences,
+			'primary_from_rules',
+			array( $rules, new DateTimeImmutable( $moment, new DateTimeZone( 'UTC' ) ) )
+		)?->recurrence_id;
 
-		$this->assertNotNull( $primary );
-		$this->assertGreaterThanOrEqual( time(), $primary->end->getTimestamp(), 'The next date that has not ended.' );
-		$this->assertLessThanOrEqual( time() + 7 * DAY_IN_SECONDS, $primary->start->getTimestamp() );
+		$this->assertSame( '20270104T200000', $at( '2026-12-20' ), 'The earliest upcoming date across the rules.' );
+		$this->assertSame( '20270108T200000', $at( '2027-01-05 12:00' ) );
+		$this->assertSame( '20270312T200000', $at( '2027-06-01' ), 'Once every date has ended, the last one.' );
+		$this->assertNotNull( $occurrences->primary(), 'The public method looks from now.' );
+	}
 
-		$ended = $this->event();
+	/**
+	 * A range returns at most MAX_OCCURRENCES, and gap-day duplicates count once.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::in_range
+	 * @covers ::merge
+	 *
+	 * @return void
+	 */
+	public function test_in_range_caps_and_merges(): void {
+		$capped = $this->event();
 
 		$this->add_rule(
-			$ended,
+			$capped,
 			array(
-				'starts_on' => '2020-01-10',
-				'ends_on'   => '2020-03-31',
+				'starts_on' => '2026-01-01',
+				'rrule'     => 'FREQ=DAILY',
+				'times'     => array( '09:00', '20:00' ),
 			)
 		);
 
-		$this->assertSame(
-			'20200313T200000',
-			$this->occurrences( $ended )->primary()->recurrence_id,
-			'Once every date has ended, the last one.'
+		$this->assertCount(
+			Occurrences::MAX_OCCURRENCES,
+			$this->occurrences( $capped )->in_range( $this->utc( '2026-01-01' ), $this->utc( '2028-01-01' ) )
+		);
+
+		$gap = $this->event();
+
+		$this->add_rule(
+			$gap,
+			array(
+				'starts_on' => '2026-03-08',
+				'rrule'     => null,
+				'times'     => array( '02:30', '03:30' ),
+			)
+		);
+
+		$this->assertCount(
+			1,
+			$this->occurrences( $gap )->in_range( $this->utc( '2026-03-08' ), $this->utc( '2026-03-09' ) ),
+			'Two showtimes on one instant are one date.'
 		);
 	}
 }

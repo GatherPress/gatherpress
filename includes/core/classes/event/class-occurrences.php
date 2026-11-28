@@ -74,6 +74,14 @@ final class Occurrences {
 	protected Occurrence|false|null $single = false;
 
 	/**
+	 * The event's valid repeat rules, once read.
+	 *
+	 * @since TBD
+	 * @var Rule[]|null
+	 */
+	protected ?array $rules = null;
+
+	/**
 	 * Build the occurrences of an event.
 	 *
 	 * @since TBD
@@ -99,6 +107,10 @@ final class Occurrences {
 	/**
 	 * The event's occurrences that overlap a range, in start order.
 	 *
+	 * A range with more dates than `MAX_OCCURRENCES`, or than one rule's
+	 * `Rule::MAX_DATES`, returns the earliest ones, so callers paging through
+	 * a long series should ask for shorter ranges.
+	 *
 	 * @since TBD
 	 *
 	 * @param DateTimeInterface $from Start of the range.
@@ -107,7 +119,7 @@ final class Occurrences {
 	 * @return Occurrence[] The occurrences.
 	 */
 	public function in_range( DateTimeInterface $from, DateTimeInterface $to ): array {
-		$rules = $this->event->rules()->all();
+		$rules = $this->rules();
 
 		if ( $rules ) {
 			$occurrences = array();
@@ -162,7 +174,7 @@ final class Occurrences {
 	 */
 	public function find( string $recurrence_id ): ?Occurrence {
 		$occurrence = null;
-		$rules      = $this->event->rules()->all();
+		$rules      = $this->rules();
 
 		foreach ( $rules as $rule ) {
 			$occurrence = $rule->find( $recurrence_id, $this->post_id(), $this->status() );
@@ -213,7 +225,7 @@ final class Occurrences {
 	 * @return Occurrence|null The occurrence, or null if the event has none.
 	 */
 	public function primary(): ?Occurrence {
-		$rules      = $this->event->rules()->all();
+		$rules      = $this->rules();
 		$occurrence = $rules ? $this->primary_from_rules( $rules ) : $this->single();
 
 		/**
@@ -281,14 +293,15 @@ final class Occurrences {
 	 *
 	 * @since TBD
 	 *
-	 * @param Rule[] $rules The event's rules.
+	 * @param Rule[]                 $rules The event's rules.
+	 * @param DateTimeImmutable|null $now   The moment to look from. Defaults to now.
 	 *
 	 * @return Occurrence|null The occurrence, or null if the rules produce none.
 	 *
 	 * @throws Exception If a date cannot be built.
 	 */
-	protected function primary_from_rules( array $rules ): ?Occurrence {
-		$now      = new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) );
+	protected function primary_from_rules( array $rules, ?DateTimeImmutable $now = null ): ?Occurrence {
+		$now      = $now ?? new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) );
 		$upcoming = array();
 		$ended    = array();
 
@@ -338,6 +351,19 @@ final class Occurrences {
 		);
 
 		return $unique;
+	}
+
+	/**
+	 * The event's valid repeat rules, read once per instance.
+	 *
+	 * @since TBD
+	 *
+	 * @return Rule[] The rules, empty when the event doesn't repeat.
+	 */
+	protected function rules(): array {
+		$this->rules ??= $this->event->rules()->all();
+
+		return $this->rules;
 	}
 
 	/**

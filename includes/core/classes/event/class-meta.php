@@ -219,7 +219,9 @@ final class Meta {
 			'show_in_rest'  => array(
 				'schema' => array(
 					'type'                 => 'object',
-					'additionalProperties' => false,
+					// WordPress defaults meta objects to no extra keys, which would turn
+					// a row with a key added later, such as a venue, into null.
+					'additionalProperties' => true,
 					'properties'           => array(
 						'change_id'  => array( 'type' => 'string' ),
 						'starts_on'  => array( 'type' => 'string' ),
@@ -387,6 +389,7 @@ final class Meta {
 				'gatherpress_datetime_end',
 				'gatherpress_datetime_end_gmt',
 				'gatherpress_timezone',
+				Rules::META_KEY,
 			),
 			Geo_Sync::FIELDS
 		);

@@ -13,6 +13,7 @@ use DateTimeZone;
 use GatherPress\Core\Event\Occurrence;
 use GatherPress\Core\Event\Rule;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Rule.
@@ -185,6 +186,7 @@ class Test_Rule extends Base {
 					'duration'   => 60,
 				)
 			),
+			'lasts over a year'     => $this->row( array( 'duration' => Rule::MAX_DURATION + 1 ) ),
 			'pattern never repeats' => $this->row(
 				array(
 					'starts_on' => '2026-02-10',
@@ -586,5 +588,166 @@ class Test_Rule extends Base {
 			$ended->previous_date( $this->utc( '2027-01-01' ) )->format( 'Y-m-d' ),
 			'After the end date, the last date before it.'
 		);
+	}
+
+	/**
+	 * Weeks start on Monday, so a mid-week start counts its own week as the first.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::period_of
+	 * @covers ::dates_in_period
+	 *
+	 * @return void
+	 */
+	public function test_weeks_start_on_monday(): void {
+		$rule = $this->rule(
+			array(
+				'starts_on' => '2026-12-16',
+				'rrule'     => 'FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE',
+			)
+		);
+
+		// Wed Dec 16 starts the week of Mon Dec 14. Every other week skips Dec 21.
+		$this->assertSame(
+			array( '20261216T200000', '20261228T200000', '20261230T200000' ),
+			$this->keys( $rule, '2026-12-01', '2027-01-04' )
+		);
+	}
+
+	/**
+	 * On a fall-back day, an ambiguous time uses its first instance and a duration counts elapsed time.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences_on
+	 *
+	 * @return void
+	 */
+	public function test_daylight_saving_fall_back(): void {
+		$ambiguous = $this->rule(
+			array(
+				'starts_on' => '2026-11-01',
+				'rrule'     => null,
+				'times'     => array( '01:30' ),
+				'duration'  => 30,
+			)
+		);
+		$across    = $this->rule(
+			array(
+				'starts_on' => '2026-11-01',
+				'rrule'     => null,
+				'times'     => array( '00:30' ),
+				'duration'  => 120,
+			)
+		);
+
+		$first = $ambiguous->occurrences( $this->utc( '2026-10-31' ), $this->utc( '2026-11-02' ), 7, 'scheduled' )[0];
+		$long  = $across->occurrences( $this->utc( '2026-10-31' ), $this->utc( '2026-11-02' ), 7, 'scheduled' )[0];
+
+		$this->assertSame( '01:30 EDT', $first->start->format( 'H:i T' ), 'The first of the repeated hour.' );
+		$this->assertSame( '01:00 EST', $first->end->format( 'H:i T' ), 'Thirty elapsed minutes later.' );
+		$this->assertSame( '01:30 EST', $long->end->format( 'H:i T' ), 'Two elapsed hours, not wall-clock hours.' );
+		$this->assertSame( 7200, $long->end->getTimestamp() - $long->start->getTimestamp() );
+	}
+
+	/**
+	 * Two showtimes in a spring-forward gap land on one instant with one key.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences_on
+	 *
+	 * @return void
+	 */
+	public function test_spring_forward_gap_collision(): void {
+		$rule = $this->rule(
+			array(
+				'starts_on' => '2026-03-08',
+				'rrule'     => null,
+				'times'     => array( '02:30', '03:30' ),
+				'duration'  => 60,
+			)
+		);
+
+		$this->assertSame(
+			array( '20260308T033000', '20260308T033000' ),
+			$this->keys( $rule, '2026-03-08', '2026-03-09' ),
+			'The rule reports both; Occurrences counts them once.'
+		);
+	}
+
+	/**
+	 * One expansion stops at MAX_DATES.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences
+	 * @covers ::dates_from
+	 *
+	 * @return void
+	 */
+	public function test_occurrences_stop_at_max_dates(): void {
+		$rule = $this->rule(
+			array(
+				'starts_on' => '2026-01-01',
+				'rrule'     => 'FREQ=DAILY',
+			)
+		);
+
+		$keys = $this->keys( $rule, '2026-01-01', '2030-01-01' );
+
+		$this->assertCount( Rule::MAX_DATES, $keys );
+		$this->assertSame( '20260101T200000', $keys[0], 'The earliest dates are kept.' );
+	}
+
+	/**
+	 * Find handles all-day keys, the start date, and dates past the end.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::find
+	 *
+	 * @return void
+	 */
+	public function test_find_edges(): void {
+		$all_day = $this->rule(
+			array(
+				'is_all_day' => true,
+				'duration'   => 1440,
+			)
+		);
+		$weekly  = $this->rule(
+			array(
+				'starts_on' => '2026-12-10',
+				'ends_on'   => '2026-12-31',
+				'rrule'     => 'FREQ=WEEKLY;BYDAY=FR',
+			)
+		);
+
+		$this->assertSame( '20270108', $all_day->find( '20270108', 7, 'scheduled' )->recurrence_id );
+		$this->assertNull( $all_day->find( '20270108T200000', 7, 'scheduled' ), 'A timed key on an all-day rule.' );
+		$this->assertSame(
+			'20261210T200000',
+			$weekly->find( '20261210T200000', 7, 'scheduled' )->recurrence_id,
+			'The start date, though the pattern would not pick a Thursday.'
+		);
+		$this->assertNull( $weekly->find( '20270101T200000', 7, 'scheduled' ), 'Past the end date.' );
+	}
+
+	/**
+	 * Ranges wholly before the start or after the end are empty.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences
+	 *
+	 * @return void
+	 */
+	public function test_ranges_outside_the_rule(): void {
+		$rule = $this->rule( array( 'ends_on' => '2027-02-12' ) );
+
+		$this->assertSame( array(), $this->keys( $rule, '2026-01-01', '2026-12-01' ) );
+		$this->assertSame( array(), $this->keys( $rule, '2027-03-01', '2028-01-01' ) );
 	}
 }
