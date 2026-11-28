@@ -64,6 +64,22 @@ final class Occurrence_Index {
 	const SCHEMA_VERSION = '1';
 
 	/**
+	 * Option used as a lock while a site builds its index.
+	 *
+	 * @since TBD
+	 * @var string
+	 */
+	const LOCK_OPTION = 'gatherpress_occurrence_index_lock';
+
+	/**
+	 * Seconds after which a build's lock is treated as abandoned, such as by a request that timed out.
+	 *
+	 * @since TBD
+	 * @var int
+	 */
+	const LOCK_TIMEOUT = 600;
+
+	/**
 	 * Daily cron action that moves repeating events' rows forward with the horizon.
 	 *
 	 * @since TBD
@@ -80,10 +96,10 @@ final class Occurrence_Index {
 	const HORIZON_MONTHS = 12;
 
 	/**
-	 * Events whose rule meta changed outside a rule write, to rebuild at shutdown.
+	 * Events whose rule meta changed outside a rule write, to rebuild at shutdown, by site ID.
 	 *
 	 * @since TBD
-	 * @var array<int, true>
+	 * @var array<int, array<int, true>>
 	 */
 	protected array $pending = array();
 
@@ -152,13 +168,58 @@ final class Occurrence_Index {
 	 * @return void
 	 */
 	public function maybe_install(): void {
-		if ( $this->is_ready() ) {
+		// Only one request builds, so the first visits after an update don't all repeat the work.
+		if ( $this->is_ready() || ! $this->lock() ) {
 			return;
 		}
 
-		$this->create_table();
-		$this->backfill();
-		update_option( self::SCHEMA_OPTION, self::SCHEMA_VERSION );
+		try {
+			$this->create_table();
+			$this->copy_events();
+			// Ready before the rule pass, which rebuilds through rebuild().
+			update_option( self::SCHEMA_OPTION, self::SCHEMA_VERSION );
+			$this->expand_repeating();
+		} finally {
+			delete_option( self::LOCK_OPTION );
+		}
+	}
+
+	/**
+	 * Take the build lock, or a lock left by a build that never finished.
+	 *
+	 * Written with `INSERT IGNORE`, so of two requests at once only one gets it.
+	 *
+	 * @since TBD
+	 *
+	 * @return bool True if this request holds the lock.
+	 */
+	protected function lock(): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- An atomic lock, as WP_Upgrader::create_lock() takes one.
+		$taken = $wpdb->query(
+			$wpdb->prepare(
+				'INSERT IGNORE INTO %i (option_name, option_value, autoload) VALUES (%s, %s, %s)',
+				$wpdb->options,
+				self::LOCK_OPTION,
+				(string) time(),
+				'no'
+			)
+		);
+
+		if ( $taken ) {
+			return true;
+		}
+
+		wp_cache_delete( self::LOCK_OPTION, 'options' );
+
+		if ( time() - (int) get_option( self::LOCK_OPTION ) < self::LOCK_TIMEOUT ) {
+			return false;
+		}
+
+		update_option( self::LOCK_OPTION, (string) time(), false );
+
+		return true;
 	}
 
 	/**
@@ -196,7 +257,7 @@ final class Occurrence_Index {
 	}
 
 	/**
-	 * Fill the index from the events table, then rebuild events with rules.
+	 * Fill the index from the events table.
 	 *
 	 * An event without rules is exactly its row in the events table, so one
 	 * statement copies all of them, building each key from its local start.
@@ -205,7 +266,7 @@ final class Occurrence_Index {
 	 *
 	 * @return void
 	 */
-	protected function backfill(): void {
+	protected function copy_events(): void {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Building a plugin-owned cache table.
@@ -232,11 +293,25 @@ final class Occurrence_Index {
 				'gatherpress_is_all_day'
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	}
 
+	/**
+	 * Rebuild every event with rules.
+	 *
+	 * Used once the events are copied in, and by the daily cron.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	protected function expand_repeating(): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Listing events with rules.
 		$repeating = $wpdb->get_col(
 			$wpdb->prepare( 'SELECT DISTINCT post_id FROM %i WHERE meta_key = %s', $wpdb->postmeta, Rules::META_KEY )
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		foreach ( $repeating as $post_id ) {
 			$this->rebuild( (int) $post_id );
@@ -247,8 +322,9 @@ final class Occurrence_Index {
 	 * Rebuild an event's rows from its rules or saved dates.
 	 *
 	 * A published event with rules keeps its past rows, since a schedule
-	 * change never touches dates before tomorrow, and rebuilds from today on.
-	 * Any other event rebuilds in full.
+	 * change never touches dates before tomorrow, and rebuilds from today on,
+	 * or from its last indexed date if that is earlier. Any other event
+	 * rebuilds in full.
 	 *
 	 * @since TBD
 	 *
@@ -257,7 +333,7 @@ final class Occurrence_Index {
 	 * @return void
 	 */
 	public function rebuild( int $post_id ): void {
-		unset( $this->pending[ $post_id ] );
+		unset( $this->pending[ get_current_blog_id() ][ $post_id ] );
 
 		if ( ! $this->is_ready() ) {
 			return;
@@ -289,9 +365,26 @@ final class Occurrence_Index {
 	 * @return void
 	 */
 	public function rebuild_pending(): void {
-		foreach ( array_keys( $this->pending ) as $post_id ) {
-			$this->rebuild( $post_id );
+		$current = get_current_blog_id();
+
+		foreach ( $this->pending as $site_id => $post_ids ) {
+			// The meta may have been written inside switch_to_blog().
+			$switched = $site_id !== $current;
+
+			if ( $switched ) {
+				switch_to_blog( $site_id );
+			}
+
+			foreach ( array_keys( $post_ids ) as $post_id ) {
+				$this->rebuild( $post_id );
+			}
+
+			if ( $switched ) {
+				restore_current_blog();
+			}
 		}
+
+		$this->pending = array();
 	}
 
 	/**
@@ -311,7 +404,7 @@ final class Occurrence_Index {
 	 */
 	public function handle_rule_meta_change( mixed $meta_id, int $object_id, string $meta_key ): void {
 		if ( Rules::META_KEY === $meta_key ) {
-			$this->pending[ $object_id ] = true;
+			$this->pending[ get_current_blog_id() ][ $object_id ] = true;
 		}
 	}
 
@@ -325,16 +418,7 @@ final class Occurrence_Index {
 	 * @return void
 	 */
 	public function extend(): void {
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Listing events with rules for a cron run.
-		$repeating = $wpdb->get_col(
-			$wpdb->prepare( 'SELECT DISTINCT post_id FROM %i WHERE meta_key = %s', $wpdb->postmeta, Rules::META_KEY )
-		);
-
-		foreach ( $repeating as $post_id ) {
-			$this->rebuild( (int) $post_id );
-		}
+		$this->expand_repeating();
 	}
 
 	/**
@@ -404,18 +488,34 @@ final class Occurrence_Index {
 	}
 
 	/**
-	 * Where a rebuild starts: today for a published event with rules, otherwise from the beginning.
+	 * Where a rebuild starts.
+	 *
+	 * A published event with rules starts today, or at its last indexed date
+	 * if that is earlier, so a gap left while the cron didn't run is filled.
+	 * Any other event, or one not indexed yet, rebuilds in full.
 	 *
 	 * @since TBD
 	 *
 	 * @param Event $event The event.
 	 *
-	 * @return DateTimeImmutable|null The start of today in UTC, or null to rebuild in full.
+	 * @return DateTimeImmutable|null Where to start, in UTC, or null to rebuild in full.
 	 */
 	protected function rebuild_from( Event $event ): ?DateTimeImmutable {
-		$published = in_array( get_post_status( $event->post->ID ?? 0 ), Rules::PUBLISHED_STATUSES, true );
+		global $wpdb;
 
-		return $published && $event->rules()->all() ? $this->utc( 'today' ) : null;
+		$post_id   = $event->post->ID ?? 0;
+		$published = in_array( get_post_status( $post_id ), Rules::PUBLISHED_STATUSES, true );
+
+		if ( ! $published || ! $event->rules()->all() ) {
+			return null;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading this cache table.
+		$last = $wpdb->get_var(
+			$wpdb->prepare( 'SELECT MAX( datetime_start_gmt ) FROM %i WHERE post_id = %d', self::table(), $post_id )
+		);
+
+		return $last ? min( $this->utc( 'today' ), $this->utc( $last ) ) : null;
 	}
 
 	/**

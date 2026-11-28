@@ -246,7 +246,9 @@ class Test_Occurrence_Index extends Base {
 	 * @covers ::maybe_install
 	 * @covers ::is_ready
 	 * @covers ::create_table
-	 * @covers ::backfill
+	 * @covers ::copy_events
+	 * @covers ::expand_repeating
+	 * @covers ::lock
 	 *
 	 * @return void
 	 */
@@ -261,11 +263,22 @@ class Test_Occurrence_Index extends Base {
 		$timed   = $this->event( 'publish' );
 		$all_day = $this->event( 'publish' );
 		$series  = $this->event();
+		$running = $this->event();
+		$started = $this->soon( -21 );
 
 		$this->save_dates( $timed, '2026-12-11 20:00:00', '2026-12-11 22:00:00' );
 		update_post_meta( $all_day, 'gatherpress_is_all_day', true );
 		$this->save_dates( $all_day, '2026-12-12 00:00:00', '2026-12-12 23:59:59' );
 		( new Event( $series ) )->rules()->replace( array( $this->row( array( 'starts_on' => '2099-01-05' ) ) ) );
+		$weekly = array( $this->row( array( 'starts_on' => $started->format( 'Y-m-d' ) ) ) );
+
+		( new Event( $running ) )->rules()->replace( $weekly );
+		wp_update_post(
+			array(
+				'ID'          => $running,
+				'post_status' => 'publish',
+			)
+		);
 
 		// Nothing is indexed until the index is built.
 		$this->assertSame( array(), $this->rows( $timed ) );
@@ -286,7 +299,21 @@ class Test_Occurrence_Index extends Base {
 			$this->rows( $timed )[0]
 		);
 		$this->assertSame( array( '20261212' ), $this->keys( $all_day ), 'An all-day event has a date key.' );
-		$this->assertSame( '20990105T190000', $this->keys( $series )[0], 'An event with rules is expanded.' );
+		$this->assertSame( array( '20990105T190000' ), $this->keys( $series ), 'A first date past the horizon.' );
+
+		$keys = $this->keys( $running );
+
+		$this->assertSame(
+			array(
+				$started->format( 'Ymd' ) . 'T190000',
+				$started->modify( '+7 days' )->format( 'Ymd' ) . 'T190000',
+				$started->modify( '+14 days' )->format( 'Ymd' ) . 'T190000',
+			),
+			array_slice( $keys, 0, 3 ),
+			'A series that started is expanded from its first date, past dates included.'
+		);
+		$this->assertGreaterThanOrEqual( 55, count( $keys ), 'Three past weeks and a year ahead.' );
+		$this->assertFalse( get_option( Occurrence_Index::LOCK_OPTION ), 'The lock is released.' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', Occurrence_Index::table() ) );
@@ -427,9 +454,9 @@ class Test_Occurrence_Index extends Base {
 
 		$this->assertCount( 1, $this->keys( $post_id ), 'Not rebuilt until shutdown.' );
 		$this->assertSame(
-			array( $post_id => true ),
+			array( get_current_blog_id() => array( $post_id => true ) ),
 			Utility::get_hidden_property( $index, 'pending' ),
-			'Only the rule key marks the event.'
+			'Only the rule key marks the event, under its site.'
 		);
 
 		$index->rebuild_pending();
@@ -545,5 +572,128 @@ class Test_Occurrence_Index extends Base {
 		$this->assertSame( $now->modify( '+1 months' )->format( 'Y-m-d' ), $index->horizon()->format( 'Y-m-d' ) );
 
 		remove_filter( 'gatherpress_occurrence_index_horizon', $months );
+	}
+
+	/**
+	 * A build already running elsewhere is left alone, and one abandoned is taken over.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::maybe_install
+	 * @covers ::lock
+	 *
+	 * @return void
+	 */
+	public function test_install_lock(): void {
+		$index = Occurrence_Index::get_instance();
+
+		delete_option( Occurrence_Index::SCHEMA_OPTION );
+		add_option( Occurrence_Index::LOCK_OPTION, (string) time(), '', false );
+		$index->maybe_install();
+
+		$this->assertFalse( $index->is_ready(), 'Another request holds the lock.' );
+
+		update_option( Occurrence_Index::LOCK_OPTION, (string) ( time() - Occurrence_Index::LOCK_TIMEOUT - 1 ), false );
+		$index->maybe_install();
+
+		$this->assertTrue( $index->is_ready(), 'An abandoned lock is taken over.' );
+		$this->assertFalse( get_option( Occurrence_Index::LOCK_OPTION ) );
+	}
+
+	/**
+	 * A published series fills a gap left while the cron didn't run.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rebuild
+	 * @covers ::rebuild_from
+	 *
+	 * @return void
+	 */
+	public function test_rebuild_fills_a_gap(): void {
+		$index   = Occurrence_Index::get_instance();
+		$post_id = $this->event();
+		$start   = $this->soon( -28 );
+
+		$weekly = array( $this->row( array( 'starts_on' => $start->format( 'Y-m-d' ) ) ) );
+
+		( new Event( $post_id ) )->rules()->replace( $weekly );
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$full = $this->keys( $post_id );
+
+		// As if indexing stopped two weeks ago.
+		$index->delete( $post_id, $start->modify( '+8 days' )->setTimezone( new DateTimeZone( 'UTC' ) ) );
+		$index->rebuild( $post_id );
+
+		$this->assertSame( $full, $this->keys( $post_id ), 'Every date from the last indexed one on is back.' );
+	}
+
+	/**
+	 * A daily rule with several showtimes stays under the read cap, a month at a time.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::insert
+	 *
+	 * @return void
+	 */
+	public function test_many_showtimes(): void {
+		$post_id = $this->event();
+		$rows    = array(
+			$this->row(
+				array(
+					'starts_on' => $this->soon( 1 )->format( 'Y-m-d' ),
+					'rrule'     => 'FREQ=DAILY',
+					'times'     => array( '09:00', '13:00', '19:00' ),
+				)
+			),
+		);
+
+		( new Event( $post_id ) )->rules()->replace( $rows );
+
+		$this->assertGreaterThanOrEqual( 1080, count( $this->keys( $post_id ) ), 'Three a day for a year.' );
+	}
+
+	/**
+	 * A rebuild queued inside switch_to_blog() runs on the site the meta was written on.
+	 *
+	 * @since TBD
+	 *
+	 * @group multisite
+	 *
+	 * @covers ::handle_rule_meta_change
+	 * @covers ::rebuild_pending
+	 *
+	 * @return void
+	 */
+	public function test_pending_rebuild_on_another_site(): void {
+		$index   = Occurrence_Index::get_instance();
+		$site_id = $this->factory()->blog->create();
+		$start   = $this->soon( 7 );
+
+		switch_to_blog( $site_id );
+		$index->maybe_install();
+
+		$post_id = $this->event();
+
+		$this->save_dates( $post_id, $start->format( 'Y-m-d' ) . ' 19:00:00', $start->format( 'Y-m-d' ) . ' 20:30:00' );
+		add_filter( 'gatherpress_rule_meta_write_allowed', '__return_true' );
+		add_post_meta( $post_id, Rules::META_KEY, $this->row( array( 'starts_on' => $start->format( 'Y-m-d' ) ) ) );
+		restore_current_blog();
+
+		$index->rebuild_pending();
+		switch_to_blog( $site_id );
+		$keys = $this->keys( $post_id );
+		restore_current_blog();
+
+		$second = $start->modify( '+7 days' )->format( 'Ymd' ) . 'T190000';
+
+		$this->assertSame( $second, $keys[1], 'Rebuilt on its own site.' );
 	}
 }
