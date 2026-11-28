@@ -42,6 +42,7 @@ phpstan.stubs
 phpunit.xml
 phpunit.xml.dist
 phpunit-multisite.xml.dist
+phpunit-pure.xml.dist
 phpmd.xml
 playwright.config.js
 sonar-project.properties
