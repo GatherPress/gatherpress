@@ -24,6 +24,7 @@ use WP_HTML_Tag_Processor;
  * @since 0.36.0
  */
 final class Tag_Processor extends WP_HTML_Tag_Processor {
+
 	/**
 	 * Bookmark used to read a token's position.
 	 *

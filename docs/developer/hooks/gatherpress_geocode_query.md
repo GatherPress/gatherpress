@@ -35,7 +35,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/geocoding/class-query.php:224](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/geocoding/class-query.php#L224)
+- [includes/core/classes/geocoding/class-query.php:225](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/geocoding/class-query.php#L225)
 ```php
 apply_filters( 'gatherpress_geocode_query', $normalized, $query )
 ```

@@ -26,6 +26,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 0.36.0
  */
 class Query {
+
 	/**
 	 * Top-level units, matched by exact prefix.
 	 *
