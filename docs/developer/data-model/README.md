@@ -97,7 +97,7 @@ Admin list tables also store per-user screen options under the usual `{$screen}_
 
 ## The events table
 
-GatherPress creates exactly one table, `{$wpdb->prefix}gatherpress_events`, in `Setup::create_tables()` via `dbDelta()`:
+GatherPress creates `{$wpdb->prefix}gatherpress_events` in `Setup::create_tables()` via `dbDelta()`, along with the [date index](#the-date-index):
 
 ```sql
 CREATE TABLE {$prefix}gatherpress_events (
@@ -124,6 +124,40 @@ Every event query is a date-range query: upcoming, past, between two dates, orde
 The GMT columns are what queries sort and filter on. The local columns exist for display, so a listing does not have to convert every row back.
 
 On multisite the table is per-site: every site in the network gets its own.
+
+## The date index
+
+`{$wpdb->prefix}gatherpress_occurrence_index` holds one row per occurrence of every event: one row for an event without rules, and one per date for a repeating event. It exists so queries can join on an event's dates like any other row. `Event\Occurrence_Index` owns it.
+
+```sql
+CREATE TABLE {$prefix}gatherpress_occurrence_index (
+    post_id            bigint(20) unsigned NOT NULL default '0',
+    recurrence_id      varchar(15) NOT NULL default '',
+    datetime_start     datetime NOT NULL default '0000-00-00 00:00:00',
+    datetime_start_gmt datetime NOT NULL default '0000-00-00 00:00:00',
+    datetime_end       datetime NOT NULL default '0000-00-00 00:00:00',
+    datetime_end_gmt   datetime NOT NULL default '0000-00-00 00:00:00',
+    timezone           varchar(64) NOT NULL default '',
+    PRIMARY KEY  (post_id,recurrence_id,datetime_start_gmt),
+    KEY datetime_start_gmt (datetime_start_gmt),
+    KEY datetime_end_gmt (datetime_end_gmt)
+);
+```
+
+**It is a cache.** The rules and the saved dates are the source of truth, and any event's rows can be rebuilt from them. Nothing keys on a row: per-date pages and RSVPs find a date by its event and key through `Occurrences::find()`, so a date beyond the index still works.
+
+**It stays small.** Rows hold dates only, never post content. Past rows are kept, since they are history. Future rows reach only as far as the horizon, 12 months by default (filter `gatherpress_occurrence_index_horizon`), so an open-ended series never fills the table. The local columns are in each occurrence's own timezone, named in `timezone`.
+
+**It keeps itself current:**
+
+- Saving an event's dates rebuilds its rows, and every rule write saves the dates. A published event with rules rebuilds from today on, since its past can't change.
+- Rule meta written directly, such as by an import, rebuilds the event at the end of the request.
+- Deleting an event deletes its rows.
+- A daily cron moves repeating events' rows forward with the horizon.
+
+**Each site builds its own on its first request** after updating, not on an admin visit: one statement copies every event in from `gatherpress_events`, then events with rules are expanded. `Occurrence_Index::is_ready()` says whether a site's index is built. The table is dropped when a site is deleted and on uninstall.
+
+Queries don't join the index yet. That comes next, together with each row showing its own date in loops and the calendar.
 
 ## Occurrences
 

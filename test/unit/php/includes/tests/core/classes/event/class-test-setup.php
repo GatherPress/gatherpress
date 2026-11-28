@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Status;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Rest_Api;
@@ -21,6 +22,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use ReflectionProperty;
 use stdClass;
 use WP;
 use WP_Block;
@@ -64,46 +66,63 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_instantiate_classes_registers_siblings(): void {
-		// Force the method to run inside the test's coverage window —
-		// Setup is a singleton cached during plugin bootstrap, so
-		// `get_instance()` here returns the cached instance and doesn't
-		// re-fire the constructor.
+		$siblings  = array(
+			Admin_List::class       => array( 'query_vars', 'query_vars' ),
+			Meta::class             => array( 'registered_post_type', 'register' ),
+			Occurrence_Index::class => array( 'gatherpress_event_datetimes_saved', 'rebuild' ),
+			Query::class            => array( 'pre_get_posts', 'prepare_event_query_before_execution' ),
+			Reminder::class         => array( Reminder::SWEEP_ACTION, 'sweep' ),
+			Rest_Api::class         => array( 'rest_api_init', 'register_endpoints' ),
+			Scheduler::class        => array( 'transition_post_status', 'handle_transition_post_status' ),
+		);
+		$originals = array();
+
+		// Plugin boot already built each sibling, so clear them, or the check can't fail.
+		foreach ( array_keys( $siblings ) as $class_name ) {
+			$property                 = new ReflectionProperty( $class_name, 'instance' );
+			$originals[ $class_name ] = $property->getValue();
+			$property->setValue( null, null );
+		}
+
 		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
 
-		$expected_hooks = array(
-			Admin_List::class => array(
-				'query_vars',
-				array( Admin_List::get_instance(), 'query_vars' ),
-			),
-			Meta::class       => array(
-				'registered_post_type',
-				array( Meta::get_instance(), 'register' ),
-			),
-			Query::class      => array(
-				'pre_get_posts',
-				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
-			),
-			Reminder::class   => array(
-				Reminder::SWEEP_ACTION,
-				array( Reminder::get_instance(), 'sweep' ),
-			),
-			Rest_Api::class   => array(
-				'rest_api_init',
-				array( Rest_Api::get_instance(), 'register_endpoints' ),
-			),
-			Scheduler::class  => array(
-				'transition_post_status',
-				array( Scheduler::get_instance(), 'handle_transition_post_status' ),
-			),
-		);
+		foreach ( $siblings as $class_name => $expected ) {
+			list( $hook, $method ) = $expected;
+			$property              = new ReflectionProperty( $class_name, 'instance' );
+			$built                 = $property->getValue();
 
-		foreach ( $expected_hooks as $class_name => $expected ) {
-			list( $hook, $callback ) = $expected;
+			$this->assertNotNull( $built, sprintf( '%s must be instantiated.', $class_name ) );
 			$this->assertSame(
 				10,
-				has_action( $hook, $callback ),
+				has_action( $hook, array( $built, $method ) ),
 				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
 			);
+
+			$this->remove_hooks_of( $built );
+			$property->setValue( null, $originals[ $class_name ] );
+		}
+	}
+
+	/**
+	 * Remove every hook an object registered.
+	 *
+	 * @since TBD
+	 *
+	 * @param object $instance The object.
+	 *
+	 * @return void
+	 */
+	protected function remove_hooks_of( object $instance ): void {
+		global $wp_filter;
+
+		foreach ( $wp_filter as $hook => $filters ) {
+			foreach ( $filters->callbacks as $priority => $callbacks ) {
+				foreach ( $callbacks as $callback ) {
+					if ( is_array( $callback['function'] ) && $instance === $callback['function'][0] ) {
+						remove_filter( $hook, $callback['function'], $priority );
+					}
+				}
+			}
 		}
 	}
 

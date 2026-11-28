@@ -19,6 +19,7 @@ use GatherPress\Core\Admin\Dashboard;
 use GatherPress\Core\Admin\Email;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
 use GatherPress\Core\Admin\Plugin_Row;
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -447,6 +448,7 @@ final class Setup {
 	 * updated array of table names to be dropped during site deletion.
 	 *
 	 * @since 0.27.0
+	 * @since TBD   Also drops the date index table.
 	 *
 	 * @param string[] $tables An array of names of the site tables to be dropped.
 	 *
@@ -454,6 +456,7 @@ final class Setup {
 	 */
 	public function on_site_delete( array $tables ): array {
 		$tables[] = Event::table();
+		$tables[] = Occurrence_Index::table();
 
 		return $tables;
 	}
@@ -468,6 +471,7 @@ final class Setup {
 	 * and to set a flag for flushing rewrite rules.
 	 *
 	 * @since 0.27.0
+	 * @since TBD   Also creates the date index table.
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 * @return void
@@ -497,6 +501,7 @@ final class Setup {
 
 		dbDelta( $sql );
 
+		Occurrence_Index::get_instance()->create_table();
 		$this->add_online_event_term();
 		$this->schedule_rewrite_flush();
 	}

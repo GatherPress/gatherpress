@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Shadow_Source;
@@ -502,6 +503,11 @@ class Test_Setup extends Base {
 			$expected_table,
 			$result,
 			'Failed to assert that the GatherPress events table is included in tables to delete.'
+		);
+		$this->assertContains(
+			Occurrence_Index::table(),
+			$result,
+			'The date index table is dropped with the site.'
 		);
 		$this->assertContains(
 			$wpdb->prefix . 'posts',

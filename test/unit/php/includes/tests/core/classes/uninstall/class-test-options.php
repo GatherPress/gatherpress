@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Uninstall;
 
 use GatherPress\Core\Calendar\External\Cache;
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Event\Scheduler;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Network;
@@ -173,8 +174,11 @@ class Test_Options extends Base {
 		$this->arm_uninstall( Preferences::TASK_OPTIONS );
 
 		update_option( Scheduler::OPTION_NAME, array( 'gatherpress_event' => array( 1 ) ) );
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
 
 		( new Options() )->run();
+
+		$this->assertFalse( get_option( Occurrence_Index::SCHEMA_OPTION ), 'The date index schema option is removed.' );
 
 		$this->assertFalse(
 			get_option( Scheduler::OPTION_NAME ),
