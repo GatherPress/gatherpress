@@ -12,6 +12,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use DateTimeImmutable;
 use GatherPress\Core\Event;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
@@ -275,6 +276,91 @@ final class Event_Query {
 	}
 
 	/**
+	 * Builds a date query from the block's date range settings.
+	 *
+	 * Presets are worked out from the current date in the site timezone each
+	 * time the query runs, so "Next month" always means the month after today
+	 * rather than the month after the block was saved. They resolve to a year
+	 * and month instead of relative strings like "first day of next month",
+	 * which keep the current time of day.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed>   $params Block query attributes or REST request params.
+	 * @param DateTimeImmutable|null $now    The current date in the site timezone. Defaults to now.
+	 *
+	 * @return array<string, int|string|bool> A `date_query` clause, or an empty array when no range is set.
+	 */
+	protected function get_date_query( array $params, ?DateTimeImmutable $now = null ): array {
+		$now  = $now ?? current_datetime();
+		$next = $now->modify( 'first day of next month' );
+
+		return match ( $params['gatherpress_date_range'] ?? '' ) {
+			'this_month' => array(
+				'year'     => (int) $now->format( 'Y' ),
+				'monthnum' => (int) $now->format( 'n' ),
+			),
+			'next_month' => array(
+				'year'     => (int) $next->format( 'Y' ),
+				'monthnum' => (int) $next->format( 'n' ),
+			),
+			'this_year'  => array( 'year' => (int) $now->format( 'Y' ) ),
+			'last_year'  => array( 'year' => (int) $now->format( 'Y' ) - 1 ),
+			'custom'     => $this->get_custom_date_query( $params ),
+			default      => array(),
+		};
+	}
+
+	/**
+	 * Builds a date query from the block's custom start and end dates.
+	 *
+	 * Both dates are optional and both are kept in the range. A value that is
+	 * not a real `Y-m-d` date is ignored, so a broken end date leaves the
+	 * range open ended rather than matching nothing, and dates given in the
+	 * wrong order are swapped.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, mixed> $params Block query attributes or REST request params.
+	 *
+	 * @return array<string, string|bool> A `date_query` clause, or an empty array when neither date is valid.
+	 */
+	protected function get_custom_date_query( array $params ): array {
+		$date_query = array();
+		$bounds     = array(
+			'after'  => 'gatherpress_date_after',
+			'before' => 'gatherpress_date_before',
+		);
+
+		foreach ( $bounds as $arg => $key ) {
+			$value = $params[ $key ] ?? '';
+
+			// Checking the shape first also keeps a null byte from reaching
+			// createFromFormat(), which throws on one since PHP 8.0.21.
+			$date = is_string( $value ) && 1 === preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value )
+				? DateTimeImmutable::createFromFormat( '!Y-m-d', $value )
+				: false;
+
+			// The round trip rejects overflowing dates such as 2026-02-31.
+			if ( false !== $date && $date->format( 'Y-m-d' ) === $value ) {
+				$date_query[ $arg ] = $value;
+			}
+		}
+
+		// A start after the end would match nothing, so read it as the range the
+		// editor meant. Y-m-d strings compare in date order.
+		if ( isset( $date_query['after'], $date_query['before'] ) && $date_query['after'] > $date_query['before'] ) {
+			list( $date_query['after'], $date_query['before'] ) = array( $date_query['before'], $date_query['after'] );
+		}
+
+		if ( ! empty( $date_query ) ) {
+			$date_query['inclusive'] = true;
+		}
+
+		return $date_query;
+	}
+
+	/**
 	 * Filters the arguments which will be passed to `WP_Query` for the Query Loop Block.
 	 *
 	 * @since 0.33.0
@@ -405,6 +491,13 @@ final class Event_Query {
 
 		if ( isset( $block_query['include_unfinished'] ) ) {
 			$query_args['include_unfinished'] = $block_query['include_unfinished'];
+		}
+
+		// The date range filters on the event date, which this method only
+		// handles for event-supporting loops.
+		$date_query = $this->get_date_query( $block_query );
+		if ( ! empty( $date_query ) ) {
+			$query_args['date_query'] = $date_query;
 		}
 
 		// Order By.
@@ -542,11 +635,18 @@ final class Event_Query {
 			$custom_args['gatherpress_shadow_source_post_type'] = (string) $context_post_type;
 		}
 
+		$request_params = $request->get_params();
+
+		$date_query = $this->get_date_query( $request_params );
+		if ( ! empty( $date_query ) ) {
+			$custom_args['date_query'] = $date_query;
+		}
+
 		/** This filter is documented in includes/core/classes/blocks/class-event-query.php */
 		$filtered_query_args = apply_filters(
 			'gatherpress_query_loop_vars',
 			$custom_args,
-			$request->get_params(),
+			$request_params,
 			false,
 		);
 
@@ -633,6 +733,26 @@ final class Event_Query {
 				'gatherpress'
 			),
 			'type'        => 'string',
+		);
+
+		// Empty values are allowed so a cleared setting never fails the
+		// editor preview request.
+		$query_params['gatherpress_date_range'] = array(
+			'description' => __( 'Date range of events to query.', 'gatherpress' ),
+			'type'        => 'string',
+			'enum'        => array( '', 'this_month', 'next_month', 'this_year', 'last_year', 'custom' ),
+		);
+
+		$query_params['gatherpress_date_after'] = array(
+			'description' => __( 'First day of a custom date range, as Y-m-d.', 'gatherpress' ),
+			'type'        => 'string',
+			'pattern'     => '^(\\d{4}-\\d{2}-\\d{2})?$',
+		);
+
+		$query_params['gatherpress_date_before'] = array(
+			'description' => __( 'Last day of a custom date range, as Y-m-d.', 'gatherpress' ),
+			'type'        => 'string',
+			'pattern'     => '^(\\d{4}-\\d{2}-\\d{2})?$',
 		);
 
 		return $query_params;

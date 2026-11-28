@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+The Event Query block has a new Date Range setting. Pick this month, next month, this year, last year, or a custom start and end date to limit the list. Presets follow the current date, and the range works together with the upcoming or past choice.

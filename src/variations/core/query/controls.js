@@ -268,9 +268,11 @@ export const EventQueryControlsPanel = ( props ) => {
 	// makes the core endpoint reject the request (rest_invalid_param) and the
 	// Query Loop spins forever (#1756). The other vars are meaningless there,
 	// and the activity vars would silently turn the filter back on when a
-	// shadow-source type is selected again. Guarded on the vars still being
-	// present so this doesn't re-fire in a loop, and on the post type having
-	// loaded so an event loop isn't stripped on open (#2495).
+	// shadow-source type is selected again. The date range vars go with the
+	// event vars, since on a plain post type the date query would filter by
+	// publish date instead. Guarded on the vars still being present so this
+	// doesn't re-fire in a loop, and on the post type having loaded so an
+	// event loop isn't stripped on open (#2495).
 	useEffect( () => {
 		if (
 			! isQueryPostTypeLoaded ||
@@ -285,6 +287,9 @@ export const EventQueryControlsPanel = ( props ) => {
 		const hasEventOnlyVars =
 			undefined !== query.gatherpress_event_query ||
 			undefined !== query.include_unfinished ||
+			undefined !== query.gatherpress_date_range ||
+			undefined !== query.gatherpress_date_after ||
+			undefined !== query.gatherpress_date_before ||
 			undefined !== query.gatherpress_has_events_filter ||
 			undefined !== query.gatherpress_upcoming_events_only ||
 			hasEventOnlyOrderBy;
@@ -305,6 +310,9 @@ export const EventQueryControlsPanel = ( props ) => {
 		if ( ! queryPostTypeSupportsEvents ) {
 			delete remainingQuery.gatherpress_event_query;
 			delete remainingQuery.include_unfinished;
+			delete remainingQuery.gatherpress_date_range;
+			delete remainingQuery.gatherpress_date_after;
+			delete remainingQuery.gatherpress_date_before;
 		}
 
 		if ( ! queryPostTypeSupportsShadowSource ) {
