@@ -17,6 +17,8 @@ import {
 	ADDRESS_SEARCH_MIN_QUERY_LENGTH,
 	fetchAddressSuggestions,
 	geocodeAddress,
+	geocodeFailedMessage,
+	GEOCODE_NOTICE_ID,
 	getAddressSearchMinQueryLength,
 	clearGeocodeCache,
 	getGeocodeCacheSize,
@@ -41,6 +43,16 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
 
 describe( 'Geocoding helpers', () => {
 	let apiFetch;
+
+	it( 'exports the message and notice ID for a failed geocode', () => {
+		expect( GEOCODE_NOTICE_ID ).toBe( 'gatherpress_geocode_failed' );
+		expect( geocodeFailedMessage() ).toBe(
+			'The address could not be located, so the venue keeps its saved map location.',
+		);
+		expect( geocodeFailedMessage( true ) ).toBe(
+			'The location service is unavailable, so the venue keeps its saved map location. Try again later.',
+		);
+	} );
 
 	it( 'exports address search min length aligned with PHP', () => {
 		expect( ADDRESS_SEARCH_MIN_QUERY_LENGTH ).toBe( 3 );
@@ -326,6 +338,7 @@ describe( 'Geocoding helpers', () => {
 			expect( result.latitude ).toBe( '' );
 			expect( result.longitude ).toBe( '' );
 			expect( result.error ).toContain( 'Could not find location' );
+			expect( result.unavailable ).toBeUndefined();
 		} );
 
 		it( 'returns error when apiFetch throws', async () => {
@@ -336,6 +349,7 @@ describe( 'Geocoding helpers', () => {
 			expect( result.latitude ).toBe( '' );
 			expect( result.longitude ).toBe( '' );
 			expect( result.error ).toContain( 'Network error' );
+			expect( result.unavailable ).toBe( true );
 		} );
 
 		it( 'handles API error without message', async () => {

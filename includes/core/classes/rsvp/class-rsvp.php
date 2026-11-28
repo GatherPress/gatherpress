@@ -140,6 +140,15 @@ final class Rsvp {
 	protected readonly Storage $storage;
 
 	/**
+	 * Lock that serializes capacity changes for this event.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @var Lock
+	 */
+	protected readonly Lock $lock;
+
+	/**
 	 * List of all RSVP providers.
 	 *
 	 * @var Provider[]
@@ -166,6 +175,7 @@ final class Rsvp {
 	public function __construct( int $post_id ) {
 		$this->post      = get_post( $post_id );
 		$this->storage   = new Storage( $post_id );
+		$this->lock      = new Lock( $post_id );
 		$this->capacity  = (int) get_post_meta( $post_id, 'gatherpress_capacity', true );
 		$this->providers = Provider_Registry::get_instance()->get_all();
 	}
@@ -338,6 +348,16 @@ final class Rsvp {
 	/**
 	 * Process an RSVP request.
 	 *
+	 * The intent passes through the event's business rules before it is
+	 * saved, so the stored response can differ from the one requested. The
+	 * guest count is capped at the event's guest limit, an attending request
+	 * moves to the waiting list once the event is full, and a request to stay
+	 * anonymous is saved as a public response when the event does not allow
+	 * anonymous RSVPs. The response is saved before this returns, so callers
+	 * that must not publish a name the responder wanted hidden have to check
+	 * the `gatherpress_enable_anonymous_rsvp` meta and reject the request
+	 * before calling this.
+	 *
 	 * @since 0.35.0
 	 *
 	 * @param Intent $intent The RSVP response/intent to save.
@@ -350,6 +370,22 @@ final class Rsvp {
 			return null;
 		}
 
+		// The count the business rules read must not change before the save.
+		return $this->lock->run( fn(): ?State => $this->process_locked( $intent ) );
+	}
+
+	/**
+	 * Process an RSVP request while holding the event's lock.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param Intent $intent The RSVP response/intent to save.
+	 *
+	 * @return State|null
+	 */
+	private function process_locked( Intent $intent ): ?State {
+		$post_id = $this->post->ID ?? 0;
+
 		// Get current/prior RSVP response.
 		$current_response = $this->storage->get( $intent->data->identity, $intent->provider );
 
@@ -361,6 +397,9 @@ final class Rsvp {
 			$intent,
 			$current_response ? (int) $current_response->comment->comment_ID : null
 		);
+
+		// The next request to take the lock counts from the saved responses.
+		Cache::delete( $post_id );
 
 		if ( is_bool( $state ) ) {
 			return null;
@@ -381,6 +420,18 @@ final class Rsvp {
 	 * @return int Number of RSVPs promoted from the waiting list.
 	 */
 	public function check_waiting_list(): int {
+		// The free spots must not change while they are filled.
+		return (int) $this->lock->run( fn(): int => $this->promote_waiting_list() );
+	}
+
+	/**
+	 * Promote pending RSVPs from the waiting list while holding the event's lock.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @return int Number of RSVPs promoted from the waiting list.
+	 */
+	private function promote_waiting_list(): int {
 		$states    = $this->storage->all();
 		$responses = new Collection( $states );
 		$post_id   = $this->post instanceof WP_Post ? $this->post->ID : 0;
@@ -408,7 +459,7 @@ final class Rsvp {
 					 * Lets a site act on the freed spot, for example to tell the
 					 * attendee. GatherPress queues a confirmation email here.
 					 *
-					 * @since TBD
+					 * @since 0.37.0
 					 *
 					 * @param int   $post_id Event post ID.
 					 * @param State $state   The promoted RSVP.
@@ -417,10 +468,12 @@ final class Rsvp {
 				}
 			}
 
+			Cache::delete( $post_id );
+
 			return $promoted_count;
 		}
 
-		$remaining_spots = $this->capacity - $responses->get_attendee_count();
+		$remaining_spots = $this->capacity - $this->count_attendees();
 
 		// No free spots left.
 		if ( $remaining_spots <= 0 ) {
@@ -442,6 +495,11 @@ final class Rsvp {
 				break;
 			}
 
+			// A party larger than the free spots keeps its place for the next opening.
+			if ( $state->get_attendee_count() > $remaining_spots ) {
+				continue;
+			}
+
 			$state = $this->storage->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
 
 			if ( $state instanceof State ) {
@@ -453,7 +511,129 @@ final class Rsvp {
 			}
 		}
 
+		Cache::delete( $post_id );
+
 		return $promoted_count;
+	}
+
+	/**
+	 * Moves an approved, attending RSVP to the waiting list when it puts the event over capacity.
+	 *
+	 * An RSVP that waits for approval does not count toward capacity, so the
+	 * event may have filled up by the time it is approved. A pending RSVP is
+	 * left alone until then.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool True when the RSVP moved to the waiting list.
+	 */
+	public function enforce_capacity( int $comment_id ): bool {
+		if (
+			empty( $this->capacity ) ||
+			'1' !== (string) get_comment( $comment_id )?->comment_approved
+		) {
+			return false;
+		}
+
+		// Two approvals at once must not both read a count that includes the other.
+		return (bool) $this->lock->run(
+			fn(): bool => $this->enforce_capacity_locked( $comment_id ),
+			fn(): bool => $this->fall_back_to_waiting_list( $comment_id )
+		);
+	}
+
+	/**
+	 * Moves an attending RSVP to the waiting list when its capacity check cannot run, then fills any free spot.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool True when the RSVP moved to the waiting list.
+	 */
+	private function fall_back_to_waiting_list( int $comment_id ): bool {
+		$moved = $this->move_to_waiting_list( $comment_id );
+
+		// Another request may have left a spot open at the same time.
+		$this->check_waiting_list();
+
+		return $moved;
+	}
+
+	/**
+	 * Moves an attending RSVP to the waiting list.
+	 *
+	 * Also used when the attendee count cannot be checked safely: the waiting
+	 * list never overbooks the event, and the next promotion fills any free spot.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool True when the RSVP moved to the waiting list.
+	 */
+	private function move_to_waiting_list( int $comment_id ): bool {
+		if ( ! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ) ) {
+			return false;
+		}
+
+		wp_set_object_terms( $comment_id, Status::WAITING_LIST->value, Status::TAXONOMY );
+		Cache::delete( $this->post->ID ?? 0 );
+
+		return true;
+	}
+
+	/**
+	 * Moves an attending RSVP to the waiting list while holding the event's lock.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @param int $comment_id The RSVP comment ID.
+	 *
+	 * @return bool True when the RSVP moved to the waiting list.
+	 */
+	private function enforce_capacity_locked( int $comment_id ): bool {
+		if ( ! is_object_in_term( $comment_id, Status::TAXONOMY, Status::ATTENDING->value ) ) {
+			return false;
+		}
+
+		return $this->count_attendees() > $this->capacity && $this->move_to_waiting_list( $comment_id );
+	}
+
+	/**
+	 * Counts the people attending the event, guests included.
+	 *
+	 * Counted from the comments themselves: an anonymous RSVP's identity is
+	 * withheld from a viewer who cannot manage RSVPs, so storage drops it.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @return int The number of people attending.
+	 */
+	private function count_attendees(): int {
+		$attending = Query::get_instance()->get_rsvps(
+			array(
+				'post_id'   => $this->post->ID ?? 0,
+				'status'    => 'approve',
+				'fields'    => 'ids',
+				'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+					array(
+						'taxonomy' => Status::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => Status::ATTENDING->value,
+					),
+				),
+			)
+		);
+		$count     = 0;
+
+		foreach ( $attending as $id ) {
+			$count += 1 + (int) get_comment_meta( (int) $id, 'gatherpress_rsvp_guests', true );
+		}
+
+		return $count;
 	}
 
 	/**
@@ -706,6 +886,10 @@ final class Rsvp {
 
 	/**
 	 * Applies business rules to a request.
+	 *
+	 * Caps guests at the guest limit, moves a new attending request to the
+	 * waiting list when the event is full, and drops the anonymous flag when
+	 * the event does not allow anonymous RSVPs.
 	 *
 	 * @param Intent $intent            The new RSVP intent.
 	 * @param State  $current_response  The prior/current RSVP state.

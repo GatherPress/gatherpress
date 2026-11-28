@@ -11,6 +11,9 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Event\Setup as Event_Setup;
+use GatherPress\Core\Event\Status as Event_Status;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Mailer;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Token;
@@ -75,6 +78,12 @@ class Test_Rest_Api extends Base {
 				'callback' => array( $instance, 'register_endpoints' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'rest_api_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_status_field' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => sprintf( 'rest_prepare_%s', Event::POST_TYPE ),
 				'priority' => 10,
@@ -92,10 +101,101 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for register_status_field method.
+	 *
+	 * @covers ::register_status_field
+	 *
+	 * @return void
+	 */
+	public function test_register_status_field(): void {
+		// WordPress core's own registry for register_rest_field(); the prefix
+		// sniff cannot tell a core global from a plugin one.
+		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+		global $wp_rest_additional_fields;
+		// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
+		$instance = Rest_Api::get_instance();
+
+		$instance->register_status_field();
+
+		$this->assertArrayHasKey(
+			'gatherpress_status',
+			$wp_rest_additional_fields[ Event::POST_TYPE ],
+			'Failed to assert the status field is registered on the event post type.'
+		);
+
+		$field = $wp_rest_additional_fields[ Event::POST_TYPE ]['gatherpress_status'];
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event_Status( $post->ID );
+
+		$this->assertSame(
+			'scheduled',
+			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
+			'Failed to assert an untouched event reads as scheduled.'
+		);
+
+		// An editor of the event may set the status.
+		$this->mock->user( 'admin' );
+
+		call_user_func( $field['update_callback'], 'canceled', $post );
+
+		$this->assertSame(
+			'canceled',
+			$event->get(),
+			'Failed to assert the update callback stores the status.'
+		);
+		$this->assertSame(
+			'canceled',
+			call_user_func( $field['get_callback'], array( 'id' => $post->ID ) ),
+			'Failed to assert the get callback reads the stored status.'
+		);
+
+		// A write that does not stick is reported rather than passed off as saved.
+		unregister_taxonomy( Event::TAXONOMY_STATUS );
+
+		$unsaved = call_user_func( $field['update_callback'], 'postponed', $post );
+
+		Event_Setup::get_instance()->register_status_taxonomy();
+
+		$this->assertWPError( $unsaved, 'Failed to assert a failed write is reported.' );
+		$this->assertSame(
+			'gatherpress_status_not_saved',
+			$unsaved->get_error_code(),
+			'Failed to assert the error names the failed save.'
+		);
+
+		// A visitor with no editing rights may not.
+		$this->mock->user( 'subscriber' );
+
+		$error = call_user_func( $field['update_callback'], 'postponed', $post );
+
+		$this->assertWPError(
+			$error,
+			'Failed to assert a user who cannot edit the event is refused.'
+		);
+		$this->assertSame(
+			'gatherpress_status_forbidden',
+			$error->get_error_code(),
+			'Failed to assert the refusal names the status permission.'
+		);
+		$this->assertSame(
+			'canceled',
+			$event->get(),
+			'Failed to assert a refused update leaves the status alone.'
+		);
+
+		$this->assertSame(
+			Event_Status::slugs(),
+			$field['schema']['enum'],
+			'Failed to assert the schema advertises the supported statuses.'
+		);
+	}
+
+	/**
 	 * An RSVP posted without JavaScript is answered with a 303 back to its
 	 * page, flagged when it failed; anything else is left alone.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::redirect_rsvp_form_submission
 	 *
 	 * @return void
@@ -172,7 +272,7 @@ class Test_Rest_Api extends Base {
 	/**
 	 * A form posted without JavaScript sends guests and anonymity under the RSVP block's field names.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::update_rsvp
 	 *
 	 * @return void
@@ -500,6 +600,332 @@ class Test_Rest_Api extends Base {
 			$event_id,
 			$response->data['event_id'],
 			'Failed to assert that event ID matches.'
+		);
+	}
+
+	/**
+	 * Sends one RSVP update for the current user and returns the guest count in the response.
+	 *
+	 * @since TBD
+	 *
+	 * @param int                  $event_id The event post ID.
+	 * @param int                  $guests   The guest count to send.
+	 * @param array<string, mixed> $order    Optional save_page and save_order params.
+	 *
+	 * @return int The guest count in the response.
+	 */
+	private function send_guest_count( int $event_id, int $guests, array $order = array() ): int {
+		$request = new WP_REST_Request( 'POST' );
+
+		$request->set_query_params(
+			array_merge(
+				array(
+					'post_id' => $event_id,
+					'status'  => 'attending',
+					'guests'  => $guests,
+				),
+				$order
+			)
+		);
+
+		return Rest_Api::get_instance()->update_rsvp( $request )->data['guests'];
+	}
+
+	/**
+	 * Coverage for update_rsvp ignoring an older guest count save from the same page.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::update_rsvp
+	 * @covers ::save_in_order
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_ignores_an_older_save_from_the_same_page(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 5 );
+
+		$this->assertSame(
+			1,
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that an ordered save with no RSVP yet is saved.'
+		);
+
+		$comment_id = (int) ( new Rsvp( $event_id ) )->find( $user_id )->comment->comment_ID;
+
+		$this->assertSame(
+			2,
+			$this->send_guest_count(
+				$event_id,
+				2,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 2,
+				)
+			),
+			'Failed to assert that a save is applied when no order is stored.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				4,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 4,
+				)
+			),
+			'Failed to assert that a newer save from the same page is applied.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				3,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 3,
+				)
+			),
+			'Failed to assert that an older save from the same page is ignored.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 4,
+				)
+			),
+			'Failed to assert that a repeated order from the same page is ignored.'
+		);
+		$this->assertSame(
+			4,
+			(int) get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ),
+			'Failed to assert that the ignored saves left the stored count alone.'
+		);
+		$this->assertSame(
+			1,
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => 'page-b',
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that a save from another page is applied.'
+		);
+		$this->assertSame(
+			1,
+			$this->send_guest_count(
+				$event_id,
+				2,
+				array(
+					'save_page'  => 'page-a',
+					'save_order' => 3,
+				)
+			),
+			'Failed to assert that a save from another page keeps the first page from saving an older count.'
+		);
+
+		foreach ( array( 'page-c', 'page-d', 'page-e', 'page-f' ) as $page ) {
+			$this->send_guest_count(
+				$event_id,
+				1,
+				array(
+					'save_page'  => $page,
+					'save_order' => 1,
+				)
+			);
+		}
+
+		$this->assertSame(
+			array( 'page-b', 'page-c', 'page-d', 'page-e', 'page-f' ),
+			array_keys( get_comment_meta( $comment_id, Rest_Api::SAVE_ORDER_META_KEY, true ) ),
+			'Failed to assert that only the five pages that saved last are kept.'
+		);
+
+		update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', 1 );
+
+		$request = new WP_REST_Request( 'POST' );
+
+		$request->set_query_params(
+			array(
+				'post_id'    => $event_id,
+				'status'     => 'attending',
+				'guests'     => 4,
+				'anonymous'  => 0,
+				'save_page'  => 'page-f',
+				'save_order' => 1,
+			)
+		);
+
+		$response = Rest_Api::get_instance()->update_rsvp( $request );
+
+		$this->assertSame(
+			1,
+			$response->data['guests'],
+			'Failed to assert that the ignored save returns the stored count.'
+		);
+		$this->assertSame(
+			1,
+			$response->data['anonymous'],
+			'Failed to assert that the ignored save returns the stored anonymity.'
+		);
+
+		update_comment_meta( $comment_id, Rest_Api::SAVE_ORDER_META_KEY, 'not an array' );
+
+		$this->assertSame(
+			2,
+			$this->send_guest_count(
+				$event_id,
+				2,
+				array(
+					'save_page'  => 'page-f',
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that a save goes through when the stored orders are not an array.'
+		);
+		$this->assertSame(
+			4,
+			$this->send_guest_count(
+				$event_id,
+				4,
+				array(
+					'save_page'  => 'page-f',
+					'save_order' => 0,
+				)
+			),
+			'Failed to assert that a save with a page but no order is applied.'
+		);
+		$this->assertSame(
+			4,
+			(int) get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ),
+			'Failed to assert that the save with a page but no order is stored.'
+		);
+		$this->assertSame(
+			3,
+			$this->send_guest_count( $event_id, 3 ),
+			'Failed to assert that a save without an order is applied.'
+		);
+	}
+
+	/**
+	 * Coverage for the rsvp route refusing bad save_page and save_order values.
+	 *
+	 * The route schema only runs on dispatch, so this sends requests through the
+	 * registered route rather than calling the callback directly.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::rsvp_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_route_validates_save_order_params_on_dispatch(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+		update_post_meta( $event_id, 'gatherpress_guest_limit', 5 );
+
+		Rest_Api::get_instance()->register_endpoints();
+
+		$dispatch = static function ( array $order ) use ( $event_id ): int {
+			$request = new WP_REST_Request(
+				'POST',
+				sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE )
+			);
+
+			$request->set_body_params(
+				array_merge(
+					array(
+						'post_id' => $event_id,
+						'status'  => 'attending',
+						'guests'  => 1,
+					),
+					$order
+				)
+			);
+
+			return rest_get_server()->dispatch( $request )->get_status();
+		};
+
+		$invalid = array(
+			'an array save_page'       => array(
+				'save_page'  => array( 'page-a' ),
+				'save_order' => 1,
+			),
+			'a too long save_page'     => array(
+				'save_page'  => str_repeat( 'a', 65 ),
+				'save_order' => 1,
+			),
+			'a zero save_order'        => array(
+				'save_page'  => 'page-a',
+				'save_order' => 0,
+			),
+			'a non-integer save_order' => array(
+				'save_page'  => 'page-a',
+				'save_order' => 'first',
+			),
+		);
+
+		foreach ( $invalid as $label => $order ) {
+			$this->assertSame(
+				400,
+				$dispatch( $order ),
+				sprintf( 'Failed to assert that %s is refused.', $label )
+			);
+		}
+
+		$this->assertSame(
+			200,
+			$dispatch(
+				array(
+					'save_page'  => str_repeat( 'a', 64 ),
+					'save_order' => 1,
+				)
+			),
+			'Failed to assert that valid save_page and save_order values are accepted.'
+		);
+		$this->assertSame(
+			200,
+			$dispatch( array() ),
+			'Failed to assert that a request without save_page and save_order is accepted.'
 		);
 	}
 
@@ -832,6 +1258,42 @@ class Test_Rest_Api extends Base {
 		$data = $response->get_data();
 		$this->assertFalse( $data['success'] );
 		$this->assertStringContainsString( 'closed', $data['message'] );
+	}
+
+	/**
+	 * Coverage for handle_rsvp_form_submission with canceled event.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_canceled_event(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 400, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertSame(
+			'Registration for this event is closed because the event has been canceled.',
+			$data['message']
+		);
 	}
 
 	/**
@@ -1512,6 +1974,38 @@ class Test_Rest_Api extends Base {
 				'timezone'       => 'America/New_York',
 			)
 		);
+
+		$user_id = $this->factory()->user->create();
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+		$data     = $response->get_data();
+
+		$this->assertFalse( $data['success'] );
+	}
+
+	/**
+	 * Coverage for update_rsvp with canceled event.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_canceled_event(): void {
+		$instance = Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		( new Event_Status( $post_id ) )->set( 'canceled' );
 
 		$user_id = $this->factory()->user->create();
 		wp_set_current_user( $user_id );
@@ -2759,6 +3253,44 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests update_rsvp leaves site membership alone for a canceled event in multisite.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_canceled_event_adds_no_membership_multisite(): void {
+		$user_id   = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		$site_2_id = $this->factory->blog->create();
+
+		switch_to_blog( $site_2_id );
+		Utility::invoke_hidden_method( Setup::get_instance(), 'create_tables' );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		( new Event_Status( $post_id ) )->set( 'canceled' );
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'user_id', $user_id );
+
+		$response = Rest_Api::get_instance()->update_rsvp( $request );
+
+		$this->assertFalse( $response->get_data()['success'] );
+		$this->assertFalse(
+			is_user_member_of_blog( $user_id, $site_2_id ),
+			'A canceled event does not add the user to the site.'
+		);
+
+		restore_current_blog();
+	}
+
+	/**
 	 * Tests update_rsvp adds user to blog in multisite when not a member.
 	 *
 	 * Covers: add_user_to_blog when user RSVPs to event on different site.
@@ -3094,6 +3626,115 @@ class Test_Rest_Api extends Base {
 			400,
 			rest_do_request( $request )->get_status(),
 			'Failed to assert a root that is not the RSVP template is refused by the route.'
+		);
+	}
+
+	/**
+	 * The status travels over the real endpoint, not just its callbacks.
+	 *
+	 * Registering a field is only half of it: the route has to accept the
+	 * value, return it, and refuse anything outside the vocabulary. Calling
+	 * the callbacks by hand skips all of that.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::register_status_field
+	 *
+	 * @return void
+	 */
+	public function test_status_reads_and_writes_over_the_rest_route(): void {
+		// rest_do_request() builds the server, which fires rest_api_init and
+		// registers the routes, so the field only needs to be in place first.
+		Rest_Api::get_instance()->register_status_field();
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event_Status( $post->ID );
+		// The post type publishes itself under a plural rest_base.
+		$route = sprintf(
+			'/wp/v2/%s/%d',
+			get_post_type_object( Event::POST_TYPE )->rest_base,
+			$post->ID
+		);
+
+		$this->mock->user( 'admin' );
+
+		$read = rest_do_request( new WP_REST_Request( 'GET', $route ) );
+
+		$this->assertSame(
+			'scheduled',
+			$read->get_data()['gatherpress_status'],
+			'Failed to assert the route reports an untouched event as scheduled.'
+		);
+
+		$update = new WP_REST_Request( 'POST', $route );
+		$update->set_param( 'gatherpress_status', 'canceled' );
+
+		$written = rest_do_request( $update );
+
+		$this->assertSame(
+			200,
+			$written->get_status(),
+			'Failed to assert the route accepts a known status.'
+		);
+		$this->assertSame(
+			'canceled',
+			$event->get(),
+			'Failed to assert the route stored the status.'
+		);
+
+		// The schema advertises an enum, so the request is turned away before
+		// it can reach the event.
+		$invalid = new WP_REST_Request( 'POST', $route );
+		$invalid->set_param( 'gatherpress_status', 'not-a-status' );
+
+		$refused = rest_do_request( $invalid );
+
+		$this->assertSame(
+			400,
+			$refused->get_status(),
+			'Failed to assert an unknown status is refused.'
+		);
+		$this->assertSame(
+			'canceled',
+			$event->get(),
+			'Failed to assert a refused request leaves the stored status alone.'
+		);
+	}
+
+	/**
+	 * Tests RSVP identifier validation logic.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::is_valid_rsvp_identifier
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_rsvp_identifier(): void {
+		$instance = Rest_Api::get_instance();
+
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( null ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 0 ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( '' ) )
+		);
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 'valid@example.com' ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 'invalid-email' ) )
+		);
+
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( $user_id ) )
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'is_valid_rsvp_identifier', array( 999999 ) )
 		);
 	}
 }

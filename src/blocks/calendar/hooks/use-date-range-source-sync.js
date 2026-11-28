@@ -4,7 +4,7 @@
  * Separates date-anchoring concerns from the Edit layout component.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { store as coreStore } from '@wordpress/core-data';

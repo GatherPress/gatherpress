@@ -209,6 +209,7 @@ The core identifier for venue post types. Enables venue address and contact data
     - `gatherpress_longitude`
     - `gatherpress_phone`
     - `gatherpress_website`
+- Registration of `gatherpress_manual_coordinates`, a boolean `show_in_rest` key. While it is true, geocoding the address leaves `gatherpress_latitude` and `gatherpress_longitude` alone.
 - Registration of eight server-populated structured-address meta keys, each `show_in_rest` for read access (REST writes are stripped, since these are derived from `gatherpress_address` by an async geocode cron handler that fires only when the address actually changes):
     - `gatherpress_house_number`
     - `gatherpress_street`

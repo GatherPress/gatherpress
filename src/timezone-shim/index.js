@@ -6,6 +6,6 @@ import { normalizeZeroOffsetTimezone } from '../helpers/timezone-shim';
 /**
  * Fix the `wp.date` timezone before anything reads it.
  *
- * @since TBD
+ * @since 0.37.0
  */
 normalizeZeroOffsetTimezone();

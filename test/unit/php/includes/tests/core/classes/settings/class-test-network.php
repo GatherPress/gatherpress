@@ -340,19 +340,16 @@ class Test_Network extends Base {
 			'events'  => array(),
 		);
 
-		// No tab in $_GET → falls back to first key.
-		unset( $_GET['tab'] );
+		// No tab in the URL → falls back to first key.
 		$this->assertSame( 'network', $method->invoke( $instance, $sub_pages ) );
 
-		// Valid tab in $_GET.
-		$_GET['tab'] = 'events';
+		// Valid tab in the URL.
+		$this->set_url_params( array( 'tab' => 'events' ) );
 		$this->assertSame( 'events', $method->invoke( $instance, $sub_pages ) );
 
-		// Unknown tab in $_GET → falls back to first key.
-		$_GET['tab'] = 'nonexistent';
+		// Unknown tab in the URL → falls back to first key.
+		$this->set_url_params( array( 'tab' => 'nonexistent' ) );
 		$this->assertSame( 'network', $method->invoke( $instance, $sub_pages ) );
-
-		unset( $_GET['tab'] );
 	}
 
 	/**
@@ -428,11 +425,9 @@ class Test_Network extends Base {
 
 		$instance = Network::get_instance();
 
-		$_GET['page'] = 'something-else';
+		$this->set_url_params( array( 'page' => 'something-else' ) );
 
 		$output = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
-
-		unset( $_GET['page'] );
 
 		$this->assertSame( '', $output );
 	}
@@ -488,12 +483,11 @@ class Test_Network extends Base {
 		grant_super_admin( $user_id );
 		wp_set_current_user( $user_id );
 
-		$_GET['page'] = 'gatherpress_general';
+		$this->set_url_params( array( 'page' => 'gatherpress_general' ) );
 
 		$instance = Network::get_instance();
 		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
 
-		unset( $_GET['page'] );
 		revoke_super_admin( $user_id );
 		wp_delete_user( $user_id );
 
@@ -530,12 +524,11 @@ class Test_Network extends Base {
 		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$_GET['page'] = 'gatherpress_general';
+		$this->set_url_params( array( 'page' => 'gatherpress_general' ) );
 
 		$instance = Network::get_instance();
 		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
 
-		unset( $_GET['page'] );
 		wp_delete_user( $user_id );
 
 		$this->assertStringContainsString(
@@ -568,7 +561,7 @@ class Test_Network extends Base {
 			)
 		);
 
-		$_GET['page'] = 'gatherpress_general';
+		$this->set_url_params( array( 'page' => 'gatherpress_general' ) );
 
 		// Filter exempts every option so `is_option_inherited` always returns
 		// false for this site.
@@ -581,7 +574,6 @@ class Test_Network extends Base {
 		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
 
 		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
-		unset( $_GET['page'] );
 
 		$this->assertSame( '', $output );
 	}
@@ -608,12 +600,10 @@ class Test_Network extends Base {
 			)
 		);
 
-		$_GET['page'] = 'gatherpress_general';
+		$this->set_url_params( array( 'page' => 'gatherpress_general' ) );
 
 		$instance = Network::get_instance();
 		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
-
-		unset( $_GET['page'] );
 
 		$this->assertSame( '', $output );
 	}
@@ -668,12 +658,10 @@ class Test_Network extends Base {
 	 * @return void
 	 */
 	public function test_maybe_redirect_to_default_tab_skips_when_tab_set(): void {
-		$_GET['tab'] = 'events';
+		$this->set_url_params( array( 'tab' => 'events' ) );
 
 		$instance = Network::get_instance();
 		$instance->maybe_redirect_to_default_tab(); // Does not exit.
-
-		unset( $_GET['tab'] );
 
 		$this->assertTrue( true ); // Reached — no exit.
 	}

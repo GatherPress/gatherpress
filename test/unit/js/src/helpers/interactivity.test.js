@@ -139,6 +139,30 @@ describe( 'sendRsvpApiRequest', () => {
 		expect( window.alert ).not.toHaveBeenCalled();
 	} );
 
+	it( 'sends every save with this page and the next order', async () => {
+		rsvpPayload = { success: true, status: 'attending', guests: 1, anonymous: false };
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 1, anonymous: false },
+			state,
+		);
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'not_attending', guests: 0, anonymous: true },
+			state,
+		);
+
+		const [ first, second ] = global.fetch.mock.calls
+			.filter( ( [ url ] ) => url.endsWith( '/rsvp' ) )
+			.map( ( [ , options ] ) => JSON.parse( options.body ) );
+
+		expect( typeof first.save_page ).toBe( 'string' );
+		expect( first.save_page ).not.toBe( '' );
+		expect( second.save_page ).toBe( first.save_page );
+		expect( second.save_order ).toBe( first.save_order + 1 );
+	} );
+
 	it( 'falls back to 0 for every count when responses is missing entirely', async () => {
 		rsvpPayload = {
 			success: true,

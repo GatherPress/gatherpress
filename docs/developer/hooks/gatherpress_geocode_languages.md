@@ -29,7 +29,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:1457](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1457)
+- [includes/core/classes/class-geocoding.php:1464](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L1464)
 ```php
 apply_filters( 'gatherpress_geocode_languages', self::PHOTON_LANGUAGES )
 ```

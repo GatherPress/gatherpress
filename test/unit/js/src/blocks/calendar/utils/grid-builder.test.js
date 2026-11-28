@@ -599,12 +599,36 @@ describe( 'calculateTimedEventTracks', () => {
 				EVENT_TYPES,
 			),
 		).toEqual( { timeRowStart: 5, timeRowEnd: 9 } );
+	} );
+
+	it( 'gives null for a post that is not an event, as the time grid leaves it out', () => {
 		expect(
 			calculateTimedEventTracks(
 				{ id: 2, type: 'post', date: '2026-10-16T09:00:00' },
 				{ enabled: true },
+				EVENT_TYPES,
 			),
-		).toEqual( { timeRowStart: 5, timeRowEnd: 9 } );
+		).toBeNull();
+		expect(
+			calculateTimedEventTracks(
+				{
+					id: 4,
+					type: 'post',
+					meta: { gatherpress_datetime_start: '2026-10-16 09:00:00' },
+				},
+				{ enabled: true },
+				EVENT_TYPES,
+			),
+		).toBeNull();
+		expect(
+			calculateTimedEventTracks(
+				{
+					...event( 3, '2026-10-16 09:00:00', '2026-10-16 10:00:00' ),
+					date: '2026-10-16T09:00:00',
+				},
+				{ enabled: true },
+			),
+		).toBeNull();
 	} );
 
 	it( 'puts an event outside the visible hours on the nearest edge, as the server does', () => {

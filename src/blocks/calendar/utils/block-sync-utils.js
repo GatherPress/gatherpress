@@ -2,7 +2,7 @@
  * Block tree navigation and localized name/label resolution helpers.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { __, _nx, _x, sprintf } from '@wordpress/i18n';

@@ -2,7 +2,7 @@
  * Inspector controls for date range source selection.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { __ } from '@wordpress/i18n';

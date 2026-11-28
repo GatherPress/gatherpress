@@ -13,6 +13,7 @@ namespace GatherPress\Tests\Core\Calendar\External;
 use GatherPress\Core\Calendar\External\External;
 use GatherPress\Core\Calendar\External\Setup;
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Status;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -32,7 +33,7 @@ class Test_External extends Base {
 	 * `GatherPress\Core\Calendar\External\External` through the alias map in
 	 * `includes/core/register-class-aliases.php`.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -52,15 +53,16 @@ class Test_External extends Base {
 	 * Build a published event with datetimes and (optionally) a venue with
 	 * a structured address attached.
 	 *
-	 * @param bool $with_venue When true, also create and attach a venue with an address.
+	 * @param bool   $with_venue When true, also create and attach a venue with an address.
+	 * @param string $title      The event title.
 	 *
 	 * @return int The event post ID.
 	 */
-	private function make_event( bool $with_venue = false ): int {
+	private function make_event( bool $with_venue = false, string $title = 'Sample Event' ): int {
 		$event_id = $this->mock->post(
 			array(
 				'post_type'  => Event::POST_TYPE,
-				'post_title' => 'Sample Event',
+				'post_title' => $title,
 				'post_name'  => 'sample-event',
 			)
 		)->get()->ID;
@@ -453,7 +455,7 @@ class Test_External extends Base {
 	 *
 	 * @covers ::get_ical_event_string
 	 * @covers ::escape_ical_text
-	 * @covers ::fold_ical_text
+	 * @covers ::fold_ical_line
 	 *
 	 * @return void
 	 */
@@ -726,25 +728,128 @@ class Test_External extends Base {
 	}
 
 	/**
-	 * Folding wraps text longer than 75 chars across CRLF + space.
+	 * A line that already fits in 75 octets is returned as it is.
 	 *
-	 * @covers ::fold_ical_text
+	 * @since 0.37.0
+	 *
+	 * @covers ::fold_ical_line
 	 *
 	 * @return void
 	 */
-	public function test_fold_ical_text_wraps_long_strings(): void {
-		$instance = new External( $this->make_event() );
+	public function test_fold_ical_line_keeps_a_line_of_75_octets(): void {
+		$line = 'SUMMARY:' . str_repeat( 'a', 67 );
 
-		$short = Utility::invoke_hidden_method( $instance, 'fold_ical_text', array( 'short text' ) );
-		$this->assertSame( 'short text', $short, 'Short text should pass through unchanged.' );
+		$this->assertSame( 75, strlen( $line ), 'The fixture should sit exactly on the limit.' );
+		$this->assertSame(
+			$line,
+			External::fold_ical_line( $line ),
+			'A line of 75 octets should not be folded.'
+		);
+	}
 
-		$long_text = str_repeat( 'a', 200 );
-		$folded    = Utility::invoke_hidden_method( $instance, 'fold_ical_text', array( $long_text ) );
+	/**
+	 * The property name counts towards the first line, and each continuation line spends one
+	 * of its 75 octets on the leading space.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::fold_ical_line
+	 *
+	 * @return void
+	 */
+	public function test_fold_ical_line_counts_the_name_and_the_leading_space(): void {
+		$line   = 'DESCRIPTION:' . str_repeat( 'a', 200 );
+		$folded = External::fold_ical_line( $line );
+
+		$this->assertSame(
+			array( 75, 75, 64 ),
+			array_map( 'strlen', explode( "\r\n", $folded ) ),
+			'Every folded line should stay within 75 octets, name and leading space included.'
+		);
+		$this->assertSame(
+			$line,
+			str_replace( "\r\n ", '', $folded ),
+			'Removing each CRLF and its space should give back the original line.'
+		);
+	}
+
+	/**
+	 * Folding counts octets and never splits a multi-octet UTF-8 character.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::fold_ical_line
+	 *
+	 * @dataProvider data_fold_ical_line_multibyte
+	 *
+	 * @param string $line              The content line to fold.
+	 * @param int    $first_line_octets The expected length of the first folded line.
+	 *
+	 * @return void
+	 */
+	public function test_fold_ical_line_keeps_multibyte_characters_whole( string $line, int $first_line_octets ): void {
+		$folded = External::fold_ical_line( $line );
+		$lines  = explode( "\r\n", $folded );
+
+		$this->assertSame(
+			$first_line_octets,
+			strlen( $lines[0] ),
+			'The first line should end before the character that would not fit.'
+		);
+
+		foreach ( $lines as $folded_line ) {
+			$this->assertLessThanOrEqual( 75, strlen( $folded_line ), 'No folded line should exceed 75 octets.' );
+			$this->assertTrue(
+				mb_check_encoding( $folded_line, 'UTF-8' ),
+				'No folded line should end inside a character.'
+			);
+		}
+
+		$this->assertSame(
+			$line,
+			str_replace( "\r\n ", '', $folded ),
+			'Unfolding should give back the original line.'
+		);
+	}
+
+	/**
+	 * Lines that would be cut inside a two-, three- and four-octet character.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @return array<string, array{0: string, 1: int}>
+	 */
+	public function data_fold_ical_line_multibyte(): array {
+		return array(
+			'two-octet characters'   => array( 'LOCATION:x' . str_repeat( 'é', 60 ), 74 ),
+			'three-octet characters' => array( 'LOCATION:x' . str_repeat( '東', 40 ), 73 ),
+			'four-octet characters'  => array( 'LOCATION:' . str_repeat( 'x', 63 ) . str_repeat( '😀', 20 ), 72 ),
+		);
+	}
+
+	/**
+	 * Every line of the VEVENT stays within 75 octets, however long or non-Latin the event's text.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_ical_event_string
+	 * @covers ::fold_ical_line
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_folds_long_lines(): void {
+		$title    = 'Tokyo ' . str_repeat( '東京', 30 ) . ', Japan';
+		$instance = new External( $this->make_event( true, $title ) );
+		$vevent   = $instance->get_ical_event_string();
+
+		foreach ( explode( "\r\n", $vevent ) as $line ) {
+			$this->assertLessThanOrEqual( 75, strlen( $line ), 'No line of the VEVENT should exceed 75 octets.' );
+		}
 
 		$this->assertStringContainsString(
-			"\r\n ",
-			$folded,
-			'Long text should be folded with CRLF + space sequences.'
+			'SUMMARY:Tokyo ' . str_repeat( '東京', 30 ) . '\\, Japan',
+			str_replace( "\r\n ", '', $vevent ),
+			'Unfolding should give back the whole escaped title.'
 		);
 	}
 
@@ -756,13 +861,7 @@ class Test_External extends Base {
 	 * @return void
 	 */
 	public function test_escape_ical_text_escapes_special_chars(): void {
-		$instance = new External( $this->make_event() );
-
-		$escaped = Utility::invoke_hidden_method(
-			$instance,
-			'escape_ical_text',
-			array( "a\\b,c;d\re\nf" )
-		);
+		$escaped = External::escape_ical_text( "a\\b,c;d\re\nf" );
 
 		// addcslashes converts \r and \n to the literal two-char sequences
 		// `\r` and `\n` (backslash + letter), not actual CR/LF.
@@ -1072,6 +1171,73 @@ class Test_External extends Base {
 			'DTEND;VALUE=DATE:20300618',
 			$multi_vevent,
 			'Multi-day all-day event must have DTEND on the day after the last day.'
+		);
+	}
+
+	/**
+	 * Regression coverage: cancelling an event must reach calendar clients.
+	 *
+	 * A client holds an existing VEVENT and ignores a replacement whose
+	 * SEQUENCE has not advanced. Statuses live in a taxonomy, and writing a
+	 * term does not touch the post row the sequence is derived from, so the
+	 * cancellation would otherwise be published under the old revision and
+	 * never displace what the subscriber already has.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @covers ::get_ical_event_string
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_ical_event_string_advances_after_a_status_change(): void {
+		$event_id = $this->make_event();
+
+		// Backdate the row so the change under test is the only thing that
+		// could move the sequence forward. wp_update_post() would stamp the
+		// current time over these, which is the very behavior under test.
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery
+		$wpdb->update(
+			$wpdb->posts,
+			array(
+				'post_modified'     => '2020-06-01 10:00:00',
+				'post_modified_gmt' => '2020-06-01 10:00:00',
+			),
+			array( 'ID' => $event_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+
+		clean_post_cache( $event_id );
+
+		$before = ( new External( $event_id ) )->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'STATUS:CONFIRMED',
+			$before,
+			'Failed to assert a scheduled event is published as confirmed.'
+		);
+
+		( new Status( $event_id ) )->set( 'canceled' );
+
+		$after = ( new External( $event_id ) )->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'STATUS:CANCELLED',
+			$after,
+			'Failed to assert the cancellation reaches the calendar.'
+		);
+
+		preg_match( '/SEQUENCE:(\\d+)/', $before, $was );
+		preg_match( '/SEQUENCE:(\\d+)/', $after, $now );
+
+		$this->assertGreaterThan(
+			(int) $was[1],
+			(int) $now[1],
+			'Failed to assert the sequence advances so a client accepts the update.'
 		);
 	}
 }

@@ -1821,7 +1821,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Puts the RSVP Form block in the middle of rendering a returned submission.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, string> $errors Error messages keyed by field name.
 	 * @param array<string, string> $values Submitted values keyed by field name.
@@ -1850,7 +1850,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Clears the returned submission the RSVP Form block was rendering.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -1861,7 +1861,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests a field takes its value and error from a returned submission.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::maybe_restore_returned_submission
 	 * @covers ::get_input_attributes
 	 *
@@ -1931,7 +1931,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests a field the submission has no value for keeps its default, and a hidden field its own value.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::maybe_restore_returned_submission
 	 *
 	 * @return void
@@ -1997,7 +1997,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Data provider for test_returned_submission_renders_the_error.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array<string, array{0: array<string, mixed>, 1: string}>
 	 */
@@ -2035,7 +2035,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests each field template closes with a returned error.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @dataProvider data_returned_submission_renders_the_error
 	 * @covers ::maybe_restore_returned_submission
 	 * @covers ::get_input_attributes
@@ -2072,7 +2072,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests a textarea holds exactly its value, so a returned answer is not padded.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::render
 	 *
 	 * @return void
@@ -2103,7 +2103,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests a radio group carries a returned error on its fieldset, and focuses its first option.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @covers ::maybe_restore_returned_submission
 	 * @covers ::get_input_attributes
 	 *

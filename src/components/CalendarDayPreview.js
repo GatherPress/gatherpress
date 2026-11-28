@@ -2,7 +2,7 @@
  * CalendarDayPreview Component
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { memo, useCallback, useMemo } from '@wordpress/element';
@@ -34,7 +34,10 @@ import {
 	FALLBACK_BLOCK_GAP,
 } from '../blocks/calendar/utils/day-number';
 import { getRibbonRowsStyle } from '../blocks/calendar/utils/ribbon-rows';
-import { getDayClassNames } from '../blocks/calendar/utils/day-classes';
+import {
+	getDayClassNames,
+	hasRibbonStyle,
+} from '../blocks/calendar/utils/day-classes';
 
 /**
  * Strips top-level event-date blocks from entries on multi-day/all-day spans.
@@ -147,7 +150,7 @@ function withResolvedDayContent( blocks, day, isRibbon ) {
  * day. The cell keeps its table cell role, so table navigation still reads
  * the column headers.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}   props                    Component props.
  * @param {Object}   props.day                Day data (day, date, posts, isEmpty, isToday).
@@ -188,9 +191,7 @@ function CalendarDayPreviewComponent( {
 		[ day, isTimeGrid, timeGridConfig, numRibbonSlots ],
 	);
 
-	const isRibbon = Boolean(
-		dayBlockAttributes?.className?.includes( 'is-style-ribbon' ),
-	);
+	const isRibbon = hasRibbonStyle( dayBlockAttributes?.className );
 	const isRibbonOrTimeGrid = isRibbon || isTimeGrid;
 
 	const hasDayNumberBlock = useMemo(

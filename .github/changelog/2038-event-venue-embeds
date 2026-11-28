@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Embedded events now show their date and time, venue, online and past or canceled status, and an RSVP link. Embedded venues show their address, phone and website. Any post type that declares the event or venue supports gets the same embed.

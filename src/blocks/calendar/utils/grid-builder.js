@@ -2,7 +2,7 @@
  * Grid builder functions for calendar units, weeks, and days.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { dateI18n, format } from '@wordpress/date';
@@ -16,14 +16,14 @@ import { WEEKDAY_SLUGS, isWeekendDay, getDayNames } from './calendar-utils';
  *
  * Mirrors Post_Organizer::MAX_EVENT_SPAN_DAYS: twelve months, the largest view.
  *
- * @since TBD
+ * @since 0.37.0
  */
 const MAX_EVENT_SPAN_DAYS = 366;
 
 /**
  * Milliseconds in one day.
  *
- * @since TBD
+ * @since 0.37.0
  */
 const DAY_MS = 1000 * 60 * 60 * 24;
 
@@ -32,7 +32,7 @@ const DAY_MS = 1000 * 60 * 60 * 24;
  *
  * Like the PHP side: a numeric hour stays, 0 included; anything else uses the default.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {*}      value    Hour from an attribute or the time grid configuration.
  * @param {number} fallback Hour to use when the value is not a number.
@@ -50,7 +50,7 @@ export function toHour( value, fallback ) {
  *
  * Mirrors Time_Grid: the same hours, rows and steps.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Object}  options            Time grid settings.
  * @param {boolean} options.enabled    Whether the calendar shows the time grid.
@@ -99,7 +99,7 @@ export function getTimeGridConfig( {
  *
  * Noon keeps the day the same when daylight saving time changes the clock.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} dateStr Date (YYYY-MM-DD).
  *
@@ -114,7 +114,7 @@ function toNoonDate( dateStr ) {
 /**
  * Count the days from one date to a later date.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Date} from Earlier date at noon.
  * @param {Date} to   Later date at noon.
@@ -132,7 +132,7 @@ function daysBetween( from, to ) {
  * later day does not run on that day, so it ends on the day before. An end
  * before the start is treated as no end.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {string} startRaw Start datetime (YYYY-MM-DD HH:MM:SS).
  * @param {string} endRaw   End datetime (YYYY-MM-DD HH:MM:SS), or an empty string.
@@ -262,18 +262,15 @@ export function resolvePostDateSpan( post, range = null, eventPostTypes = [] ) {
  * @param {Object}        gridConfig     Time grid configuration.
  * @param {Array<string>} eventPostTypes Slugs of the post types that support gatherpress-event-date.
  *
- * @return {Object|null} { timeRowStart, timeRowEnd }, or null when the grid is off or the post has no start.
+ * @return {Object|null} { timeRowStart, timeRowEnd }, or null when the grid is off, the post is not an event or it has no start.
  */
 export function calculateTimedEventTracks( post, gridConfig, eventPostTypes = [] ) {
-	if ( ! gridConfig?.enabled ) {
+	if ( ! gridConfig?.enabled || ! eventPostTypes.includes( post.type ) ) {
 		return null;
 	}
 
-	const isEvent = eventPostTypes.includes( post.type );
-	const startTimeStr = isEvent
-		? post.meta?.gatherpress_datetime_start
-		: post.date;
-	const endTimeStr = isEvent ? post.meta?.gatherpress_datetime_end : null;
+	const startTimeStr = post.meta?.gatherpress_datetime_start;
+	const endTimeStr = post.meta?.gatherpress_datetime_end;
 
 	if ( ! startTimeStr ) {
 		return null;
@@ -561,7 +558,7 @@ export function groupPostsByDate(
 		if ( a.startDateStr !== b.startDateStr ) {
 			return a.startDateStr.localeCompare( b.startDateStr );
 		}
-		return ( a.post.id || 0 ) - ( b.post.id || 0 );
+		return a.post.id - b.post.id;
 	} );
 
 	const occupiedSlots = {};
@@ -590,7 +587,7 @@ export function groupPostsByDate(
 
 	Object.keys( grouped ).forEach( ( dateStr ) => {
 		grouped[ dateStr ].sort(
-			( a, b ) => ( a.slot || 0 ) - ( b.slot || 0 ),
+			( a, b ) => a.slot - b.slot,
 		);
 	} );
 
@@ -671,8 +668,7 @@ export function buildWeeks(
 		// Pre-pad leading empty days before the first visible day of the month
 		if ( ! firstDayPlaced ) {
 			firstDayPlaced = true;
-			const startCol = activeDaysOfWeek.indexOf( dayOfWeek );
-			const emptyDays = -1 !== startCol ? startCol : 0;
+			const emptyDays = activeDaysOfWeek.indexOf( dayOfWeek );
 
 			// Fill initial empty days before the month starts.
 			for ( let i = 0; i < emptyDays; i++ ) {
@@ -775,7 +771,7 @@ export function buildConsecutiveDays(
  * Monday spans two ISO weeks, and its fourth day is always in the one that
  * holds most of the row.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @param {Array}  week        Day entries of the row.
  * @param {number} startOfWeek Start of week (0-6).
@@ -810,7 +806,7 @@ export function getWeekNumRibbonSlots( weekDays, isTimeGrid ) {
 	}
 	let maxSlot = -1;
 	weekDays.forEach( ( day ) => {
-		( day.posts || [] ).forEach( ( p ) => {
+		day.posts.forEach( ( p ) => {
 			if ( ! p.isTimed ) {
 				maxSlot = Math.max( maxSlot, Number( p.slot ) || 0 );
 			}
@@ -832,8 +828,8 @@ export function getWeekNumRibbonSlots( weekDays, isTimeGrid ) {
  * @return {Object} Calendar data structure.
  */
 export function generateCalendar(
-	posts = [],
-	startOfWeek = 0,
+	posts,
+	startOfWeek,
 	dateRange,
 	showWeekends = true,
 	timeGridConfig = {},
@@ -858,10 +854,7 @@ export function generateCalendar(
 			dayNames.push( formatCalendarDate( 'D', d ) );
 		}
 		const weeks = buildConsecutiveDays( startObj, requestedCount, postsByDate );
-		const numRibbonSlots = getWeekNumRibbonSlots(
-			weeks[ 0 ] || [],
-			isTimeGrid,
-		);
+		const numRibbonSlots = getWeekNumRibbonSlots( weeks[ 0 ], isTimeGrid );
 		const units = [
 			{
 				dayNames,
@@ -881,10 +874,7 @@ export function generateCalendar(
 	}
 
 	if ( 'week' === viewType ) {
-		const weekStart =
-			dateRange.rawWeekStart ||
-			dateRange.startDateObj ||
-			toNoonDate( dateRange.startDate );
+		const weekStart = dateRange.rawWeekStart || startObj;
 		const dayNames = getDayNames( startOfWeek, showWeekends );
 		const weeks = buildConsecutiveWeeks(
 			weekStart,

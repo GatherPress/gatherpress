@@ -61,6 +61,7 @@ final class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Manager::get_instance();
+		Cleanup::get_instance();
 		Map::get_instance();
 		Prewarm::get_instance();
 		Rest_Api::get_instance();

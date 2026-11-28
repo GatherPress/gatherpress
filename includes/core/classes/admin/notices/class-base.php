@@ -242,6 +242,7 @@ abstract class Base {
 		// the current directory, so /wp-admin/edit.php became
 		// /wp-admin/wp-admin/edit.php and the dismissal never ran (#2233).
 		// Rebuild the current admin request as an absolute URL instead.
+		// INPUT_SERVER is unreliable under FastCGI.
 		$request = isset( $_SERVER['REQUEST_URI'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) )
 			: '';

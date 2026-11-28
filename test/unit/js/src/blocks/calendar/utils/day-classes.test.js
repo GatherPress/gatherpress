@@ -6,7 +6,10 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import { getDayClassNames } from '@src/blocks/calendar/utils/day-classes';
+import {
+	getDayClassNames,
+	hasRibbonStyle,
+} from '@src/blocks/calendar/utils/day-classes';
 
 const TODAY = '2026-10-15';
 const FLAT = { ribbon: false, grid: false };
@@ -72,5 +75,19 @@ describe( 'getDayClassNames', () => {
 		expect(
 			getDayClassNames( day, TODAY, { ribbon: false, grid: true } ),
 		).toEqual( expect.arrayContaining( [ 'is-style-ribbon', 'gatherpress--has-time-grid' ] ) );
+	} );
+} );
+
+describe( 'hasRibbonStyle', () => {
+	it( 'finds the Ribbon style as a whole class name', () => {
+		expect( hasRibbonStyle( 'is-style-ribbon' ) ).toBe( true );
+		expect( hasRibbonStyle( 'custom  is-style-ribbon other' ) ).toBe( true );
+	} );
+
+	it( 'does not take a class that only starts with it, or no class', () => {
+		expect( hasRibbonStyle( 'is-style-ribbon-foo' ) ).toBe( false );
+		expect( hasRibbonStyle( 'is-style-default' ) ).toBe( false );
+		expect( hasRibbonStyle( '' ) ).toBe( false );
+		expect( hasRibbonStyle( undefined ) ).toBe( false );
 	} );
 } );

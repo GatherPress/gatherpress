@@ -5,7 +5,7 @@
  * core/query-pagination-previous, and core/query-pagination-next.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { registerBlockVariation } from '@wordpress/blocks';

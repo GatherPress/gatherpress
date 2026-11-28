@@ -3,7 +3,7 @@
  * Renders the Calendar Week block.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -23,7 +23,7 @@ use WP_Block;
  * Renders one table row of the calendar: an optional time gutter, an optional hidden week
  * number, and one gatherpress/calendar-day block per day.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-import-type TemplateBlock from Html_Renderer
  */
@@ -32,7 +32,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/calendar-week';
@@ -40,7 +40,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Day entries of the week, from the block context.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var array<mixed>
 	 */
 	private readonly array $week_days;
@@ -48,7 +48,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Time grid of the calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var Time_Grid
 	 */
 	private readonly Time_Grid $time_grid;
@@ -56,7 +56,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Number of ribbon rows the week's multi-day and all-day events need.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var int
 	 */
 	private readonly int $num_ribbon_slots;
@@ -64,7 +64,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param WP_Block $block Block instance.
 	 */
@@ -79,7 +79,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Calculates the maximum ribbon slot index across all days in the week.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int Maximum slot index found or -1 if none.
 	 */
@@ -103,7 +103,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Renders the time gutter header cell when time grid is active.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Rendered time gutter HTML.
 	 */
@@ -128,7 +128,7 @@ final class Calendar_Week extends Base {
 	 *
 	 * Called from the block's render.php.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Rendered HTML <tr> row.
 	 */
@@ -180,7 +180,7 @@ final class Calendar_Week extends Base {
 	 * inside one of its entries. The editor does the same (getRibbonRowsStyle() in
 	 * src/blocks/calendar/utils/ribbon-rows.js).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Inline style declarations.
 	 */
@@ -195,7 +195,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Count consecutive active (non-empty) columns remaining from the current column.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param int $col_index Current column index.
 	 *
@@ -219,7 +219,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Annotate a single post entry with week-boundary and row-span descriptors.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $post_entry   Post entry descriptor.
 	 * @param bool         $is_first_col Whether current column is first active column.
@@ -253,7 +253,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Annotate all day posts with week boundary wrapping and span metadata.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $day_posts Posts on the day.
 	 * @param int          $col_index Column index.
@@ -285,7 +285,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Build context array for a single day block.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $day       Day entry data.
 	 * @param array<mixed> $day_posts Annotated day posts.
@@ -314,7 +314,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Render all day blocks for a given week.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $day_template Parsed day template block.
 	 * @param string               $today        Today's date in Y-m-d format.
@@ -342,7 +342,7 @@ final class Calendar_Week extends Base {
 	/**
 	 * Build unique key attribute for the week row.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Row key.
 	 */

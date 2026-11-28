@@ -2,7 +2,7 @@
  * Utility functions and constants for calendar date range sources.
  *
  * @package
- * @since TBD
+ * @since 0.37.0
  */
 
 import { select as wpSelect } from '@wordpress/data';
@@ -268,7 +268,7 @@ export function resolveSourceEventDates( select, params = {} ) {
 	let effectivePostId = 0;
 	if ( isSelected ) {
 		effectivePostId = toPostId( postId );
-	} else if ( isContext ) {
+	} else {
 		effectivePostId =
 			toPostId( contextPostId ) || toPostId( currentEditorPostId );
 	}

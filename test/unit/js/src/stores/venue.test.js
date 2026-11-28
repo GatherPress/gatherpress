@@ -29,12 +29,6 @@ describe( 'Venue store', () => {
 
 			expect( longitude ).toBe( 0 );
 		} );
-
-		it( 'has mapCustomLatLong set to false by default', () => {
-			const mapCustomLatLong = select( STORE_NAME ).getMapCustomLatLong();
-
-			expect( mapCustomLatLong ).toBe( false );
-		} );
 	} );
 
 	describe( 'selectors', () => {

@@ -42,6 +42,7 @@ These settings choose the mapping platform and the defaults applied to newly add
 - **CARTO API Key** is required for the default (unmodified) OpenStreetMap tiles; it's ignored once a custom tile layer URL is set.
 - **Default Render Mode** chooses between an interactive map and a static map image for new blocks.
 - **Default Map Type** (Google Maps only), **Default Zoom Level**, **Default Height**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height can be left empty for automatic sizing derived from the aspect ratio.
+- **Unused Map Image Cleanup** sets how often GatherPress removes saved map images that no venue uses anymore: **Daily**, **Weekly** (the default), or **Never**. Maps still in use, and any saved in the last five minutes, are kept. Developers can also run it with `wp gatherpress venue-map cleanup`.
 
 ### Geocoding
 
@@ -71,6 +72,14 @@ Default RSVP settings for new events; most can be overridden per event.
 - **Capacity** caps the total number of people per event. Set to 0 for no limit.
 - **Maximum Number of Guests** sets how many additional guests each attendee may bring.
 - **Anonymous RSVP** allows users to RSVP without revealing their identity.
+
+### Notifications
+
+The emails GatherPress sends attendees on its own (see [Emails](user/emails.md)).
+
+- **Waiting List Emails** emails attendees when a spot opens up and they move off the waiting list. It is on by default.
+- **Reminder Emails** sends attendees a reminder before an event starts. It is on by default.
+- **Reminder Timing** has a checkbox for each time a reminder can go out: a day before (checked by default) and an hour before. Check both to remind attendees twice. The `gatherpress_event_reminder_timings` filter can add or remove timings.
 
 ### Cleanup
 

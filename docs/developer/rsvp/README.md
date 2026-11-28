@@ -153,11 +153,99 @@ own.
 
 - **`GatherPress\Core\Rsvp\Flag\Base`**: the abstract class a flag extends. It
   stores, reads, and counts the flag, and fires the flag hooks.
-- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` flag, the first
-  one GatherPress ships.
+- **`GatherPress\Core\Rsvp\Flag\Check_In_State`**: the abstract class a
+  check-in state extends. See [Check-in](#check-in).
+- **`GatherPress\Core\Rsvp\Flag\Check_In`**: the `checked-in` state, the
+  first flag GatherPress shipped.
+- **`GatherPress\Core\Rsvp\Flag\No_Show`**: the `no-show` state, for an RSVP
+  that did not turn up.
+- **`GatherPress\Core\Rsvp\Flag\Check_In_Registry`**: the check-in states
+  the RSVP screen offers.
 - **`GatherPress\Core\Rsvp\Flag\Setup`**: what belongs to every flag rather
   than one. It registers the taxonomy, reads all flags on an RSVP, and sweeps
   them when the RSVP is deleted.
+
+### Check-in
+
+A check-in state records what happened when the event took place. Core has two:
+
+| State | Flag | Attended |
+| --- | --- | --- |
+| Checked in | `checked-in` | Yes |
+| No-show | `no-show` | No |
+
+An RSVP has at most one check-in state: adding one removes the others. An RSVP
+with none is **not recorded**, which is where every RSVP starts, so RSVPs from
+before the no-show state need no backfill. A report of who turns up should
+count the states whose `attended()` is true as present and the others as
+absent, and leave not recorded RSVPs out.
+
+```php
+use GatherPress\Core\Rsvp\Flag\Check_In_Registry;
+use GatherPress\Core\Rsvp\Flag\No_Show;
+
+( new No_Show( $rsvp_id ) )->add();
+
+$state = Check_In_Registry::get_instance()->get_state( $rsvp_id );
+
+if ( null === $state ) {
+	// Nobody recorded whether this person came.
+} elseif ( $state->attended() ) {
+	// The person came.
+}
+```
+
+### Adding a check-in state
+
+A check-in state is a flag that extends `Check_In_State`. Beyond its slug, it
+names itself, names the action that sets it, says whether the person attended,
+and has an icon. Register it on `gatherpress_register_rsvp_check_in_states`,
+and the Events > RSVPs screen offers it in the Check-in column's dropdown, the
+bulk actions, and the check-in filter.
+
+The icon is a [Dashicon](https://developer.wordpress.org/resource/dashicons/)
+name without its `dashicons-` prefix, as core's states use: `yes` for checked
+in and `no-alt` for a no-show.
+
+```php
+<?php
+
+namespace My_Plugin\Flag;
+
+use GatherPress\Core\Rsvp\Flag\Check_In_State;
+
+class Checked_In_Online extends Check_In_State {
+	public const SLUG = 'my-plugin-checked-in-online';
+
+	public function label(): string {
+		return __( 'Checked in online', 'my-plugin' );
+	}
+
+	public function action_label(): string {
+		return __( 'Check in online', 'my-plugin' );
+	}
+
+	public function attended(): bool {
+		return true;
+	}
+
+	public function icon(): string {
+		return 'laptop';
+	}
+}
+
+add_action(
+	'gatherpress_register_rsvp_check_in_states',
+	function ( $registry ) {
+		$registry->register( Checked_In_Online::class );
+	}
+);
+```
+
+Adding this state removes any other check-in state on the RSVP, and adding
+another one removes it. The slug follows the same rules as any flag, and
+cannot be `not-recorded`, which the RSVP screen's filter uses for an RSVP with
+no state.
 
 ### Adding a flag
 
@@ -222,7 +310,9 @@ Every flag fires `gatherpress_rsvp_flag_added` and `gatherpress_rsvp_flag_remove
 with the RSVP ID and the flag slug. To react to one flag, compare the slug with
 that flag class's `SLUG`. Neither action fires on a repeat or a failed write,
 and when two requests add the same flag at once, only the one that stored it
-announces it.
+announces it. Changing a check-in state fires `gatherpress_rsvp_flag_removed`
+for the old state before `gatherpress_rsvp_flag_added` for the new one, so a
+listener on the added action reads the new state alone.
 
 ```php
 use My_Plugin\Flag\Walk_In;
@@ -235,7 +325,8 @@ function my_plugin_on_flag_added( int $rsvp_id, string $flag ): void {
 add_action( 'gatherpress_rsvp_flag_added', 'my_plugin_on_flag_added', 10, 2 );
 ```
 
-The same pattern reacts to a check-in, with `Check_In::SLUG`.
+The same pattern reacts to a check-in, with `Check_In::SLUG`, or to a no-show,
+with `No_Show::SLUG`.
 
 ### Slugs
 
@@ -294,6 +385,41 @@ Open RSVP has two gates: the sitewide `enable_open_rsvp` setting and a
 per-event `gatherpress_enable_open_rsvp` post meta (unset means enabled).
 `Rsvp::allows_open_rsvp()` resolves both; when it returns false the RSVP Form
 block renders nothing and form or REST submissions are rejected with a 403.
+
+## Visibility and anonymous RSVPs
+
+Who can see what about a responder comes down to one capability,
+`Rsvp::CAPABILITY` (`moderate_comments`). Being able to edit the event does
+not grant it, and there is no separate rule for site admins: anyone with the
+capability sees everything, anyone without it sees the masked version.
+
+Without the capability, a viewer gets:
+
+- **Anonymous response**: name "Anonymous", no email, no profile URL, and the
+  default avatar. This applies to `get_comment()` readers
+  (`Rsvp\Query::prepare_rsvp_comment()`), the comments REST `author` field
+  (`Rsvp\Query::mask_anonymous_rsvp_rest_author()`), the RSVP response record
+  (`Rsvp\Response\Serializer::to_array()`), and avatars
+  (`Blocks\Rsvp_Response::modify_avatar_for_gatherpress_rsvp()`). The REST
+  `author` field and the response record also withhold the user ID, but a
+  `get_comment()` reader still gets the stored `user_id`.
+- **Response identified only by email**: name "Attendee" and no identifier, so
+  the address is not published.
+
+Avatars for RSVPs are resolved by core, because GatherPress adds
+`gatherpress_rsvp` to the `get_avatar_comment_types` filter. An avatar another
+plugin supplies through `pre_get_avatar_data` is kept. The only override is
+for an anonymous response shown to a viewer without the capability, which
+always gets the default avatar.
+
+Anonymity also needs the event to allow it. `Rsvp::process()` runs every
+intent through `constrain_rsvp_intent()`, and when the event's
+`gatherpress_enable_anonymous_rsvp` meta is off, a request to stay anonymous
+is saved as a **public** response rather than rejected. The save happens
+before `process()` returns, so the returned state can only tell you it
+already happened. A companion plugin that should not publish a name the
+responder wanted hidden must check that meta and reject the request before
+calling `process()`.
 
 ## Custom fields and the form schema
 

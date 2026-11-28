@@ -249,11 +249,9 @@ class Test_Uninstall extends Base {
 	 * @return void
 	 */
 	public function test_warning_renders_on_its_own_page(): void {
-		$_GET['page'] = 'gatherpress_uninstall_settings';
+		$this->set_url_params( array( 'page' => 'gatherpress_uninstall_settings' ) );
 
 		$output = Utility::buffer_and_return( array( Uninstall::get_instance(), 'render_warning' ) );
-
-		unset( $_GET['page'] );
 
 		$this->assertStringContainsString(
 			'notice-warning',
@@ -285,11 +283,9 @@ class Test_Uninstall extends Base {
 	 * @return void
 	 */
 	public function test_warning_stays_off_other_pages(): void {
-		$_GET['page'] = 'gatherpress_general';
+		$this->set_url_params( array( 'page' => 'gatherpress_general' ) );
 
 		$output = Utility::buffer_and_return( array( Uninstall::get_instance(), 'render_warning' ) );
-
-		unset( $_GET['page'] );
 
 		$this->assertSame( '', $output, 'Nothing is being deleted on any other screen.' );
 	}
@@ -302,8 +298,6 @@ class Test_Uninstall extends Base {
 	 * @return void
 	 */
 	public function test_warning_stays_off_a_page_with_no_slug(): void {
-		unset( $_GET['page'] );
-
 		$output = Utility::buffer_and_return( array( Uninstall::get_instance(), 'render_warning' ) );
 
 		$this->assertSame( '', $output, 'A screen that names no page is not this one.' );

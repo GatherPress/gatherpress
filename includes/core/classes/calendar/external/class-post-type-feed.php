@@ -65,6 +65,33 @@ final class Post_Type_Feed extends Endpoint {
 	}
 
 	/**
+	 * Gets the archive slug of the post type.
+	 *
+	 * Matches WordPress core's archive rules, so the rule matches the link
+	 * that `get_post_type_archive_feed_link()` returns: a string
+	 * `has_archive` replaces the rewrite slug.
+	 *
+	 * @since 0.37.0
+	 *
+	 * @return string The archive slug.
+	 */
+	protected function get_rewrite_slug(): string {
+		/**
+		 * The registered post type object.
+		 *
+		 * @var WP_Post_Type $type_object Registration resolved the object before the
+		 *                                endpoint could initialize.
+		 */
+		$type_object = $this->type_object;
+
+		if ( is_string( $type_object->has_archive ) && '' !== $type_object->has_archive ) {
+			return $type_object->has_archive;
+		}
+
+		return parent::get_rewrite_slug();
+	}
+
+	/**
 	 * Validates if the current request is for a post type archive feed.
 	 *
 	 * This method checks if the current request is for an archive page of the specified

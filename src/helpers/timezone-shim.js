@@ -11,7 +11,7 @@
  * Non-zero UTC offsets are left untouched. Operators with those configured
  * should pick an IANA zone in Settings → General.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @return {void}
  */

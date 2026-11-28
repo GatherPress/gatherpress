@@ -3,7 +3,7 @@
  * Registers the block binding sources and editor settings of the Calendar blocks.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks\Calendar;
@@ -30,14 +30,14 @@ use WP_Block;
  * date range of its calendar. The editor settings give the editor preview the same week start,
  * weekend days, post limit and time grid rows as the front end.
  *
- * @since TBD
+ * @since 0.37.0
  */
 final class Registration {
 
 	/**
 	 * The calendar blocks, which render their inner blocks themselves.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string[]
 	 */
 	const SELF_RENDERING_BLOCKS = array(
@@ -55,7 +55,7 @@ final class Registration {
 	/**
 	 * Class constructor.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -64,7 +64,7 @@ final class Registration {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -82,7 +82,7 @@ final class Registration {
 	 * that unit's context. Without this, WP_Block::render() also renders the template once
 	 * without that context, and the output is thrown away. Core's Post Template does the same.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $args       Block type arguments.
 	 * @param string               $block_type Block type name.
@@ -100,7 +100,7 @@ final class Registration {
 	/**
 	 * Register the block binding sources of the calendar.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -130,7 +130,7 @@ final class Registration {
 	 * The editor preview then uses the same start of week, weekend days, post limit and hours per
 	 * time grid row as the front end. Other values under `gatherpress` stay.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $settings Default editor settings.
 	 *
@@ -154,7 +154,7 @@ final class Registration {
 	 *
 	 * Supports optional 'format' argument from binding args (e.g. 'j', 'd', 'jS', 'j.', 'D j').
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $source_args    Source arguments.
 	 * @param WP_Block             $block_instance Block instance.
@@ -198,7 +198,7 @@ final class Registration {
 	 * so a heading bound to this source (anywhere inside the same Query block) always
 	 * shows the date range that the calendar shows.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed> $source_args    Source arguments.
 	 * @param WP_Block             $block_instance Block instance.

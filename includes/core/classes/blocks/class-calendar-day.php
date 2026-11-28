@@ -3,7 +3,7 @@
  * Renders the Calendar Day block.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -23,7 +23,7 @@ use WP_Block;
  *
  * Renders one table cell of the calendar: the day number and the calendar entries of the day.
  *
- * @since TBD
+ * @since 0.37.0
  *
  * @phpstan-import-type TemplateBlock from Html_Renderer
  */
@@ -32,7 +32,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/calendar-day';
@@ -42,7 +42,7 @@ final class Calendar_Day extends Base {
 	 *
 	 * Called from the block's render.php.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string Rendered HTML, or an empty string outside a calendar week.
 	 */
@@ -77,7 +77,7 @@ final class Calendar_Day extends Base {
 	 * The time grid places its entries with the Ribbon layout, so a day in a time grid gets the
 	 * Ribbon class whichever style it has, as in the editor (calendar-day/edit.js).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return list<string> The Ribbon class, or nothing when it is not needed.
 	 */
@@ -99,7 +99,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Build cell attributes including key and interactivity directives.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string[] $classes  CSS classes list.
 	 * @param string   $day_date YYYY-MM-DD date string.
@@ -152,7 +152,7 @@ final class Calendar_Day extends Base {
 	 * date; the view script then uses the visitor's date (calendar-day/view.js), which can be
 	 * another day near midnight.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -179,7 +179,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Compare the date of the cell that the server processes now with today's date.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return int|null -1 for a past day, 0 for today, 1 for a future day, null without a date.
 	 */
@@ -193,7 +193,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Check if any post entry is a multi-day or all-day event.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $day_posts List of day post entries.
 	 *
@@ -218,7 +218,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Resolve class names for a calendar day cell.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return string[] Array of CSS classes.
 	 */
@@ -260,7 +260,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Resolve weekday slug and weekend status.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array{0: string, 1: bool} Weekday slug and is_weekend flag.
 	 */
@@ -281,7 +281,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Resolve temporal CSS classes (today, past, future).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param string $day_date YYYY-MM-DD date string.
 	 *
@@ -306,7 +306,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Check if a block is a day number block with the gatherpress/calendar-day binding.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<mixed> $block Parsed block array.
 	 *
@@ -324,7 +324,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Locate day number and entries inner blocks.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return array{day_number: TemplateBlock|null, entries: TemplateBlock|null} Found blocks.
 	 */
@@ -358,7 +358,7 @@ final class Calendar_Day extends Base {
 	/**
 	 * Render day cell content (day number and events list).
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @param array<string, mixed>|null $day_number_block Bound day number block.
 	 * @param array<string, mixed>|null $entries_block    Calendar entries block.

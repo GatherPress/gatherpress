@@ -19,7 +19,7 @@ composer install
 ```
 
 > [!NOTE]
-> You also need to use Node.js 20 or later
+> You also need Node.js 26, the version in `.nvmrc`
 
 Install the dependencies to create the Playground testing instance, using the following command:
 
@@ -64,6 +64,17 @@ To run only specific tests, you can call `npm run test:unit:php`:
     ```
 
 - or with any other of [phpunit's command-line options](https://docs.phpunit.de/en/10.5/textui.html#command-line-options).
+
+## Faking request input
+
+Code reads request input through `Utility::get_http_input()`, which wraps `filter_input()`. `filter_input()` reads the raw request, so writing to `$_GET` or `$_POST` in a test has no effect. Use the helpers on the test `Base` class instead. They hook the `gatherpress_pre_get_http_input` filter, which only runs during unit tests:
+
+```php
+$this->set_url_params( array( 'tab' => 'general' ) );
+$this->set_post_params( array( 'author' => 'O\\Brien' ) );
+```
+
+Pass `false` for a value that should read as not a string, such as `?tab[]=x`.
 
 ## Resources
 

@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+The marker on a static OpenStreetMap venue map can now take other colors through the new `gatherpress_static_map_marker_colors` filter. Saved maps render again when the colors change, and maps with the default marker keep their saved image.

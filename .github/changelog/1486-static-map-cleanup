@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Static-map images that no venue uses anymore are now removed on a schedule, weekly by default. Settings > Venues > Maps has an Unused Map Image Cleanup option for daily, weekly or never. `wp gatherpress venue-map cleanup` previews them, or deletes them now with `--apply`. Recently saved maps and maps still in use are never removed.

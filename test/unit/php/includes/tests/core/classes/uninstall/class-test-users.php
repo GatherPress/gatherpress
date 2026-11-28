@@ -126,6 +126,7 @@ class Test_Users extends Base {
 				'gatherpress_timezone',
 				'gatherpress_time_format',
 				'gatherpress_event_updates_opt_in',
+				'gatherpress_event_reminders_opt_in',
 				sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
 			),
 			Users::meta_keys(),

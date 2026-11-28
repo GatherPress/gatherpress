@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Capability.
  *
  * @package GatherPress\Core
- * @since TBD
+ * @since 0.37.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -23,7 +23,7 @@ class Test_Capability extends Base {
 	/**
 	 * Verify the constants hold WordPress's post meta capabilities.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -35,7 +35,7 @@ class Test_Capability extends Base {
 	/**
 	 * Verify READ_POST meta capability resolves properly against event posts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -103,7 +103,7 @@ class Test_Capability extends Base {
 	/**
 	 * Verify READ_POST meta capability resolves properly against venue posts.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */
@@ -148,7 +148,7 @@ class Test_Capability extends Base {
 	/**
 	 * Verify EDIT_POST meta capability resolves properly against events and venues.
 	 *
-	 * @since TBD
+	 * @since 0.37.0
 	 *
 	 * @return void
 	 */

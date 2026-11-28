@@ -120,6 +120,17 @@ class Test_Venues extends Base {
 			);
 		}
 
+		$this->assertSame(
+			array( 'daily', 'weekly', 'never' ),
+			array_keys( $section['maps']['options']['static_map_cleanup']['field']['options']['items'] ),
+			'Failed to assert the cleanup frequency choices.'
+		);
+		$this->assertSame(
+			'weekly',
+			$section['maps']['options']['static_map_cleanup']['field']['options']['default'],
+			'Failed to assert the cleanup runs weekly by default.'
+		);
+
 		// Default Map Type only affects Google Maps rendering, so it is gated
 		// behind the Google platform via show_if (#1760).
 		$this->assertSame(
