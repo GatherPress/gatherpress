@@ -2928,6 +2928,40 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Block data sent as an object fails validation with a 400, not a fatal.
+	 *
+	 * @since TBD
+	 * @covers ::rsvp_status_html_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_rejects_non_string_block_data(): void {
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp-status-html' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			(string) wp_json_encode(
+				array(
+					'post_id'         => 1,
+					'status'          => 'attending',
+					'block_data'      => array( 'a' => 1 ),
+					'block_signature' => str_repeat( 'a0', 32 ),
+				)
+			)
+		);
+
+		$response = rest_do_request( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $data['code'] );
+		$this->assertArrayHasKey(
+			'block_data',
+			$data['data']['params'],
+			'The 400 should come from block_data, not another param.'
+		);
+	}
+
+	/**
 	 * Tests rsvp_responses_route protected method.
 	 *
 	 * @covers ::rsvp_responses_route
