@@ -79,12 +79,12 @@ final class Occurrences {
 	 * @since TBD
 	 *
 	 * @param DateTimeInterface $start   The occurrence's start, in the event's timezone.
-	 * @param bool              $all_day Whether the occurrence lasts all day.
+	 * @param bool              $is_all_day Whether the occurrence lasts all day.
 	 *
 	 * @return string The key, such as `20261211T200000`, or `20261211` for an all-day occurrence.
 	 */
-	public static function recurrence_id( DateTimeInterface $start, bool $all_day = false ): string {
-		return $start->format( $all_day ? self::ALL_DAY_KEY_FORMAT : self::KEY_FORMAT );
+	public static function recurrence_id( DateTimeInterface $start, bool $is_all_day = false ): string {
+		return $start->format( $is_all_day ? self::ALL_DAY_KEY_FORMAT : self::KEY_FORMAT );
 	}
 
 	/**
@@ -102,7 +102,10 @@ final class Occurrences {
 		$occurrences = ( $single && $single->start < $to && $single->end >= $from ) ? array( $single ) : array();
 
 		/**
-		 * Filters an event's occurrences within a range.
+		 * Lets repeat rules supply an event's dates within a range.
+		 *
+		 * Calendars, lists and feeds ask for dates through here, so a plugin that
+		 * expands repeat rules returns each date in the range as an occurrence.
 		 *
 		 * @since TBD
 		 *
@@ -111,6 +114,8 @@ final class Occurrences {
 		 * @param int               $post_id     The event post ID.
 		 * @param DateTimeInterface $from        Start of the range.
 		 * @param DateTimeInterface $to          End of the range, exclusive.
+		 *
+		 * @return Occurrence[] The occurrences that overlap the range.
 		 */
 		$occurrences = apply_filters( 'gatherpress_event_occurrences', $occurrences, $this->post_id(), $from, $to );
 
@@ -138,7 +143,10 @@ final class Occurrences {
 		$occurrence = ( $single && $single->recurrence_id === $recurrence_id ) ? $single : null;
 
 		/**
-		 * Filters the occurrence found for a key.
+		 * Lets repeat rules supply the occurrence for a key.
+		 *
+		 * Per-date pages and RSVPs look a date up by its key, so a plugin that
+		 * expands repeat rules returns the occurrence that key names.
 		 *
 		 * @since TBD
 		 *
@@ -146,14 +154,21 @@ final class Occurrences {
 		 *                                       if its key matches.
 		 * @param int             $post_id       The event post ID.
 		 * @param string          $recurrence_id The occurrence's key.
+		 *
+		 * @return Occurrence|null The occurrence, or null if the event has none with that key.
 		 */
-		$occurrence = apply_filters( 'gatherpress_event_occurrence', $occurrence, $this->post_id(), $recurrence_id );
+		$occurrence = apply_filters(
+			'gatherpress_event_occurrence_by_key',
+			$occurrence,
+			$this->post_id(),
+			$recurrence_id
+		);
 
 		return $occurrence instanceof Occurrence ? $occurrence : null;
 	}
 
 	/**
-	 * The occurrence a series shows by default.
+	 * The series' primary occurrence, the one it shows by default.
 	 *
 	 * That is the first occurrence that has not ended, preferring one that is
 	 * not canceled, or the last occurrence when all have ended.
@@ -166,12 +181,17 @@ final class Occurrences {
 		$occurrence = $this->single();
 
 		/**
-		 * Filters the occurrence a series shows by default.
+		 * Lets repeat rules pick a series' primary occurrence.
+		 *
+		 * The event page and lists show this date for a series, so a plugin that
+		 * expands repeat rules returns the next date that has not ended.
 		 *
 		 * @since TBD
 		 *
 		 * @param Occurrence|null $occurrence The occurrence. Without repeat rules, the event's one date.
 		 * @param int             $post_id    The event post ID.
+		 *
+		 * @return Occurrence|null The primary occurrence, or null if the event has none.
 		 */
 		$occurrence = apply_filters( 'gatherpress_event_primary_occurrence', $occurrence, $this->post_id() );
 
@@ -241,17 +261,17 @@ final class Occurrences {
 			return null;
 		}
 
-		$utc      = new DateTimeZone( 'UTC' );
-		$timezone = new DateTimeZone( Utility::normalize_timezone_string( $this->event->get_timezone() ) );
-		$start    = ( new DateTimeImmutable( $datetime['datetime_start_gmt'], $utc ) )->setTimezone( $timezone );
-		$end      = empty( $datetime['datetime_end_gmt'] )
+		$utc        = new DateTimeZone( 'UTC' );
+		$timezone   = new DateTimeZone( Utility::normalize_timezone_string( $this->event->get_timezone() ) );
+		$start      = ( new DateTimeImmutable( $datetime['datetime_start_gmt'], $utc ) )->setTimezone( $timezone );
+		$end        = empty( $datetime['datetime_end_gmt'] )
 			? $start
 			: ( new DateTimeImmutable( $datetime['datetime_end_gmt'], $utc ) )->setTimezone( $timezone );
-		$all_day  = $this->event->is_all_day();
+		$is_all_day = $this->event->is_all_day();
 
-		$key          = self::recurrence_id( $start, $all_day );
+		$key          = self::recurrence_id( $start, $is_all_day );
 		$status       = ( new Status( $this->post_id() ) )->get();
-		$this->single = new Occurrence( $this->post_id(), $key, $start, $end, $all_day, $status );
+		$this->single = new Occurrence( $this->post_id(), $key, $start, $end, $is_all_day, $status );
 
 		return $this->single;
 	}

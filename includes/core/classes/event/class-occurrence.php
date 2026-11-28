@@ -31,7 +31,7 @@ final class Occurrence {
 	 * @param string            $recurrence_id  The occurrence's key within its series.
 	 * @param DateTimeImmutable $start          The start, in the event's timezone.
 	 * @param DateTimeImmutable $end            The end, in the event's timezone.
-	 * @param bool              $all_day        Whether the occurrence lasts all day.
+	 * @param bool              $is_all_day     Whether the occurrence lasts all day.
 	 * @param string            $status         The occurrence's status, one of the event status slugs.
 	 */
 	public function __construct(
@@ -39,8 +39,8 @@ final class Occurrence {
 		public readonly string $recurrence_id,
 		public readonly DateTimeImmutable $start,
 		public readonly DateTimeImmutable $end,
-		public readonly bool $all_day = false,
-		public readonly string $status = 'scheduled'
+		public readonly bool $is_all_day = false,
+		public readonly string $status = Status::STATUS_SCHEDULED
 	) {}
 
 	/**

@@ -31,7 +31,7 @@ class Test_Occurrences extends Base {
 	 */
 	public function tear_down(): void {
 		remove_all_filters( 'gatherpress_event_occurrences' );
-		remove_all_filters( 'gatherpress_event_occurrence' );
+		remove_all_filters( 'gatherpress_event_occurrence_by_key' );
 		remove_all_filters( 'gatherpress_event_primary_occurrence' );
 
 		parent::tear_down();
@@ -143,7 +143,7 @@ class Test_Occurrences extends Base {
 		$this->assertSame( '2026-12-11 20:00:00', $occurrences[0]->start->format( 'Y-m-d H:i:s' ) );
 		$this->assertSame( '2026-12-11 22:00:00', $occurrences[0]->end->format( 'Y-m-d H:i:s' ) );
 		$this->assertSame( 'America/New_York', $occurrences[0]->start->getTimezone()->getName() );
-		$this->assertFalse( $occurrences[0]->all_day );
+		$this->assertFalse( $occurrences[0]->is_all_day );
 	}
 
 	/**
@@ -257,7 +257,7 @@ class Test_Occurrences extends Base {
 		$occurrences = $this->december( $post_id );
 
 		$this->assertSame( '20261211', $occurrences[0]->recurrence_id );
-		$this->assertTrue( $occurrences[0]->all_day );
+		$this->assertTrue( $occurrences[0]->is_all_day );
 	}
 
 	/**
@@ -337,7 +337,7 @@ class Test_Occurrences extends Base {
 		);
 
 		add_filter(
-			'gatherpress_event_occurrence',
+			'gatherpress_event_occurrence_by_key',
 			static function ( ?Occurrence $occurrence, int $id, string $key ) use ( $other ) {
 				if ( '20261218T200000' === $key ) {
 					return $other;
@@ -372,7 +372,7 @@ class Test_Occurrences extends Base {
 		$post_id    = $this->event();
 		$occurrence = $this->occurrences( $post_id )->find( '20261211T200000' );
 
-		$this->assertSame( 'scheduled', $occurrence->status );
+		$this->assertSame( Status::STATUS_SCHEDULED, $occurrence->status );
 		$this->assertFalse( $occurrence->is_canceled(), 'A scheduled event is not canceled.' );
 
 		( new Status( $post_id ) )->set( Status::STATUS_CANCELED );
