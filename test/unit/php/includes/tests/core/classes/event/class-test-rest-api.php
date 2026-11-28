@@ -2859,6 +2859,41 @@ class Test_Rest_Api extends Base {
 		// Test with invalid email - is_email() returns false.
 		$result = call_user_func( $validate_callback, 'not-an-email' );
 		$this->assertFalse( $result, 'Validate callback should return false for invalid email' );
+
+		$this->assertFalse(
+			call_user_func( $validate_callback, array( 'test@example.com' ) ),
+			'Validate callback should return false for an email that is not a string, instead of a TypeError'
+		);
+	}
+
+	/**
+	 * An email sent as an array fails validation with a 400, not a fatal.
+	 *
+	 * @since TBD
+	 * @covers ::rsvp_form_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_form_rejects_non_string_email(): void {
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp-form' );
+		$request->set_body_params(
+			array(
+				'comment_post_ID' => 1,
+				'author'          => 'Test Person',
+				'email'           => array( 'test@example.com' ),
+			)
+		);
+
+		$response = rest_do_request( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $data['code'] );
+		$this->assertArrayHasKey(
+			'email',
+			$data['data']['params'],
+			'The 400 should come from email, not another param.'
+		);
 	}
 
 	/**
