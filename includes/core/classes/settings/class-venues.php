@@ -344,6 +344,27 @@ final class Venues extends Base {
 							),
 						),
 					),
+					'static_map_cleanup'          => array(
+						'labels'      => array(
+							'name' => __( 'Unused Map Image Cleanup', 'gatherpress' ),
+						),
+						'description' => __(
+							'How often to remove saved map images that no venue uses. Maps in use are kept.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Remove unused map images:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => 'weekly',
+								'items'   => array(
+									'daily'  => __( 'Daily', 'gatherpress' ),
+									'weekly' => __( 'Weekly', 'gatherpress' ),
+									'never'  => __( 'Never', 'gatherpress' ),
+								),
+							),
+						),
+					),
 				),
 			),
 			'geocoding' => array(

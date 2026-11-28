@@ -112,7 +112,7 @@ wp gatherpress venue-map cleanup --apply --limit=200
 | `--limit` | `1000` | Stops after this many files. Must be a positive whole number |
 | `--force` | off | Runs even if another cleanup holds the lock |
 
-GatherPress already runs this cleanup weekly through WP-Cron (`gatherpress_venue_map_cleanup`), with `--apply` and the default limit, so the command is for previewing or for running it now. Images changed in the last five minutes are skipped, so a map being saved is never removed mid-write. Only one cleanup runs at a time, through a lock that expires after a minute. If a run reaches `--limit` with `--apply`, run it again to continue.
+GatherPress also runs this cleanup on WP-Cron (`gatherpress_venue_map_cleanup`), with `--apply` and the default limit, at the frequency set under Settings > Venues > Maps (weekly by default). The command is for previewing or for running it now. Images changed in the last five minutes are skipped, so a map being saved is never removed mid-write. Only one cleanup runs at a time, through a lock that expires after a minute. If a run reaches `--limit` with `--apply`, run it again to continue.
 
 ## Commands from companion plugins
 

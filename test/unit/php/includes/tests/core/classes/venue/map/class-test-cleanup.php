@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core\Venue\Map;
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map\Cleanup;
 use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Venue;
@@ -742,7 +743,7 @@ class Test_Cleanup extends Base {
 	}
 
 	/**
-	 * Tests the weekly cleanup is scheduled once.
+	 * Tests the cleanup follows the frequency setting.
 	 *
 	 * @since TBD
 	 *
@@ -750,18 +751,31 @@ class Test_Cleanup extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_schedule(): void {
+	public function test_schedule_follows_setting(): void {
+		$settings = Settings::get_instance();
+		$cleanup  = Cleanup::get_instance();
+
 		wp_clear_scheduled_hook( Cleanup::CRON_ACTION );
 
-		Cleanup::get_instance()->schedule();
+		$cleanup->schedule();
 		$first = wp_next_scheduled( Cleanup::CRON_ACTION );
+		$this->assertSame( 'weekly', wp_get_schedule( Cleanup::CRON_ACTION ), 'Weekly is the default.' );
 
-		Cleanup::get_instance()->schedule();
+		$cleanup->schedule();
+		$this->assertSame( $first, wp_next_scheduled( Cleanup::CRON_ACTION ), 'An unchanged setting keeps the event.' );
 
-		$this->assertNotFalse( $first );
-		$this->assertSame( 'weekly', wp_get_schedule( Cleanup::CRON_ACTION ) );
-		$this->assertSame( $first, wp_next_scheduled( Cleanup::CRON_ACTION ), 'A second call should not reschedule.' );
+		$settings->set( 'static_map_cleanup', 'daily' );
+		$cleanup->schedule();
+		$this->assertSame( 'daily', wp_get_schedule( Cleanup::CRON_ACTION ) );
 
+		$settings->set( 'static_map_cleanup', 'never' );
+		$cleanup->schedule();
+		$this->assertFalse( wp_next_scheduled( Cleanup::CRON_ACTION ), 'Never should remove the event.' );
+
+		$cleanup->schedule();
+		$this->assertFalse( wp_next_scheduled( Cleanup::CRON_ACTION ), 'Never should stay unscheduled.' );
+
+		$settings->set( 'static_map_cleanup', 'weekly' );
 		wp_clear_scheduled_hook( Cleanup::CRON_ACTION );
 	}
 

@@ -42,6 +42,7 @@ These settings choose the mapping platform and the defaults applied to newly add
 - **CARTO API Key** is required for the default (unmodified) OpenStreetMap tiles; it's ignored once a custom tile layer URL is set.
 - **Default Render Mode** chooses between an interactive map and a static map image for new blocks.
 - **Default Map Type** (Google Maps only), **Default Zoom Level**, **Default Height**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height can be left empty for automatic sizing derived from the aspect ratio.
+- **Unused Map Image Cleanup** sets how often GatherPress removes saved map images that no venue uses anymore: **Daily**, **Weekly** (the default), or **Never**. Maps still in use, and any saved in the last five minutes, are kept. Developers can also run it with `wp gatherpress venue-map cleanup`.
 
 ### Geocoding
 

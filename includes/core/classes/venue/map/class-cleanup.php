@@ -14,6 +14,7 @@ namespace GatherPress\Core\Venue\Map;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Venue;
@@ -33,7 +34,7 @@ class Cleanup {
 	use Singleton;
 
 	/**
-	 * Cron action for the weekly cleanup.
+	 * Cron action for the scheduled cleanup.
 	 *
 	 * @since TBD
 	 * @var string
@@ -98,7 +99,7 @@ class Cleanup {
 	}
 
 	/**
-	 * Set up hooks for the weekly cleanup.
+	 * Set up hooks for the scheduled cleanup.
 	 *
 	 * @since TBD
 	 *
@@ -110,22 +111,34 @@ class Cleanup {
 	}
 
 	/**
-	 * Schedule the weekly cleanup if it is not scheduled yet.
+	 * Keep the cleanup scheduled at the frequency set under Venues > Maps.
+	 *
+	 * Reschedules when the setting changes, and removes the event when it is
+	 * set to never.
 	 *
 	 * @since TBD
 	 *
 	 * @return void
 	 */
 	public function schedule(): void {
-		if ( wp_next_scheduled( self::CRON_ACTION ) ) {
+		$frequency = (string) Settings::get_instance()->get( 'static_map_cleanup' );
+		$scheduled = wp_get_schedule( self::CRON_ACTION );
+
+		if ( $frequency === $scheduled ) {
 			return;
 		}
 
-		wp_schedule_event( time(), 'weekly', self::CRON_ACTION );
+		if ( false !== $scheduled ) {
+			wp_unschedule_hook( self::CRON_ACTION );
+		}
+
+		if ( in_array( $frequency, array( 'daily', 'weekly' ), true ) ) {
+			wp_schedule_event( time(), $frequency, self::CRON_ACTION );
+		}
 	}
 
 	/**
-	 * Delete orphaned static map images on the weekly schedule.
+	 * Delete orphaned static map images on the cleanup schedule.
 	 *
 	 * @since TBD
 	 *
