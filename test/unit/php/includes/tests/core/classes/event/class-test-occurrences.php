@@ -22,6 +22,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Event\Occurrences
  */
 class Test_Occurrences extends Base {
+
 	/**
 	 * Clear the filters a test added.
 	 *
