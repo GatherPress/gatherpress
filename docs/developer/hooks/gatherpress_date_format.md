@@ -18,7 +18,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:274](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L274)
+- [includes/core/classes/event/class-event.php:287](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L287)
 ```php
 apply_filters( 'gatherpress_date_format', $settings->get( 'date_format' ) )
 ```
