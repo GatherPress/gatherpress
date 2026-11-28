@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Status;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Meta;
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Event\Reminder;
 use GatherPress\Core\Event\Rest_Api;
@@ -71,27 +72,31 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
 
 		$expected_hooks = array(
-			Admin_List::class => array(
+			Admin_List::class       => array(
 				'query_vars',
 				array( Admin_List::get_instance(), 'query_vars' ),
 			),
-			Meta::class       => array(
+			Meta::class             => array(
 				'registered_post_type',
 				array( Meta::get_instance(), 'register' ),
 			),
-			Query::class      => array(
+			Occurrence_Index::class => array(
+				'gatherpress_event_datetimes_saved',
+				array( Occurrence_Index::get_instance(), 'rebuild' ),
+			),
+			Query::class            => array(
 				'pre_get_posts',
 				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
 			),
-			Reminder::class   => array(
+			Reminder::class         => array(
 				Reminder::SWEEP_ACTION,
 				array( Reminder::get_instance(), 'sweep' ),
 			),
-			Rest_Api::class   => array(
+			Rest_Api::class         => array(
 				'rest_api_init',
 				array( Rest_Api::get_instance(), 'register_endpoints' ),
 			),
-			Scheduler::class  => array(
+			Scheduler::class        => array(
 				'transition_post_status',
 				array( Scheduler::get_instance(), 'handle_transition_post_status' ),
 			),

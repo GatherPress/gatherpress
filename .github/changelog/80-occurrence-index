@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Events now keep an index of their dates in a new `gatherpress_occurrence_index` table, with a row per date for repeating events up to 12 months ahead. Each site builds it on its first request after updating. Nothing reads it yet.

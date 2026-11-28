@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Uninstall;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event\Occurrence_Index;
 use GatherPress\Core\Uninstall\Events;
 use GatherPress\Core\Uninstall\Preferences;
 use GatherPress\Core\Venue;
@@ -304,7 +305,7 @@ class Test_Events extends Base {
 	}
 
 	/**
-	 * The event date table is dropped with the events.
+	 * The event date table and the date index are dropped with the events.
 	 *
 	 * @covers ::uninstall_site
 	 * @covers ::drop_table
@@ -314,7 +315,8 @@ class Test_Events extends Base {
 	public function test_drops_the_event_date_table(): void {
 		$this->arm_uninstall( Preferences::TASK_EVENTS );
 
-		$drops = $this->drop_statements( $this->capture_run() );
+		$queries = $this->capture_run();
+		$drops   = $this->drop_statements( $queries );
 
 		$this->assertCount( 1, $drops, 'Exactly one drop is issued for the event table.' );
 		$this->assertStringContainsString(
@@ -326,6 +328,17 @@ class Test_Events extends Base {
 			Event::table(),
 			$drops[0],
 			'The drop names the event table for this site, not another one.'
+		);
+		$index = Occurrence_Index::table();
+
+		$this->assertCount(
+			1,
+			array_filter(
+				$queries,
+				static fn( string $query ): bool => str_contains( $query, 'DROP TABLE IF EXISTS' )
+					&& str_contains( $query, $index )
+			),
+			'One drop is issued for the date index of this site.'
 		);
 	}
 
