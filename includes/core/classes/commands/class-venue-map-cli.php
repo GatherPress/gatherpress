@@ -31,7 +31,7 @@ final class Venue_Map_Cli extends WP_CLI {
 	 * : Delete the orphaned images. Without this flag, the command only reports them.
 	 *
 	 * [--verbose]
-	 * : Output each candidate file being inspected or deleted.
+	 * : List each file found, deleted, or that could not be deleted.
 	 *
 	 * [--limit=<number>]
 	 * : Maximum number of files to unlink in one run. Defaults to 1000.
@@ -93,11 +93,15 @@ final class Venue_Map_Cli extends WP_CLI {
 			return; // @phpstan-ignore deadCode.unreachable
 		}
 
-		if ( $verbose && ! empty( $result['files'] ) ) {
+		if ( $verbose ) {
 			$prefix = $dry_run ? '[orphan]' : '[deleted]';
 
 			foreach ( $result['files'] as $file ) {
 				self::line( sprintf( '%s %s', $prefix, $file ) );
+			}
+
+			foreach ( $result['failed_files'] as $file ) {
+				self::line( sprintf( '[failed] %s', $file ) );
 			}
 		}
 

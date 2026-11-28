@@ -206,34 +206,32 @@ class Cleanup {
 		}
 
 		/**
-		 * Filters how many venues are read per batch when finding the static maps in use.
+		 * Filters how many venues have their map data read per batch when finding the static maps in use.
 		 *
 		 * @since TBD
 		 *
 		 * @param int $batch_size Number of venues read per batch.
 		 */
 		$batch_size = (int) apply_filters( 'gatherpress_venue_map_cleanup_scan_batch_size', self::SCAN_BATCH_SIZE );
-		$page       = 1;
+		$batch_size = max( 1, $batch_size );
 
-		while ( true ) {
-			$post_ids = get_posts(
-				array(
-					'post_type'              => $types,
-					'post_status'            => array( 'publish', 'draft', 'pending', 'future', 'private', 'trash' ),
-					'posts_per_page'         => $batch_size,
-					'paged'                  => $page,
-					'orderby'                => 'ID',
-					'order'                  => 'ASC',
-					'fields'                 => 'ids',
-					'no_found_rows'          => true,
-					'update_post_meta_cache' => false,
-					'update_post_term_cache' => false,
-				)
-			);
+		// Every ID up front, in any status, so a venue deleted mid-scan cannot shift a page.
+		$all_ids = get_posts(
+			array(
+				'post_type'              => $types,
+				'post_status'            => array_keys( get_post_stati() ),
+				'posts_per_page'         => -1,
+				'orderby'                => 'ID',
+				'order'                  => 'ASC',
+				'fields'                 => 'ids',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
 
-			if ( empty( $post_ids ) ) {
-				break;
-			}
+		foreach ( array_chunk( $all_ids, $batch_size ) as $post_ids ) {
+			update_meta_cache( 'post', $post_ids );
 
 			foreach ( $post_ids as $post_id ) {
 				$raw = get_post_meta( (int) $post_id, Map::META_KEY, true );
@@ -246,23 +244,15 @@ class Cleanup {
 					array_walk_recursive(
 						$raw,
 						static function ( $val ) use ( &$in_use ) {
-							if ( is_string( $val ) && str_ends_with( $val, '.png' ) ) {
-								$basename = wp_basename( (string) wp_parse_url( $val, PHP_URL_PATH ) );
+							$path = is_string( $val ) ? (string) wp_parse_url( $val, PHP_URL_PATH ) : '';
 
-								if ( '' !== $basename ) {
-									$in_use[ $basename ] = true;
-								}
+							if ( str_ends_with( $path, '.png' ) ) {
+								$in_use[ wp_basename( $path ) ] = true;
 							}
 						}
 					);
 				}
 			}
-
-			if ( count( $post_ids ) < $batch_size ) {
-				break;
-			}
-
-			++$page;
 		}
 
 		/**
@@ -332,6 +322,7 @@ class Cleanup {
 	 *     failed: int,
 	 *     bytes_reclaimed: int,
 	 *     files: string[],
+	 *     failed_files: string[],
 	 *     hit_limit: bool
 	 * } Sweep summary statistics.
 	 *
@@ -347,6 +338,7 @@ class Cleanup {
 			'failed'          => 0,
 			'bytes_reclaimed' => 0,
 			'files'           => array(),
+			'failed_files'    => array(),
 			'hit_limit'       => false,
 		);
 
@@ -414,6 +406,7 @@ class Cleanup {
 				if ( ! $dry_run ) {
 					if ( ! $this->unlink_file( $full_path ) ) {
 						++$result['failed'];
+						$result['failed_files'][] = $entry;
 						continue;
 					}
 

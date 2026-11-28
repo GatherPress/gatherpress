@@ -108,7 +108,7 @@ wp gatherpress venue-map cleanup --apply --limit=200
 | Option | Default | Notes |
 |---|---|---|
 | `--apply` | off | Without it, the command is a dry run |
-| `--verbose` | off | Prints each file found or deleted |
+| `--verbose` | off | Prints each file found, deleted, or that could not be deleted |
 | `--limit` | `1000` | Stops after this many files. Must be a positive whole number |
 | `--force` | off | Runs even if another cleanup holds the lock |
 

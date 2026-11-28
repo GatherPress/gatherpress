@@ -292,11 +292,19 @@ class Test_Venue_Map_Cli extends Base {
 		add_filter( 'wp_delete_file', '__return_empty_string' );
 		$output = Utility::buffer_and_return(
 			array( $cli, 'cleanup' ),
-			array( array(), array( 'apply' => true ) )
+			array(
+				array(),
+				array(
+					'apply'   => true,
+					'verbose' => true,
+				),
+			)
 		);
 		remove_filter( 'wp_delete_file', '__return_empty_string' );
 
 		$this->assertStringContainsString( 'Could not delete 1 file(s).', $output );
+		$this->assertStringContainsString( '[failed] cli-undeletable-osm-roadmap-15-800-400.png', $output );
+		$this->assertStringNotContainsString( '[deleted]', $output );
 
 		$filter = static function ( array $dirs ): array {
 			$dirs['error'] = 'Simulated upload dir failure.';

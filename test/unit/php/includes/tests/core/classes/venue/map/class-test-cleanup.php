@@ -726,6 +726,7 @@ class Test_Cleanup extends Base {
 		$this->assertSame( 1, $result['failed'] );
 		$this->assertSame( 0, $result['deleted'] );
 		$this->assertSame( array(), $result['files'], 'A file that was not deleted is not listed.' );
+		$this->assertSame( array( 'undeletable-osm-roadmap-15-800-400.png' ), $result['failed_files'] );
 	}
 
 	/**
@@ -867,5 +868,89 @@ class Test_Cleanup extends Base {
 		}
 
 		$this->assertSame( array( $name => true ), $basenames );
+	}
+
+	/**
+	 * Tests a stored URL with a query string still marks its file as in use.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_in_use_basenames
+	 *
+	 * @return void
+	 */
+	public function test_get_in_use_basenames_strips_query_strings(): void {
+		$venue = $this->factory()->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$name  = 'query-osm-roadmap-15-800-400-1a2b3c4d.png';
+
+		add_post_meta( $venue, Map::META_KEY, array( 'url' => Saved_Image::url( $name ) . '?v=1' ) );
+
+		$this->assertArrayHasKey( $name, Cleanup::get_instance()->get_in_use_basenames() );
+	}
+
+	/**
+	 * Tests venues in any registered status, such as auto-draft, are checked.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_in_use_basenames
+	 *
+	 * @return void
+	 */
+	public function test_get_in_use_basenames_checks_every_status(): void {
+		$venue = $this->factory()->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'auto-draft',
+			)
+		);
+		$name  = 'autodraft-osm-roadmap-15-800-400.png';
+
+		add_post_meta( $venue, Map::META_KEY, array( 'url' => Saved_Image::url( $name ) ) );
+
+		$this->assertArrayHasKey( $name, Cleanup::get_instance()->get_in_use_basenames() );
+	}
+
+	/**
+	 * Tests a venue deleted during the scan does not make the scan skip another venue.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::get_in_use_basenames
+	 *
+	 * @return void
+	 */
+	public function test_get_in_use_basenames_survives_deletion_mid_scan(): void {
+		$venues = array();
+
+		foreach ( array( 'first', 'second', 'third' ) as $label ) {
+			$venues[ $label ] = $this->factory()->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+			$url              = Saved_Image::url( $label . '-osm-roadmap-15-800-400.png' );
+			add_post_meta( $venues[ $label ], Map::META_KEY, array( 'url' => $url ) );
+		}
+
+		$deleted = false;
+		$delete  = static function ( $value, $object_id ) use ( &$deleted, $venues ) {
+			if ( ! $deleted && $venues['second'] === (int) $object_id ) {
+				$deleted = true;
+				wp_delete_post( $venues['first'], true );
+			}
+
+			return $value;
+		};
+		$batch   = static fn() => 1;
+
+		add_filter( 'get_post_metadata', $delete, 10, 2 );
+		add_filter( 'gatherpress_venue_map_cleanup_scan_batch_size', $batch );
+
+		try {
+			$in_use = Cleanup::get_instance()->get_in_use_basenames();
+		} finally {
+			remove_filter( 'get_post_metadata', $delete, 10 );
+			remove_filter( 'gatherpress_venue_map_cleanup_scan_batch_size', $batch );
+		}
+
+		$this->assertTrue( $deleted, 'The first venue should be deleted during the scan.' );
+		$this->assertArrayHasKey( 'third-osm-roadmap-15-800-400.png', $in_use );
 	}
 }
