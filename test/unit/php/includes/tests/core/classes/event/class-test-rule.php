@@ -935,4 +935,32 @@ class Test_Rule extends Base {
 			$keys
 		);
 	}
+
+	/**
+	 * A day a timezone skipped counts once, though its date lands on the next one.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::occurrences
+	 *
+	 * @return void
+	 */
+	public function test_skipped_day_counts_once(): void {
+		// Samoa skipped 2011-12-30, so that day's 10:00 is built as 10:00 on 2011-12-31.
+		$rule = $this->rule(
+			array(
+				'starts_on' => '2011-12-29',
+				'rrule'     => 'FREQ=DAILY',
+				'times'     => array( '10:00' ),
+				'timezone'  => 'Pacific/Apia',
+				'duration'  => 60,
+			)
+		);
+		$keys = array_map(
+			static fn( Occurrence $occurrence ): string => $occurrence->recurrence_id,
+			$rule->occurrences( $this->utc( '2011-12-28' ), $this->utc( '2012-01-05' ), 7, 'scheduled', 3 )
+		);
+
+		$this->assertSame( array( '20111229T100000', '20111231T100000', '20120101T100000' ), $keys );
+	}
 }
