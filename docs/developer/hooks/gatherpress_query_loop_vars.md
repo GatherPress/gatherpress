@@ -25,7 +25,7 @@ add_filter(
 ## Parameters
 
 - *`array<string,`* `mixed>` $query_args  Arguments to be passed to WP_Query.
-- `$get_params` Other variable names: `array<string, mixed> $block_query The block's query attribute, or the`, `$attrs`, `$block_query`
+- `$get_params` Other variable names: `array<string, mixed> $block_query The block's query attribute, or the`, `$attrs`, `$block_query`, `$request_params`
 - *`bool`* `$inherited` Whether the Query Loop inherits the main query.
 - ``
 
@@ -41,7 +41,7 @@ apply_filters(
 		)
 ```
 
-- [includes/core/classes/blocks/class-event-query.php:217](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L217)
+- [includes/core/classes/blocks/class-event-query.php:218](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L218)
 ```php
 apply_filters(
 				'gatherpress_query_loop_vars',
@@ -51,7 +51,7 @@ apply_filters(
 			)
 ```
 
-- [includes/core/classes/blocks/class-event-query.php:352](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L352)
+- [includes/core/classes/blocks/class-event-query.php:438](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L438)
 ```php
 apply_filters(
 			'gatherpress_query_loop_vars',
@@ -61,12 +61,12 @@ apply_filters(
 		)
 ```
 
-- [includes/core/classes/blocks/class-event-query.php:546](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L546)
+- [includes/core/classes/blocks/class-event-query.php:646](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L646)
 ```php
 apply_filters(
 			'gatherpress_query_loop_vars',
 			$custom_args,
-			$request->get_params(),
+			$request_params,
 			false,
 		)
 ```
