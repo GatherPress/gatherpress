@@ -4328,4 +4328,115 @@ class Test_Query extends Base {
 		$this->assertFalse( $uses( array( Query::OCCURRENCES_PARAM => true ) ), 'Not before the index is built.' );
 		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
 	}
+
+	/**
+	 * A published weekly event that started some days ago, indexed.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $days_ago Days since its first date.
+	 *
+	 * @return int The post ID.
+	 */
+	protected function running_event( int $days_ago ): int {
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+		$start   = new \DateTimeImmutable(
+			sprintf( 'today -%d days', $days_ago ),
+			new \DateTimeZone( 'America/New_York' )
+		);
+
+		( new Event( $post_id ) )->rules()->replace(
+			array(
+				array(
+					'starts_on' => $start->format( 'Y-m-d' ),
+					'rrule'     => 'FREQ=WEEKLY',
+					'times'     => array( '19:00' ),
+					'timezone'  => 'America/New_York',
+					'duration'  => 90,
+				),
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * A one-row list finds a running series through the index and orders by its next or latest date.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::adjust_event_sql
+	 * @covers ::lists_once_by_index
+	 * @covers ::filter_by_index
+	 *
+	 * @return void
+	 */
+	public function test_one_row_lists_read_the_index(): void {
+		$older = $this->running_event( 20 );
+		$newer = $this->running_event( 3 );
+		$list  = static function ( string $type ) use ( $older, $newer ): array {
+			return ( new WP_Query(
+				array(
+					'post_type'              => Event::POST_TYPE,
+					Query::EVENT_QUERY_PARAM => $type,
+					'fields'                 => 'ids',
+					'orderby'                => 'datetime',
+					'order'                  => 'upcoming' === $type ? 'ASC' : 'DESC',
+					'post__in'               => array( $older, $newer ),
+				)
+			) )->posts;
+		};
+
+		// The newer series' next date is 4 days out; the older one's, 1 day out.
+		$this->assertSame( array( $older, $newer ), $list( 'upcoming' ), 'Both upcoming, soonest next first.' );
+		// The newer series' latest past date is 3 days ago; the older one's, 6 days ago.
+		$this->assertSame( array( $newer, $older ), $list( 'past' ), 'Both are past too, latest past date first.' );
+	}
+
+	/**
+	 * A per-date list breaks ties on the event and key, and a grouped one groups by the whole key.
+	 *
+	 * @since TBD
+	 *
+	 * @covers ::join_occurrence_index
+	 *
+	 * @return void
+	 */
+	public function test_join_occurrence_index_tiebreak_and_grouping(): void {
+		update_option( Occurrence_Index::SCHEMA_OPTION, Occurrence_Index::SCHEMA_VERSION );
+
+		$index  = Occurrence_Index::table();
+		$pieces = Query::get_instance()->join_occurrence_index(
+			array(
+				'join'    => ' LEFT JOIN ' . Event::table() . ' ON 1=1',
+				'where'   => '',
+				'fields'  => 'wp_posts.*',
+				'groupby' => 'wp_posts.ID',
+				'orderby' => Event::table() . '.datetime_start_gmt ASC',
+			),
+			new WP_Query()
+		);
+
+		$this->assertSame(
+			"{$index}.datetime_start_gmt ASC, {$index}.post_id ASC, {$index}.recurrence_id ASC",
+			$pieces['orderby']
+		);
+		$this->assertSame(
+			"wp_posts.ID, {$index}.post_id, {$index}.recurrence_id, {$index}.datetime_start_gmt",
+			$pieces['groupby']
+		);
+	}
 }

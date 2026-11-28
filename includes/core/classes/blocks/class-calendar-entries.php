@@ -288,7 +288,7 @@ final class Calendar_Entries {
 			esc_attr( implode( ' ', get_post_class( $classnames, $post_id ) ) ),
 			$this->build_entry_style_attribute( $entry_styles['inline_styles'], $span_data, $row_span, $timed_style ),
 			$this->build_entry_data_attributes( $span_data, $row_span ),
-			$this->build_entry_iapi_directives( $post_id ),
+			$this->build_entry_iapi_directives( $post_id, $span_data ),
 			$inner_content
 		);
 	}
@@ -414,14 +414,20 @@ final class Calendar_Entries {
 	 * Build Interactivity API directives for synchronized hover/focus.
 	 *
 	 * @since 0.37.0
+	 * @since TBD    Keys a date of a repeating event by its date as well.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int                  $post_id   Post ID.
+	 * @param array<string, mixed> $span_data The entry, whose date of a repeating event, if any, joins the key.
 	 *
 	 * @return string Directives string.
 	 */
-	private function build_entry_iapi_directives( int $post_id ): string {
+	private function build_entry_iapi_directives( int $post_id, array $span_data = array() ): string {
+		// One date of a repeating event highlights alone, not every date of its series.
+		$key      = $span_data['occurrence']['recurrence_id'] ?? '';
+		$event_id = is_string( $key ) && '' !== $key ? $post_id . ':' . $key : $post_id;
+
 		return ' data-wp-interactive="gatherpress/calendar"'
-			. sprintf( ' data-wp-context="%s"', esc_attr( (string) wp_json_encode( array( 'eventId' => $post_id ) ) ) )
+			. sprintf( ' data-wp-context="%s"', esc_attr( (string) wp_json_encode( array( 'eventId' => $event_id ) ) ) )
 			. ' data-wp-on--mouseenter="actions.hoverEvent"'
 			. ' data-wp-on--mouseleave="actions.unhoverEvent"'
 			. ' data-wp-on--focusin="actions.focusEvent"'

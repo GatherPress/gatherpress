@@ -167,6 +167,8 @@ These stay one row per event:
 - The admin, REST requests, feeds, and an event's own page.
 - Any query that sets `gatherpress_occurrences` to false. Setting it to true turns the index on where it would otherwise be off.
 
+A one-row-per-event list still reads its upcoming or past filter from the index, since the events table holds only a series' first date: an event is upcoming while any of its dates is, and past once any of them is, so a running series appears in both. Upcoming orders by each event's next date and past by its latest. The admin's Upcoming and Past counts match.
+
 Until a site's index is built, queries keep using `gatherpress_events`.
 
 **Each row knows its date.** A row selects its date as `gatherpress_occurrence_*` properties on the post. While the loop's global `$post` is that row, `Event::get_datetime()` and `Event::is_all_day()` return that date, so the Event Date and Add to Calendar blocks show it. A nested loop or `wp_reset_postdata()` puts the outer row back. `Event::get_saved_datetime()` always returns the saved dates, the series' first date. `Event\Current_Occurrence` reads the row and lets the calendar, which renders entries from plain posts, set an entry's date while it renders.

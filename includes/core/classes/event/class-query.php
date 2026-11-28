@@ -447,7 +447,8 @@ final class Query {
 			'upcoming',
 			$query->get( 'order' ),
 			$query->get( 'orderby' ),
-			$inclusive
+			$inclusive,
+			$query
 		);
 	}
 
@@ -475,7 +476,8 @@ final class Query {
 			'past',
 			$query->get( 'order' ),
 			$query->get( 'orderby' ),
-			$inclusive
+			$inclusive,
+			$query
 		);
 	}
 
@@ -539,7 +541,8 @@ final class Query {
 			$gatherpress_events_query,
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
-			$inclusive
+			$inclusive,
+			$wp_query
 		);
 
 		$gatherpress_event_month = $wp_query->get( self::EVENT_DATE_QUERY_PARAM );
@@ -626,6 +629,8 @@ final class Query {
 	 *                                         (Default: ['datetime']).
 	 * @param bool                  $inclusive Whether to include currently running events in the query
 	 *                                         (Default: true).
+	 * @param WP_Query|null         $query     The query, which decides whether a repeating event is read from
+	 *                                         the date index. Since TBD.
 	 *
 	 * @return array<string, string> An array containing adjusted SQL clauses for the Event query.
 	 */
@@ -634,7 +639,8 @@ final class Query {
 		string $type = 'all',
 		string $order = 'DESC',
 		$order_by = array( 'datetime' ),
-		bool $inclusive = true
+		bool $inclusive = true,
+		?WP_Query $query = null
 	): array {
 		global $wpdb;
 
@@ -706,6 +712,10 @@ final class Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 		$column  = $this->get_datetime_comparison_column( $type, $inclusive );
 
+		if ( $this->lists_once_by_index( $query ) ) {
+			return $this->filter_by_index( $pieces, $type, $column, $current, $order );
+		}
+
 		// Append a date-based condition to the WHERE clause, filtering as
 		// either upcoming or past. Events with no row in the events table
 		// (no date set yet) are excluded from both buckets — they only
@@ -763,7 +773,90 @@ final class Query {
 		$pieces['fields'] = (string) ( $pieces['fields'] ?? '' ) . ', ' . implode( ', ', $columns );
 
 		if ( '' !== trim( $pieces['groupby'] ) ) {
-			$pieces['groupby'] .= sprintf( ', %1$s.recurrence_id, %1$s.datetime_start_gmt', $index );
+			$pieces['groupby'] .= sprintf( ', %1$s.post_id, %1$s.recurrence_id, %1$s.datetime_start_gmt', $index );
+		}
+
+		// Showtimes and series often share a start, so a tiebreak keeps pages from repeating or skipping rows.
+		if ( '' !== trim( (string) ( $pieces['orderby'] ?? '' ) ) ) {
+			$pieces['orderby'] .= sprintf( ', %1$s.post_id ASC, %1$s.recurrence_id ASC', $index );
+		}
+
+		return $pieces;
+	}
+
+	/**
+	 * Whether a query lists each event once while the date index can say which have upcoming or past dates.
+	 *
+	 * Such a query keeps the events table's one row per event, but the
+	 * events table holds only a series' first date, so the index decides.
+	 *
+	 * @since TBD
+	 *
+	 * @param WP_Query|null $query The query, if known.
+	 *
+	 * @return bool True to filter and order by the index.
+	 */
+	protected function lists_once_by_index( ?WP_Query $query ): bool {
+		return $query instanceof WP_Query
+			&& Occurrence_Index::get_instance()->is_ready()
+			&& ! $this->uses_occurrence_index( $query );
+	}
+
+	/**
+	 * Filter a one-row-per-event query to events with an upcoming or past date, ordered by that date.
+	 *
+	 * An event is upcoming while any of its dates is, and past once any of
+	 * them is, so a running series is in both lists. Upcoming orders by each
+	 * event's next date and past by its latest one.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string, string> $pieces  The query's SQL clauses.
+	 * @param string                $type    `upcoming` or `past`.
+	 * @param string                $column  The index column to compare.
+	 * @param string                $current Now, in GMT.
+	 * @param string                $order   `ASC` or `DESC`.
+	 *
+	 * @return array<string, string> The clauses.
+	 */
+	protected function filter_by_index(
+		array $pieces,
+		string $type,
+		string $column,
+		string $current,
+		string $order
+	): array {
+		global $wpdb;
+
+		$compare   = 'upcoming' === $type ? '>=' : '<';
+		$aggregate = 'upcoming' === $type ? 'MIN' : 'MAX';
+		$format    = 'FROM %i AS gatherpress_dates WHERE gatherpress_dates.post_id = %i.ID'
+			. ' AND gatherpress_dates.%i ' . $compare . ' %s';
+		$matching  = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $compare is one of two literals.
+			$format,
+			Occurrence_Index::table(),
+			$wpdb->posts,
+			$column,
+			$current
+		);
+
+		$pieces['where'] .= ' AND EXISTS ( SELECT 1 ' . $matching . ' )';
+
+		/**
+		 * Escaped events table name.
+		 *
+		 * @var string $events esc_sql() only returns an array when it is handed one.
+		 */
+		$events = esc_sql( Event::table() );
+
+		if ( str_starts_with( $pieces['orderby'], $events . '.datetime_start_gmt' ) ) {
+			$pieces['orderby'] = sprintf(
+				'( SELECT %1$s( gatherpress_dates.datetime_start_gmt ) %2$s ) %3$s',
+				$aggregate,
+				$matching,
+				in_array( $order, array( 'ASC', 'DESC' ), true ) ? $order : 'DESC'
+			);
 		}
 
 		return $pieces;
