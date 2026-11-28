@@ -28,7 +28,7 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:1270](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L1270)
+- [includes/core/classes/event/class-event.php:1302](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L1302)
 ```php
 do_action(
 				'gatherpress_event_datetimes_saved',

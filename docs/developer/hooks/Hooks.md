@@ -100,6 +100,12 @@
 
 - [`gatherpress_pseudo_post_metas`](gatherpress_pseudo_post_metas.md) Filters the list of data-names and their respective export- and import-callbacks.
 
+## class-occurrences.php
+
+- [`gatherpress_event_occurrence_by_key`](gatherpress_event_occurrence_by_key.md) Lets repeat rules supply the occurrence for a key.
+- [`gatherpress_event_occurrences`](gatherpress_event_occurrences.md) Lets repeat rules supply an event's dates within a range.
+- [`gatherpress_event_primary_occurrence`](gatherpress_event_primary_occurrence.md) Lets repeat rules pick a series' primary occurrence.
+
 ## class-osm.php
 
 - [`gatherpress_static_map_composite_time_budget`](gatherpress_static_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single OSM
