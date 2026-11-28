@@ -24,8 +24,10 @@ import {
 	exportSettings,
 	importSettings,
 	initSettingsTools,
+	isButtonBusy,
 	previewImport,
 	renderPreview,
+	setButtonBusy,
 } from '@src/helpers/settings-tools';
 
 jest.mock( '@wordpress/api-fetch' );
@@ -340,6 +342,17 @@ describe( 'importSettings', () => {
 		expect( apiFetch ).not.toHaveBeenCalled();
 	} );
 
+	it( 'returns early if the import button is busy', async () => {
+		const elements = getElements( renderTools() );
+
+		elements.importData = { settings: { a: 1 } };
+		setButtonBusy( elements.importButton, true );
+
+		await importSettings( elements );
+
+		expect( apiFetch ).not.toHaveBeenCalled();
+	} );
+
 	it( 'imports with the picked mode and shows the result', async () => {
 		const elements = getElements( renderTools( 'network' ) );
 
@@ -359,7 +372,7 @@ describe( 'importSettings', () => {
 			},
 		} );
 		expect( statusText( elements ) ).toBe( '1 setting imported.' );
-		expect( elements.importButton.disabled ).toBe( false );
+		expect( elements.importButton.getAttribute( 'aria-disabled' ) ).toBeNull();
 	} );
 
 	it( 'shows why the import failed', async () => {
@@ -380,7 +393,7 @@ describe( 'importSettings', () => {
 		await importSettings( elements );
 
 		expect( statusText( elements ) ).toBe( 'Import failed.' );
-		expect( elements.importButton.disabled ).toBe( false );
+		expect( elements.importButton.getAttribute( 'aria-disabled' ) ).toBeNull();
 	} );
 } );
 
@@ -435,5 +448,28 @@ describe( 'initSettingsTools', () => {
 				path: '/gatherpress/v1/settings/import',
 			} ),
 		);
+	} );
+
+	describe( 'isButtonBusy and setButtonBusy', () => {
+		it( 'handles null or undefined button gracefully', () => {
+			expect( isButtonBusy( null ) ).toBe( false );
+			expect( isButtonBusy( undefined ) ).toBe( false );
+			expect( () => setButtonBusy( null, true ) ).not.toThrow();
+			expect( () => setButtonBusy( undefined, false ) ).not.toThrow();
+		} );
+
+		it( 'sets and removes aria-disabled attribute', () => {
+			const button = document.createElement( 'button' );
+
+			expect( isButtonBusy( button ) ).toBe( false );
+
+			setButtonBusy( button, true );
+			expect( button.getAttribute( 'aria-disabled' ) ).toBe( 'true' );
+			expect( isButtonBusy( button ) ).toBe( true );
+
+			setButtonBusy( button, false );
+			expect( button.getAttribute( 'aria-disabled' ) ).toBeNull();
+			expect( isButtonBusy( button ) ).toBe( false );
+		} );
 	} );
 } );

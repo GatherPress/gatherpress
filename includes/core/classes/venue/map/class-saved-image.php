@@ -499,10 +499,11 @@ final class Saved_Image {
 	 * Get the PNG URLs that queued delete events hold.
 	 *
 	 * @since 0.37.0
+	 * @since TBD    Public, for `Cleanup`.
 	 *
 	 * @return string[] URLs without a query string.
 	 */
-	private static function queued_urls(): array {
+	public static function queued_urls(): array {
 		$urls = array();
 
 		foreach ( (array) _get_cron_array() as $hooks ) {
