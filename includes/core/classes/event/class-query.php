@@ -566,7 +566,7 @@ final class Query {
 			return $query_pieces;
 		}
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 		$year  = (int) $matches[1];
 		$month = (int) $matches[2];
 
@@ -634,7 +634,7 @@ final class Query {
 		);
 		$pieces   = array_merge( $defaults, $pieces );
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 
 		/**
 		 * Escaped events table name.
@@ -725,7 +725,7 @@ final class Query {
 		 *
 		 * @var string $events_table esc_sql() only returns an array when it is handed one.
 		 */
-		$events_table = esc_sql( sprintf( Event::TABLE_FORMAT, $wpdb->prefix ) );
+		$events_table = esc_sql( Event::table() );
 
 		/**
 		 * Escaped posts table name.
@@ -878,7 +878,7 @@ final class Query {
 		}
 
 		$query_pieces = $this->ensure_events_join( $query_pieces );
-		$table        = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table        = Event::table();
 		$start_column = (string) $window['column'];
 		$end_column   = str_replace( 'datetime_start', 'datetime_end', $start_column );
 
@@ -1100,7 +1100,7 @@ final class Query {
 		}
 
 		global $wpdb;
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 
 		return $join . $wpdb->prepare( ' INNER JOIN %i AS gpe ON p.ID = gpe.post_id', $table );
 	}

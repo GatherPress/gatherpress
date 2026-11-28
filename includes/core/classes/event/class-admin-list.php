@@ -265,7 +265,7 @@ final class Admin_List {
 
 		global $wpdb;
 
-		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table   = Event::table();
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
 		// Upcoming: events whose end time is still in the future (includes
@@ -597,7 +597,7 @@ final class Admin_List {
 	protected function get_event_date_months( string $post_type ): array {
 		global $wpdb;
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = Event::table();
 
 		// The appended status clause is one of two fixed strings, but the
 		// sniff cannot see through the call that picks between them.
