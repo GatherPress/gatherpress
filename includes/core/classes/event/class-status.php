@@ -34,6 +34,7 @@ use WP_Term;
  * @since 0.37.0
  */
 final class Status {
+
 	/**
 	 * Schema.org value published for a status that names none of its own.
 	 *

@@ -29,6 +29,7 @@ use GatherPress\Core\Utility;
  * @since TBD
  */
 final class Occurrences {
+
 	/**
 	 * Key format for an occurrence with a time: its local start, as an
 	 * RFC 5545 `RECURRENCE-ID`.

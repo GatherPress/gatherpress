@@ -22,6 +22,7 @@ use DateTimeImmutable;
  * @since TBD
  */
 final class Occurrence {
+
 	/**
 	 * Build an occurrence.
 	 *
